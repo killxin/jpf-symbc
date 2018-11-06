@@ -23,8 +23,16 @@ import gov.nasa.jpf.symbc.Debug;
 public class CollectConstraints {
 	public static void test(int x, int y) {
 		int z=x+y;
-		if(z!=0)
+		if(z==0) {
+			z+=x-y;
+			x=z;
+			if(x<-10) {
+				System.out.println("EQ1 z ");
+			} else {
+				System.out.println("NEQ1 z ");
+			}
 			System.out.println("NEQ z ");
+		}
 		else
 			System.out.println("EQ z ");
 			
@@ -36,7 +44,7 @@ public class CollectConstraints {
 	// The test driver
 	public static void main(String[] args) {
 		int x=2;
-		int y=3;
+		int y=-2;
 		x=Debug.addSymbolicInt(x, "sym_x");
 		y=Debug.addSymbolicInt(y, "sym_y");
 		test(x,y);

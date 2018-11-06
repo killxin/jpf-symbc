@@ -52,6 +52,7 @@ public class IFNE extends gov.nasa.jpf.jvm.bytecode.IFNE {
             ChoiceGenerator<?> cg;
 
             if (!ti.isFirstStepInsn()) { // first time around
+            	// top half - (potentially) creates and registers a new ChoiceGenerator. This marks the end of a transition
                 if (SymbolicInstructionFactory.collect_constraints)
                     cg = new PCChoiceGenerator(1);
                 else if (dp[0].equalsIgnoreCase("omega")) // hack because omega does not handle not or or correctly
@@ -60,9 +61,10 @@ public class IFNE extends gov.nasa.jpf.jvm.bytecode.IFNE {
                     cg = new PCChoiceGenerator(2);
                 ((PCChoiceGenerator) cg).setOffset(this.position);
                 ((PCChoiceGenerator) cg).setMethodName(this.getMethodInfo().getFullName());
-                ti.getVM().getSystemState().setNextChoiceGenerator(cg);
+                ti.getVM().getSystemState().setNextChoiceGenerator(cg); //this would make ss.breakTransition be true
                 return this;
             } else { // this is what really returns results
+            	// bottom half - which does the real work, and might depend on acquiring a new choice value. This is executed at the beginning of the next transition
                 cg = ti.getVM().getSystemState().getChoiceGenerator();
                 assert (cg instanceof PCChoiceGenerator) : "expected PCChoiceGenerator, got: " + cg;
                 conditionValue = popConditionValue(sf);

@@ -52,10 +52,10 @@ public class TestArray {
 		}
 		System.out.println("\n");
 		
-		if (arrList.get(x) == 999) {
-			System.out.println("Found solution for arrList[x] == 999: " + Debug.getSolvedPC());
+		if (arrList.get(x) == 9) {
+			System.out.println("Found solution for arrList[x] == 9: " + Debug.getSolvedPC());
 		} else {
-			System.out.println("Found solution for arrList[x] != 999: " + Debug.getSolvedPC());
+			System.out.println("Found solution for arrList[x] != 9: " + Debug.getSolvedPC());
 		}
 	}
 	

@@ -41,6 +41,7 @@ import gov.nasa.jpf.symbc.Observations;
 import gov.nasa.jpf.symbc.SymbolicInstructionFactory;
 import gov.nasa.jpf.symbc.numeric.solvers.*;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -126,6 +127,11 @@ public class SymbolicConstraintsGeneral {
          * e.g. with Z3.
          */
         ProblemGeneral tempPb = PCParser.parse(pc, pb);
+        
+        com.microsoft.z3.Context ctx = ((ProblemZ3)tempPb).ctx;
+        com.microsoft.z3.Solver solver = ((ProblemZ3)tempPb).solver;
+        com.microsoft.z3.BoolExpr[] exprs = solver.getAssertions();
+        System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
 
         if (tempPb == null)
             result = Boolean.FALSE;
