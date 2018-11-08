@@ -48,6 +48,11 @@ public abstract class Constraint implements Comparable<Constraint> {
 
   public Constraint and;
 
+  public Constraint() {
+	  left = null;
+	  right = null;
+  }
+  
   public Constraint(Expression l, Comparator c, Expression r) {
     left = l;
     comp = c;

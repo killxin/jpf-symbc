@@ -62,6 +62,7 @@ public class IALOAD extends gov.nasa.jpf.jvm.bytecode.IALOAD {
             if (SymbolicInstructionFactory.collect_constraints) {
                 arrayCG = new PCChoiceGenerator(1); // YN: symcrete mode
             } else {
+            	// this ChoiceFenerator will enumerate all possible index from 0 to len+1
                 arrayCG = new PCChoiceGenerator(0, len + 1); // add 2 error cases: <0, >=len
             }
 

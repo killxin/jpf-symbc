@@ -148,6 +148,11 @@ public class SymbolicConstraintsGeneral {
 
             result = pb.solve();
         }
+        
+        System.out.println("rh: Solving Result "+result);
+        if (result == Boolean.TRUE) {
+        	System.out.println("rh: Model: " + solver.getModel());
+        }
 
         if (SymbolicInstructionFactory.debugMode)
             System.out.println("numeric PC: " + pc + " -> " + result + "\n");

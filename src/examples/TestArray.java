@@ -39,28 +39,41 @@ public class TestArray {
 		}
 	}
 	
-	public static void testArrayList(int x) {		
-		int arrSize = 1000;
+	public static void testArrayList(int x, int y) {		
+		int arrSize = 5;
 		ArrayList<Integer> arrList = new ArrayList<>();
 		for (int i = 0; i < arrSize; i++) {
-			arrList.add(i);
+			arrList.add(y);
 		}
 		
-		System.out.println("Contents of arr: " );
-		for (int i : arrList) {
-			System.out.print(i + " ");
-		}
-		System.out.println("\n");
+//		System.out.println("Contents of arr: " );
+//		for (int i : arrList) {
+//			System.out.print(i + " ");
+//		}
+//		System.out.println("\n");
 		
-		if (arrList.get(x) == 9) {
-			System.out.println("Found solution for arrList[x] == 9: " + Debug.getSolvedPC());
+		if (arrList.get(x) == 30) {
+//			System.out.println("Found solution for arrList[x] == 3: " + Debug.getSolvedPC());
+			System.out.println("Found solution for arrList[x] == 30");
 		} else {
-			System.out.println("Found solution for arrList[x] != 9: " + Debug.getSolvedPC());
+//			System.out.println("Found solution for arrList[x] != 3: " + Debug.getSolvedPC());
+			System.out.println("Found solution for arrList[x] != 30");
+		}
+	}
+	
+	public static void testMyArray(int[] a, int x, int[] b) {
+		if (a[x] == b[x]) {
+//			System.out.println("Found solution for arrList[x] == 3: " + Debug.getSolvedPC());
+			System.out.println("Found solution for a[x] == b[x]");
+		} else {
+//			System.out.println("Found solution for arrList[x] != 3: " + Debug.getSolvedPC());
+			System.out.println("Found solution for a[x] != b[x]");
 		}
 	}
 	
 	public static void main(String[] args) {
 		//testBasic(0);
-		testArrayList(0);
+		testArrayList(0,3);
+//		testMyArray(new int[] {4,9,5,7}, 2,new int[] {1,3,5,6});
 	}
 }

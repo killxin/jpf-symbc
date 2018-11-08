@@ -44,6 +44,9 @@ import gov.nasa.jpf.symbc.arrays.RealArrayConstraint;
 import gov.nasa.jpf.symbc.arrays.RealStoreExpression;
 import gov.nasa.jpf.symbc.arrays.SelectExpression;
 import gov.nasa.jpf.symbc.arrays.StoreExpression;
+import gov.nasa.jpf.symbc.collections.ArrayListExpression;
+import gov.nasa.jpf.symbc.collections.SequenceConstraint;
+import gov.nasa.jpf.symbc.collections.SequenceOperator;
 import gov.nasa.jpf.symbc.numeric.solvers.IncrementalListener;
 import gov.nasa.jpf.symbc.numeric.solvers.IncrementalSolver;
 import gov.nasa.jpf.symbc.numeric.solvers.ProblemCoral;
@@ -1040,6 +1043,68 @@ getExpression(stoex.value)), newae));
         return true;
     }
 
+	static Map<ArrayListExpression,Object>	symArrayListVar;
+	static Object getExpression(ArrayListExpression eRef) {
+		ProblemZ3 pbz3 = (ProblemZ3)pb;
+	 assert eRef != null;
+	 Object dp_var = symArrayListVar.get(eRef);
+	   if (dp_var == null) {
+		   dp_var = pbz3.makeArrayListVar(eRef.getName()+"_1");
+		   symArrayListVar.put(eRef, dp_var);
+	   }
+	   return dp_var;
+	 }
+	
+	static Object updateExpression(ArrayListExpression eRef) {
+		ProblemZ3 pbz3 = (ProblemZ3)pb;
+		 assert eRef != null;
+		 Object dp_var = symArrayListVar.get(eRef); 
+		 assert dp_var != null;
+		 // version update
+		 String nAndv = dp_var.toString();
+		 int start = nAndv.lastIndexOf("_")+1;
+		 int end = nAndv.endsWith("|") ? nAndv.length()-1:nAndv.length();
+		 int version = Integer.parseInt(nAndv.substring(start,end));
+		 Object newVar = pbz3.makeArrayListVar(eRef.getName()+"_"+(version+1));
+		 symArrayListVar.put(eRef, newVar);
+		 return newVar;
+	 }
+
+	public static boolean createSequenceConstraint(final SequenceConstraint cRef) {
+		ProblemZ3 pbz3 = (ProblemZ3)pb;
+		final SequenceOperator opt = cRef.getOpt();
+		switch(opt) {
+		case ADD:
+		case GET:
+			ArrayListExpression base = (ArrayListExpression) cRef.getBase();
+			Expression item = cRef.getParams()[0];
+			if(item instanceof IntegerExpression) {
+				IntegerExpression ie = (IntegerExpression) item;
+				Object sym_b = getExpression(base);
+				Object sym_p = getExpression(ie);
+				if(opt.equals(SequenceOperator.ADD)) {
+					Object new_sym_b = updateExpression(base);
+//					pbz3.post(pbz3.seqAdd(sym_b, sym_p, new_sym_b, null));
+					// pc is prepend, so the former pc happens latter
+					pbz3.post(pbz3.seqAdd(new_sym_b, sym_p, sym_b, null));
+				} else if (opt.equals(SequenceOperator.GET)) {
+					IntegerExpression ir = (IntegerExpression) cRef.getrEturn();
+					Object sym_r = getExpression(ir);
+					pbz3.post(pbz3.seqGet(sym_b, sym_p, null, sym_r));
+				} 
+			}
+			break;
+		case EMPTY:
+			ArrayListExpression ale = (ArrayListExpression) cRef.getBase();
+			Object sym = getExpression(ale);
+			pbz3.post(pbz3.seqEmpty(sym));
+			break;
+	    default:
+	        throw new RuntimeException("error in createSequenceConstraint");
+		}
+	    return true;
+	}
+
   /**
    * Merges the given path condition with the given ProblemGeneral object (i.e. the solver).
    * Normally the merging means only adding the assertions from the path condition to the 
@@ -1055,6 +1120,8 @@ getExpression(stoex.value)), newae));
 
     symRealVar = new HashMap<SymbolicReal,Object>();
     symIntegerVar = new HashMap<SymbolicInteger,Object>();
+    // add by rhjiang
+    symArrayListVar = new HashMap<ArrayListExpression,Object>();
     //result = null;
     tempVars = 0;
 
@@ -1078,6 +1145,9 @@ getExpression(stoex.value)), newae));
           return null;
         }
         cRef = cRef.and;
+      }
+      for(Expression key : symArrayListVar.keySet()) {
+    	  addConstraint(new SequenceConstraint(SequenceOperator.EMPTY,key,null,null));
       }
     }
 
@@ -1114,6 +1184,16 @@ getExpression(stoex.value)), newae));
             throw new RuntimeException("## Error : Array constraints only handled by z3. Try specifying a z3 instance as symbolic.dp");
         }
     }
+    
+    // add by rhjiang
+    else if (cRef instanceof SequenceConstraint) {
+    	 if(pb instanceof ProblemCoral || pb instanceof ProblemZ3|| pb instanceof ProblemZ3Optimize || pb instanceof ProblemZ3BitVector || pb instanceof ProblemZ3Incremental || pb instanceof ProblemZ3BitVectorIncremental) {
+    		 constraintResult = createSequenceConstraint((SequenceConstraint)cRef);
+    	 } else {
+    		 throw new RuntimeException("## Error: Non Linear Integer Constraint not handled " + cRef);
+    	 }
+    }
+    
     else {
       //System.out.println("## Warning: Non Linear Integer Constraint (only coral or z3 can handle it)" + cRef);
       if(pb instanceof ProblemCoral || pb instanceof ProblemZ3|| pb instanceof ProblemZ3Optimize || pb instanceof ProblemZ3BitVector || pb instanceof ProblemZ3Incremental || pb instanceof ProblemZ3BitVectorIncremental)

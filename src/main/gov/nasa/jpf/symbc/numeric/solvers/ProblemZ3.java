@@ -1178,5 +1178,43 @@ public class ProblemZ3 extends ProblemGeneral {
             throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
         }
     }
+    
+    public Object makeArrayListVar(String name) {
+    	try {
+            Sort sort = ctx.mkSeqSort(ctx.mkIntSort());
+            return ctx.mkConst(name, sort);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
+        }
+    }
+    
+    public Object seqAdd(Object sym_b, Object sym_p, Object new_sym_b, Object sym_r) {
+    	try {
+            return ctx.mkEq((Expr) new_sym_b, ctx.mkConcat((SeqExpr)sym_b,ctx.mkUnit((Expr)sym_p)));
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
+        }
+    }
+
+	public Object seqGet(Object sym_b, Object sym_p, Object new_sym_b, Object sym_r) {
+		try {
+            return ctx.mkEq(ctx.mkUnit((Expr)sym_r), ctx.mkAt((SeqExpr)sym_b,(IntExpr)sym_p));
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
+        }
+	}
+	
+	public Object seqEmpty(Object sym) {
+		try {
+			SeqExpr seqExp = (SeqExpr) sym;
+            return ctx.mkEq(ctx.mkEmptySeq(seqExp.getSort()),seqExp);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
+        }
+	}
 
 }

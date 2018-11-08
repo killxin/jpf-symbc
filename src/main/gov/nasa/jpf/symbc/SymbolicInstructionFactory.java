@@ -506,6 +506,17 @@ public class SymbolicInstructionFactory extends gov.nasa.jpf.jvm.bytecode.Instru
 		return (filter.isPassing(ci) ? new SASTORE() : super.sastore());
 	  }
 	  
+	  public Instruction nativereturn(){
+		  return (filter.isPassing(ci) ? new NATIVERETURN() : super.nativereturn());
+	  }
+	  
+	  public Instruction areturn(){
+		  return (filter.isPassing(ci) ? new ARETURN() : super.areturn());
+	  }
+	  
+	  public Instruction ireturn(){
+		  return (filter.isPassing(ci) ? new IRETURN() : super.ireturn());
+	  }
 		//TODO: to review
         //From Fujitsu:
 

@@ -48,6 +48,9 @@ import gov.nasa.jpf.symbc.arrays.ArrayExpression;
 import gov.nasa.jpf.symbc.arrays.RealArrayConstraint;
 import gov.nasa.jpf.symbc.arrays.RealStoreExpression;
 import gov.nasa.jpf.symbc.arrays.StoreExpression;
+import gov.nasa.jpf.symbc.collections.ArrayListExpression;
+import gov.nasa.jpf.symbc.collections.SequenceConstraint;
+import gov.nasa.jpf.symbc.collections.SequenceOperator;
 import gov.nasa.jpf.symbc.arrays.SelectExpression;
 import gov.nasa.jpf.symbc.concolic.PCAnalyzer;
 import gov.nasa.jpf.symbc.numeric.solvers.SolverTranslator;
@@ -236,6 +239,13 @@ public class PathCondition implements Comparable<PathCondition> {
 
         prependUnlessRepeated(t);
 
+    }
+    
+    public void _addOpt(SequenceOperator opt, Expression b, Expression[] p, Expression r) {
+    	Constraint t;
+        flagSolved = false;
+        t = new SequenceConstraint(opt, b, p, r);
+        prependUnlessRepeated(t);
     }
 
     /**
