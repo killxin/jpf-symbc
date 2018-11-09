@@ -222,6 +222,15 @@ public class BytecodeUtils {
             }
         }
         // End string handling
+        
+     // Start list handling
+        SymbolicListHandler slh = new SymbolicListHandler();
+        Instruction handled = slh.handleSymbolicLists(invInst, th);
+        if (handled != null) { // go to next instruction as symbolic string operation was done
+            // System.out.println("Symbolic string analysis!!!"+invInst);
+            return new InstructionOrSuper(false, handled);
+        }
+        // End string handling
 
         boolean symClass = BytecodeUtils.isClassSymbolic(conf, cname, mi, mname);
         boolean found = (BytecodeUtils.isMethodSymbolic(conf, longName, argSize, args) || symClass);
@@ -340,7 +349,14 @@ public class BytecodeUtils {
                         expressionMap.put(name, sym_v);
                         sf.setOperandAttr(stackIdx, sym_v);
                         outputString = outputString.concat(" " + sym_v + ",");
-                    } else if (argTypes[j].equalsIgnoreCase("int[]") || argTypes[j].equalsIgnoreCase("long[]")
+                    } 
+                    else if (argTypes[j].equalsIgnoreCase("java.lang.String")) {
+                        StringExpression sym_v = new StringSymbolic(varName(name, VarType.STRING));
+                        expressionMap.put(name, sym_v);
+                        sf.setOperandAttr(stackIdx, sym_v);
+                        outputString = outputString.concat(" " + sym_v + ",");
+                    } 
+                    else if (argTypes[j].equalsIgnoreCase("int[]") || argTypes[j].equalsIgnoreCase("long[]")
                             || argTypes[j].equalsIgnoreCase("byte[]")) {
                         if (symarray) {
                             ArrayExpression sym_v = new ArrayExpression(th.getElementInfo(sf.peek()).toString());
