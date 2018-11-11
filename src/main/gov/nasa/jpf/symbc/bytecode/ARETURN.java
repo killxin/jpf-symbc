@@ -18,16 +18,17 @@ public class ARETURN extends gov.nasa.jpf.jvm.bytecode.ARETURN {
 		if(retExp instanceof Expression) {
 			StackFrame calleeFrame = th.getModifiableTopFrame();
 			// caller frame peek() is parameters, callee frame is return value
-			int retRef = calleeFrame.peek();
-			ElementInfo retEI = th.getModifiableElementInfo(retRef);
-			System.out.println("ARET "+retRef);
-			if(retEI == null) {
-				super.addReturnAttr(th, retExp);
-				System.out.println("ARET "+super.getReturnAttr(th));
-			} else {
+			if(calleeFrame.isOperandRef()) {
+				int retRef = calleeFrame.peek();
+				ElementInfo retEI = th.getModifiableElementInfo(retRef);
+				System.out.println("ARET "+retRef);
+				System.out.println("ARET (before set attr)"+retEI.getObjectAttr());
 //				retEI.addObjectAttr(retExp);
 				retEI.setObjectAttr(retExp);
 				System.out.println("ARET "+retEI.getObjectAttr());
+			} else {
+				super.addReturnAttr(th, retExp);
+				System.out.println("ARET "+super.getReturnAttr(th));
 			}
 			callerFrame.removeFrameAttr(retExp);
 		}

@@ -36,6 +36,33 @@ public class IRETURN extends gov.nasa.jpf.jvm.bytecode.IRETURN {
     			head = current;
     		}
         }
+        
+		StackFrame callerFrame = th.getCallerStackFrame();
+		Object retExp = callerFrame.getFrameAttr();
+		if(retExp instanceof Expression) {
+			super.addReturnAttr(th, retExp);
+			callerFrame.removeFrameAttr(retExp);
+		}
+		
+		StackFrame calleeFrame = th.getTopFrame();
+		Object objFAttr = calleeFrame.getFrameAttr();
+		if(objFAttr instanceof Map) {
+			Map<Object,Object> fAttr = (Map) objFAttr;
+			for(Entry<Object,Object> entry : fAttr.entrySet()) {
+				Object key = entry.getKey();
+				if(key instanceof ElementInfo) {
+					ElementInfo ei = (ElementInfo) key;
+					ei.addObjectAttr(entry.getValue());
+				}
+				// useless maybe
+				else if (key instanceof Integer) {
+					// [@373,0(x_1_SYMINT)^top] --> [@373,0(x_1_SYMINT)^top-(top-1),@374^top]
+		            // addOperandAttr(offset): top-offset, set offset = top-(top-1) = 1
+					calleeFrame.addOperandAttr(calleeFrame.getTopPos()-(Integer)key, entry.getValue());
+				}
+			}
+		}
+        
         return super.execute(th);
 	}
 

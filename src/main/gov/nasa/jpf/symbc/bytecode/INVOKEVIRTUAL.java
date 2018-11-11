@@ -78,12 +78,17 @@ public class INVOKEVIRTUAL extends gov.nasa.jpf.jvm.bytecode.INVOKEVIRTUAL {
 	        }
         	ElementInfo p1 = th.getModifiableElementInfo(frame.peek(0));
         	ElementInfo base = th.getModifiableElementInfo(frame.peek(1));
-        	Object sym_b = base != null ? base.getObjectAttr() : null;
-        	Object sym_p = p1 != null ? p1.getObjectAttr() : null;
+        	ArrayListExpression sym_b = base != null ? (ArrayListExpression)base.getObjectAttr() : null;
+        	Expression sym_p = p1 != null ? (Expression)p1.getObjectAttr() : null;
         	// currently just handle both != null
         	if(sym_b != null && sym_p != null) {
-        		ArrayListExpression asym_b = (ArrayListExpression) sym_b;
-        		IntegerExpression isym_p = (IntegerExpression) sym_p;
+//        	if(sym_p != null || ((ArrayListExpression) sym_b).isSymbolic()) {
+//        		Expression sym_p;
+//        		if(sym_p!=null) {
+//        			isym_p = (IntegerExpression) sym_p;
+//        		} else {
+//        			isym_p = new IntegerConstant(???)
+//        		}
         		// create a choice generator to associate the precondition with it
 	            ChoiceGenerator<?> cg = null;
 	          	if (!th.isFirstStepInsn()) { // first time around
@@ -100,8 +105,10 @@ public class INVOKEVIRTUAL extends gov.nasa.jpf.jvm.bytecode.INVOKEVIRTUAL {
 	                pc = new PathCondition();
 	            else
 	                pc = ((PCChoiceGenerator) prev_cg).getCurrentPC();
-	//
-	            pc._addOpt(SequenceOperator.ADD, asym_b, new Expression[]{isym_p}, null);
+	            
+	            IntegerExpression retExp = new SymbolicInteger(BytecodeUtils.varName("rEturn", VarType.INT),0,1);
+	            pc._addOpt(SequenceOperator.ADD, sym_b, new Expression[]{sym_p}, retExp);
+	            th.getTopFrame().addFrameAttr(retExp);
 //	            pc._addDet(Comparator.GE, sym_v.length, new IntegerConstant(0));
 	            ((PCChoiceGenerator) cg).setCurrentPC(pc);
         	}

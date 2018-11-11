@@ -21,6 +21,7 @@ package gov.nasa.jpf.symbc.bytecode;
 import gov.nasa.jpf.Config;
 import gov.nasa.jpf.jvm.bytecode.JVMInvokeInstruction;
 import gov.nasa.jpf.symbc.arrays.ArrayExpression;
+import gov.nasa.jpf.symbc.collections.ArrayListExpression;
 import gov.nasa.jpf.symbc.heap.Helper;
 import gov.nasa.jpf.symbc.numeric.Comparator;
 import gov.nasa.jpf.symbc.numeric.Expression;
@@ -340,7 +341,16 @@ public class BytecodeUtils {
                         expressionMap.put(name, sym_v);
                         sf.setOperandAttr(stackIdx, sym_v);
                         outputString = outputString.concat(" " + sym_v + ",");
-                    } else if (argTypes[j].equalsIgnoreCase("int[]") || argTypes[j].equalsIgnoreCase("long[]")
+                    } else if (argTypes[j].equalsIgnoreCase("java.util.ArrayList")) {
+                    	ArrayListExpression sym_v = new ArrayListExpression(varName(name, VarType.ARRLIST), true);
+                    	expressionMap.put(name, sym_v);
+                    	assert sf.isOperandRef(stackIdx);
+                        int objRef = sf.peek(stackIdx);
+                        ElementInfo ei = th.getElementInfo(objRef);
+                        ei.setObjectAttr(sym_v);
+                        outputString = outputString.concat(" " + sym_v + ",");
+                    }
+                    else if (argTypes[j].equalsIgnoreCase("int[]") || argTypes[j].equalsIgnoreCase("long[]")
                             || argTypes[j].equalsIgnoreCase("byte[]")) {
                         if (symarray) {
                             ArrayExpression sym_v = new ArrayExpression(th.getElementInfo(sf.peek()).toString());
@@ -635,7 +645,7 @@ public class BytecodeUtils {
     }
 
     public enum VarType {
-        INT, REAL, REF, STRING
+        INT, REAL, REF, STRING, ARRLIST
     };
 
     public static String varName(String name, VarType type) {
@@ -653,6 +663,9 @@ public class BytecodeUtils {
         case STRING:
             suffix = "_SYMSTRING";
             break;
+        case ARRLIST:
+        	suffix = "_SYMAL";
+        	break;
         default:
             throw new RuntimeException("Unhandled SymVarType: " + type);
         }

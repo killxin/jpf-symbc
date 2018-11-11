@@ -19,6 +19,7 @@ package gov.nasa.jpf.symbc.bytecode;
 
 import gov.nasa.jpf.symbc.arrays.ArrayExpression;
 import gov.nasa.jpf.symbc.bytecode.BytecodeUtils.InstructionOrSuper;
+import gov.nasa.jpf.symbc.bytecode.BytecodeUtils.VarType;
 import gov.nasa.jpf.symbc.collections.ArrayListExpression;
 import gov.nasa.jpf.symbc.numeric.Comparator;
 import gov.nasa.jpf.symbc.numeric.IntegerConstant;
@@ -76,7 +77,7 @@ public class INVOKESPECIAL extends gov.nasa.jpf.jvm.bytecode.INVOKESPECIAL {
 	        int stackIdx = 0;
 	        int objRef = sf.peek(stackIdx);
 	        ElementInfo ei = th.getModifiableElementInfo(objRef);
-	        ArrayListExpression sym_v = new ArrayListExpression(ei.getType()+"_"+objRef);
+	        ArrayListExpression sym_v = new ArrayListExpression(BytecodeUtils.varName("@"+objRef, VarType.ARRLIST));
 	        ei.setObjectAttr(sym_v);
 	        System.out.println(ei.getObjectAttr());
 //	        sf.setOperandAttr(stackIdx, sym_v);

@@ -10,14 +10,26 @@ public class ArrayListExpression extends Expression {
 //	public IntegerExpression length;
     private String elemType = "?";
     private final String name;
+    
+    private boolean isSYM;
 
     public String getName() {
         return this.name;
     }
 
     public ArrayListExpression(String name) {
-        this.name=name;
+        this.name = name;
+        this.isSYM = false;
 //        this.length = new SymbolicInteger(name+"_length");
+    }
+    
+    public ArrayListExpression(String name, boolean isSYM) {
+        this.name = name;
+        this.isSYM = isSYM;
+    }
+    
+    public boolean isSymbolic() {
+    	return isSYM;
     }
 
     public static String getNewName(ArrayExpression prev) {
