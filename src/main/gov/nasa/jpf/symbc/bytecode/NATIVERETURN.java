@@ -15,7 +15,7 @@ public class NATIVERETURN extends gov.nasa.jpf.jvm.bytecode.NATIVERETURN {
         	int paramRef = callerFrame.peek(0);
         	Object attr = callerFrame.getOperandAttr(0);
         	Integer objRef = (Integer)super.getReturnValue(th);
-        	ElementInfo ei = th.getElementInfo(objRef);
+        	ElementInfo ei = th.getModifiableElementInfo(objRef);
         	ei.setObjectAttr(attr);
         	System.out.println("NATIVE:"+callerFrame);
         	System.out.println("NATIVE:"+paramRef);

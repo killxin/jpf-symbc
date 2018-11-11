@@ -346,7 +346,7 @@ public class BytecodeUtils {
                     	expressionMap.put(name, sym_v);
                     	assert sf.isOperandRef(stackIdx);
                         int objRef = sf.peek(stackIdx);
-                        ElementInfo ei = th.getElementInfo(objRef);
+                        ElementInfo ei = th.getModifiableElementInfo(objRef);
                         ei.setObjectAttr(sym_v);
                         outputString = outputString.concat(" " + sym_v + ",");
                     }
