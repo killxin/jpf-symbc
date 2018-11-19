@@ -61,19 +61,38 @@ public class TestArray {
 		}
 	}
 	
-	public static void testMyArray(int[] a, int x, int[] b) {
-		if (a[x] == b[x]) {
+	public static void testMyArray(ArrayList a, ArrayList b) {
+		int arrSize = 5;
+		for (int i = 0; i < arrSize; i++) {
+			a.add(i); b.add(5-i);
+		}
+		if ((int)a.get(2)==(int)b.get(2)) {
 //			System.out.println("Found solution for arrList[x] == 3: " + Debug.getSolvedPC());
-			System.out.println("Found solution for a[x] == b[x]");
+			System.out.println("Found solution for a[2] == b[2]");
 		} else {
 //			System.out.println("Found solution for arrList[x] != 3: " + Debug.getSolvedPC());
-			System.out.println("Found solution for a[x] != b[x]");
+			System.out.println("Found solution for a[2] != b[2]");
+		}
+	}
+	
+	public static void testMyArray2(ArrayList a, int x) {
+		int arrSize = 5;
+		for (int i = 0; i < arrSize; i++) {
+			a.add(x);
+		}
+		if ((int)a.get(3)==5) {
+//			System.out.println("Found solution for arrList[x] == 3: " + Debug.getSolvedPC());
+			System.out.println("Found solution for a[6] == 5");
+		} else {
+//			System.out.println("Found solution for arrList[x] != 3: " + Debug.getSolvedPC());
+			System.out.println("Found solution for a[6] != 5");
 		}
 	}
 	
 	public static void main(String[] args) {
 		//testBasic(0);
-		testArrayList(0,3);
-//		testMyArray(new int[] {4,9,5,7}, 2,new int[] {1,3,5,6});
+//		testArrayList(0,3);
+//		testMyArray(new ArrayList(), new ArrayList());
+		testMyArray2(new ArrayList(), 5);
 	}
 }

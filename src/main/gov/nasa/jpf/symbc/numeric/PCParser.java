@@ -1081,16 +1081,23 @@ getExpression(stoex.value)), newae));
 			if(item instanceof IntegerExpression) {
 				IntegerExpression ie = (IntegerExpression) item;
 				Object sym_b = getExpression(base);
-				Object sym_p = getExpression(ie);
+				Object sym_p = ie instanceof IntegerConstant ? ie : getExpression(ie);
 				if(opt.equals(SequenceOperator.ADD)) {
-					Object new_sym_b = updateExpression(base);
-//					pbz3.post(pbz3.seqAdd(sym_b, sym_p, new_sym_b, null));
+					Object old_sym_b = updateExpression(base);
 					// pc is prepend, so the former pc happens latter
-					pbz3.post(pbz3.seqAdd(new_sym_b, sym_p, sym_b, null));
+					if(sym_p instanceof IntegerConstant) {
+						pbz3.post(pbz3.seqAdd(old_sym_b, pbz3.makeIntConst(((IntegerConstant)sym_p).value), sym_b, null));
+					} else {
+						pbz3.post(pbz3.seqAdd(old_sym_b, sym_p, sym_b, null));
+					}
 				} else if (opt.equals(SequenceOperator.GET)) {
 					IntegerExpression ir = (IntegerExpression) cRef.getrEturn();
 					Object sym_r = getExpression(ir);
-					pbz3.post(pbz3.seqGet(sym_b, sym_p, null, sym_r));
+					if(sym_p instanceof IntegerConstant) {
+						pbz3.post(pbz3.seqGet(sym_b, pbz3.makeIntConst(((IntegerConstant)sym_p).value), null, sym_r));
+					} else {
+						pbz3.post(pbz3.seqGet(sym_b, sym_p, null, sym_r));
+					}
 				} 
 			}
 			break;
@@ -1146,8 +1153,10 @@ getExpression(stoex.value)), newae));
         }
         cRef = cRef.and;
       }
-      for(Expression key : symArrayListVar.keySet()) {
-    	  addConstraint(new SequenceConstraint(SequenceOperator.EMPTY,key,null,null));
+      for(ArrayListExpression key : symArrayListVar.keySet()) {
+    	  if(!key.isSymbolic()) {
+    		  addConstraint(new SequenceConstraint(SequenceOperator.EMPTY,key,null,null));
+    	  }
       }
     }
 
