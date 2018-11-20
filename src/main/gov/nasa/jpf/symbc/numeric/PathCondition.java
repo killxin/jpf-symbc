@@ -42,15 +42,13 @@ import za.ac.sun.cs.green.Instance;
 import java.util.HashMap;
 import java.util.Map;
 
+import edu.nju.seg.symbc.collections.CollectionPathCondition;
 import gov.nasa.jpf.symbc.SymbolicInstructionFactory;
 import gov.nasa.jpf.symbc.arrays.ArrayConstraint;
 import gov.nasa.jpf.symbc.arrays.ArrayExpression;
 import gov.nasa.jpf.symbc.arrays.RealArrayConstraint;
 import gov.nasa.jpf.symbc.arrays.RealStoreExpression;
 import gov.nasa.jpf.symbc.arrays.StoreExpression;
-import gov.nasa.jpf.symbc.collections.ArrayListExpression;
-import gov.nasa.jpf.symbc.collections.SequenceConstraint;
-import gov.nasa.jpf.symbc.collections.SequenceOperator;
 import gov.nasa.jpf.symbc.arrays.SelectExpression;
 import gov.nasa.jpf.symbc.concolic.PCAnalyzer;
 import gov.nasa.jpf.symbc.numeric.solvers.SolverTranslator;
@@ -79,6 +77,9 @@ public class PathCondition implements Comparable<PathCondition> {
 
     // TODO: to review
     public StringPathCondition spc = new StringPathCondition(this);
+    
+    // add by rhjiang
+    public CollectionPathCondition cpc = new CollectionPathCondition(this);
 
     private Integer hashCode = null;
 
@@ -110,6 +111,7 @@ public class PathCondition implements Comparable<PathCondition> {
         pc_new.header = this.header;
         pc_new.count = this.count;
         pc_new.spc = this.spc.make_copy(pc_new); // TODO: to review
+        pc_new.cpc = this.cpc.make_copy(pc_new); // add by rhjiang
         pc_new.solverCalls = this.solverCalls;
         pc_new.arrayExpressions = this.arrayExpressions;
         return pc_new;
@@ -239,13 +241,6 @@ public class PathCondition implements Comparable<PathCondition> {
 
         prependUnlessRepeated(t);
 
-    }
-    
-    public void _addOpt(SequenceOperator opt, Expression b, Expression[] p, Expression r) {
-    	Constraint t;
-        flagSolved = false;
-        t = new SequenceConstraint(opt, b, p, r);
-        prependUnlessRepeated(t);
     }
 
     /**

@@ -1,7 +1,7 @@
 target=TestArray
 classpath=${jpf-symbc}/build/examples
 sourcepath=${jpf-symbc}/src/examples
-symbolic.method = TestArray.testBasic(sym),TestArray.testArrayList(sym#sym),TestArray.testMyArray(sym#sym),TestArray.testMyArray2(sym#sym)
+symbolic.method = TestArray.testBasic(sym),TestArray.testArrayList(sym),TestArray.testArrayList2(sym#sym),TestArray.testMyArray(sym#sym),TestArray.testMyArray2(sym#sym)
 symbolic.min_int=-10
 #set max=1000 to reach 999
 symbolic.max_int=10

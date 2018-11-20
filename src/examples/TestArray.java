@@ -39,7 +39,23 @@ public class TestArray {
 		}
 	}
 	
-	public static void testArrayList(int x, int y) {		
+	public static void testArrayList(int x) {		
+		int arrSize = 5;
+		ArrayList<Integer> arrList = new ArrayList<>();
+		for (int i = 0; i < arrSize; i++) {
+			arrList.add(x);
+		}
+		
+		if (arrList.get(3) == 30) {
+//			System.out.println("Found solution for arrList[x] == 3: " + Debug.getSolvedPC());
+			System.out.println("Found solution for arrList[3] == 30");
+		} else {
+//			System.out.println("Found solution for arrList[x] != 3: " + Debug.getSolvedPC());
+			System.out.println("Found solution for arrList[3] != 30");
+		}
+	}
+	
+	public static void testArrayList2(int x, int y) {		
 		int arrSize = 5;
 		ArrayList<Integer> arrList = new ArrayList<>();
 		for (int i = 0; i < arrSize; i++) {
@@ -82,16 +98,17 @@ public class TestArray {
 		}
 		if ((int)a.get(3)==5) {
 //			System.out.println("Found solution for arrList[x] == 3: " + Debug.getSolvedPC());
-			System.out.println("Found solution for a[6] == 5");
+			System.out.println("Found solution for a[3] == 5");
 		} else {
 //			System.out.println("Found solution for arrList[x] != 3: " + Debug.getSolvedPC());
-			System.out.println("Found solution for a[6] != 5");
+			System.out.println("Found solution for a[3] != 5");
 		}
 	}
 	
 	public static void main(String[] args) {
 		//testBasic(0);
-//		testArrayList(0,3);
+//		testArrayList(0);
+//		testArrayList2(0,3);
 //		testMyArray(new ArrayList(), new ArrayList());
 		testMyArray2(new ArrayList(), 5);
 	}

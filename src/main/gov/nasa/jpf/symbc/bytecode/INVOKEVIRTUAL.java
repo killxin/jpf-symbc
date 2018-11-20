@@ -17,27 +17,9 @@
  */
 package gov.nasa.jpf.symbc.bytecode;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import gov.nasa.jpf.JPFException;
-import gov.nasa.jpf.symbc.bytecode.BytecodeUtils.VarType;
-import gov.nasa.jpf.symbc.collections.ArrayListExpression;
-import gov.nasa.jpf.symbc.collections.SequenceOperator;
-import gov.nasa.jpf.symbc.numeric.Expression;
-import gov.nasa.jpf.symbc.numeric.IntegerConstant;
-import gov.nasa.jpf.symbc.numeric.IntegerExpression;
-import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
-import gov.nasa.jpf.symbc.numeric.PathCondition;
-import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
-import gov.nasa.jpf.vm.ChoiceGenerator;
-import gov.nasa.jpf.vm.ClassChangeException;
 import gov.nasa.jpf.vm.ClassInfo;
-import gov.nasa.jpf.vm.ElementInfo;
 import gov.nasa.jpf.vm.Instruction;
-import gov.nasa.jpf.vm.MJIEnv;
 import gov.nasa.jpf.vm.MethodInfo;
-import gov.nasa.jpf.vm.StackFrame;
 import gov.nasa.jpf.vm.ThreadInfo;
 
 // need to fix names
@@ -63,108 +45,6 @@ public class INVOKEVIRTUAL extends gov.nasa.jpf.jvm.bytecode.INVOKEVIRTUAL {
 	      ClassInfo ci = th.getClassInfo(objRef);
 	      String clsName = (ci != null) ? ci.getName() : "?UNKNOWN?";
 	      return th.createAndThrowException("java.lang.NoSuchMethodError", clsName + '.' + mname);
-	    }
-	    
-	    if(mi.getFullName().equals("java.util.ArrayList.add(Ljava/lang/Object;)Z")) {
-//	        ElementInfo ei = th.getElementInfo(objRef);
-	        ClassInfo ciCaller = mi.getClassInfo();
-	        StackFrame frame = ciCaller.createStackFrame( th, mi);
-	        int numParams = getArgSize();
-	        for(int i=numParams-1;i>=0;i--) {
-	        	Object attr = frame.getOperandAttr(i);
-	        	System.out.println(i+": "+frame.peek(i)+":"+attr);
-	        	ElementInfo ei = th.getModifiableElementInfo(frame.peek(i));
-	        	if(ei != null) {
-	        		System.out.println(ei.getObjectAttr());
-	        	}
-	        }
-        	ElementInfo p1 = th.getModifiableElementInfo(frame.peek(0));
-        	ElementInfo base = th.getModifiableElementInfo(frame.peek(1));
-        	ArrayListExpression sym_b = base != null ? (ArrayListExpression)base.getObjectAttr() : null;
-        	Expression sym_p = p1 != null ? (Expression)p1.getObjectAttr() : null;
-        	// currently just handle both != null
-//        	if(sym_b != null && sym_p != null) {
-        	assert sym_b != null;
-        	if(sym_p != null || sym_b.isSymbolic()) {
-        		if(sym_p == null) {
-        			if(p1.getClassInfo().getName().equals("java.lang.Integer")) {
-        				sym_p = new IntegerConstant(p1.asInteger());
-        				System.out.println("create symbolic expression for concrete Integer "+sym_p);
-        			} else {
-        				throw new JPFException("object is of type "+p1.getClassInfo().getName());
-        			}
-        		}
-        		// create a choice generator to associate the precondition with it
-	            ChoiceGenerator<?> cg = null;
-	          	if (!th.isFirstStepInsn()) { // first time around
-	                  cg = new PCChoiceGenerator(1);
-	                  th.getVM().setNextChoiceGenerator(cg);
-	                  return this;
-	              } else { // this is what really returns results
-	                  cg = th.getVM().getChoiceGenerator();   
-	              }
-	        	
-	        	PCChoiceGenerator prev_cg = cg.getPreviousChoiceGeneratorOfType(PCChoiceGenerator.class);
-	            PathCondition pc;
-	            if (prev_cg == null)
-	                pc = new PathCondition();
-	            else
-	                pc = ((PCChoiceGenerator) prev_cg).getCurrentPC();
-	            
-	            IntegerExpression retExp = new SymbolicInteger(BytecodeUtils.varName("rEturn", VarType.INT),0,1);
-	            pc._addOpt(SequenceOperator.ADD, sym_b, new Expression[]{sym_p}, retExp);
-	            th.getTopFrame().addFrameAttr(retExp);
-//	            pc._addDet(Comparator.GE, sym_v.length, new IntegerConstant(0));
-	            ((PCChoiceGenerator) cg).setCurrentPC(pc);
-        	}
-	    }
-	    
-	    if(mi.getFullName().equals("java.util.ArrayList.get(I)Ljava/lang/Object;")) {
-	        ClassInfo ciCaller = mi.getClassInfo();
-	        StackFrame frame = ciCaller.createStackFrame( th, mi);
-	        int numParams = getArgSize();
-	        for(int i=numParams-1;i>=0;i--) {
-	        	Object attr = frame.getOperandAttr(i);
-	        	System.out.println(i+": "+frame.peek(i)+":"+attr);
-	        	ElementInfo ei = th.getModifiableElementInfo(frame.peek(i));
-	        	if(ei != null) {
-	        		System.out.println(ei.getObjectAttr());
-	        	}
-	        }
-        	ElementInfo base = th.getModifiableElementInfo(frame.peek(1));
-        	ArrayListExpression sym_b = base != null ? (ArrayListExpression)base.getObjectAttr() : null;
-        	IntegerExpression sym_p = frame.hasOperandAttr(0) ? (IntegerExpression) frame.getOperandAttr(0) : null;
-        	// currently just handle both != null
-//        	if(sym_b != null && sym_p != null) {
-    		assert sym_b != null;
-        	if(sym_p != null || sym_b.isSymbolic()) {
-        		if(sym_p == null) {
-        			sym_p = new IntegerConstant(frame.peek(0));
-        			System.out.println("create symbolic expression for concrete int "+sym_p);
-        		}
-        		// create a choice generator to associate the precondition with it
-	            ChoiceGenerator<?> cg = null;
-	          	if (!th.isFirstStepInsn()) { // first time around
-	                  cg = new PCChoiceGenerator(1);
-	                  th.getVM().setNextChoiceGenerator(cg);
-	                  return this;
-	              } else { // this is what really returns results
-	                  cg = th.getVM().getChoiceGenerator();   
-	              }
-	        	
-	        	PCChoiceGenerator prev_cg = cg.getPreviousChoiceGeneratorOfType(PCChoiceGenerator.class);
-	            PathCondition pc;
-	            if (prev_cg == null)
-	                pc = new PathCondition();
-	            else
-	                pc = ((PCChoiceGenerator) prev_cg).getCurrentPC();
-	//
-	            IntegerExpression retExp = new SymbolicInteger(BytecodeUtils.varName("rEturn", VarType.INT));
-	            pc._addOpt(SequenceOperator.GET, sym_b, new Expression[]{sym_p}, retExp);
-	            th.getTopFrame().addFrameAttr(retExp);
-//	            pc._addDet(Comparator.GE, sym_v.length, new IntegerConstant(0));
-	            ((PCChoiceGenerator) cg).setCurrentPC(pc);
-        	}
 	    }
 	    
 		BytecodeUtils.InstructionOrSuper nextInstr = BytecodeUtils.execute(this,  th);

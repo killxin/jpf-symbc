@@ -21,9 +21,9 @@ package gov.nasa.jpf.symbc.bytecode;
 import gov.nasa.jpf.Config;
 import gov.nasa.jpf.jvm.bytecode.JVMInvokeInstruction;
 import gov.nasa.jpf.symbc.arrays.ArrayExpression;
-import gov.nasa.jpf.symbc.collections.ArrayListExpression;
 import gov.nasa.jpf.symbc.heap.Helper;
 import gov.nasa.jpf.symbc.numeric.Comparator;
+import gov.nasa.jpf.symbc.numeric.ConstraintExpressionVisitor;
 import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.IntegerConstant;
 import gov.nasa.jpf.symbc.numeric.IntegerExpression;
@@ -55,6 +55,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.Vector;
+
+import edu.nju.seg.symbc.collections.CollectionExpression;
 
 public class BytecodeUtils {
 
@@ -224,11 +226,10 @@ public class BytecodeUtils {
         }
         // End string handling
         
-     // Start list handling
+        // Start list handling
         SymbolicListHandler slh = new SymbolicListHandler();
         Instruction handled = slh.handleSymbolicLists(invInst, th);
-        if (handled != null) { // go to next instruction as symbolic string operation was done
-            // System.out.println("Symbolic string analysis!!!"+invInst);
+        if (handled != null) {
             return new InstructionOrSuper(false, handled);
         }
         // End string handling
@@ -351,8 +352,9 @@ public class BytecodeUtils {
                         sf.setOperandAttr(stackIdx, sym_v);
                         outputString = outputString.concat(" " + sym_v + ",");
                     } 
+                    // add by rhjiang
                     else if (argTypes[j].equalsIgnoreCase("java.util.ArrayList")) {
-                    	ArrayListExpression sym_v = new ArrayListExpression(varName(name, VarType.ARRLIST), true);
+                    	CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.ARRLIST), true);
                     	expressionMap.put(name, sym_v);
                     	assert sf.isOperandRef(stackIdx);
                         int objRef = sf.peek(stackIdx);
