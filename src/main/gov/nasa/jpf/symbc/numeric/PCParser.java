@@ -65,7 +65,7 @@ import java.util.Map.Entry;
 
 import edu.nju.seg.symbc.collections.CollectionConstraint;
 import edu.nju.seg.symbc.collections.CollectionExpression;
-import edu.nju.seg.symbc.collections.CollectionOperator;
+import edu.nju.seg.symbc.collections.CollectionOperation;
 
 
 // parses PCs
@@ -1164,8 +1164,8 @@ getExpression(stoex.value)), newae));
 
 	public static boolean createCollectionConstraint(final CollectionConstraint cRef) {
 		ProblemZ3 pbz3 = (ProblemZ3)pb;
-		final CollectionOperator opt = cRef.getOpt();
-		if(opt == CollectionOperator.ARRAYLIST_ADD){
+		final CollectionOperation opt = cRef.getOpt();
+		if(opt == CollectionOperation.ARRAYLIST_ADD){
 			CollectionExpression base = (CollectionExpression) cRef.getBase();
 			CollectionExpression _base = (CollectionExpression) cRef._getBase();
 			Expression param = cRef.getParams()[0];
@@ -1183,7 +1183,7 @@ getExpression(stoex.value)), newae));
 					pbz3.post(pbz3.seqAdd(sym_b, sym_p, new_sym_b, null));
 				}
 			}
-		} else if(opt == CollectionOperator.ARRAYLIST_GET){
+		} else if(opt == CollectionOperation.ARRAYLIST_GET){
 			CollectionExpression base = (CollectionExpression) cRef.getBase();
 			Expression param = cRef.getParams()[0];
 			IntegerExpression rEtrun = (IntegerExpression) cRef.getrEturn();
@@ -1198,7 +1198,7 @@ getExpression(stoex.value)), newae));
 					pbz3.post(pbz3.seqGet(sym_b, sym_p, sym_r));
 				}
 			} 
-		} else if(opt == CollectionOperator.ARRAYLIST_INIT){
+		} else if(opt == CollectionOperation.ARRAYLIST_INIT2){
 			CollectionExpression le = (CollectionExpression) cRef.getBase();
 			Object sym = getExpression(le);
 			pbz3.post(pbz3.seqEmpty(sym));

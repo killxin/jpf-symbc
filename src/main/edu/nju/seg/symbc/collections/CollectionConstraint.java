@@ -6,7 +6,7 @@ import gov.nasa.jpf.symbc.numeric.Expression;
 
 public class CollectionConstraint {
 	
-	private CollectionOperator opt;
+	private CollectionOperation opt;
 	
 	private Expression base;
 
@@ -16,21 +16,18 @@ public class CollectionConstraint {
 	
 	private Expression _base;
 	
-	private Expression[] _params;
-	
 	public CollectionConstraint and;
     
-	public CollectionConstraint(CollectionOperator opt, Expression base, Expression[] params, Expression rEturn,
-			Expression _base, Expression[] _params) {
+	public CollectionConstraint(CollectionOperation opt, Expression base, Expression[] params, Expression rEturn,
+			Expression _base) {
 		this.opt = opt;
 		this.base = base;
 		this.params = params;
 		this.rEturn = rEturn;
 		this._base = _base;
-		this._params = _params;
 	}
 
-	public CollectionOperator getOpt() {
+	public CollectionOperation getOpt() {
 		return opt;
 	}
 
@@ -50,13 +47,8 @@ public class CollectionConstraint {
 		return _base;
 	}
 
-	public Expression[] _getParams() {
-		return _params;
-	}
-
 	public String toString() {
-        return rEturn.toString() + _base.toString() + Arrays.toString(_params) + 
-        		" = " + opt.toString() + base.toString() + Arrays.toString(params) + "\n" +
+        return rEturn.toString() + _base.toString() + " = " + opt.toString() + base.toString() + Arrays.toString(params) + "\n" +
         		((and == null) ? "" : " and " + and);
     }
 
@@ -69,8 +61,7 @@ public class CollectionConstraint {
 	            && (base == null ? cc.base == null : base.equals(cc.base))
 	            && (params == null ? cc.params == null : Arrays.equals(params, cc.params))
 	            && (rEturn == null ? cc.rEturn == null : rEturn.equals(cc.rEturn))
-	            && (_base == null ? cc._base == null : _base.equals(cc._base))
-	            && (_params == null ? cc._params == null : Arrays.equals(_params, cc._params));
+	            && (_base == null ? cc._base == null : _base.equals(cc._base));
 	        }
       }
 

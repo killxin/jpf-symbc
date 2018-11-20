@@ -32,6 +32,10 @@ public class CollectionExpression extends Expression {
 	public boolean isSYM() {
 		return isSYM;
 	}
+	
+	public String toString() {
+		return name;
+	}
 
 	@Override
 	public void accept(ConstraintExpressionVisitor visitor) {

@@ -109,7 +109,7 @@ public class TestArray {
 		//testBasic(0);
 //		testArrayList(0);
 //		testArrayList2(0,3);
-//		testMyArray(new ArrayList(), new ArrayList());
-		testMyArray2(new ArrayList(), 5);
+		testMyArray(new ArrayList(), new ArrayList());
+//		testMyArray2(new ArrayList(), 5);
 	}
 }

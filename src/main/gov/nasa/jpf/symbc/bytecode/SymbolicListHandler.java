@@ -5,19 +5,17 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.Stack;
+import java.util.TreeMap;
 
 import edu.nju.seg.symbc.collections.CollectionConstraint;
 import edu.nju.seg.symbc.collections.FrameAttribute;
 import edu.nju.seg.symbc.collections.CollectionExpression;
-import edu.nju.seg.symbc.collections.CollectionOperator;
+import edu.nju.seg.symbc.collections.CollectionOperation;
 import gov.nasa.jpf.JPFException;
 import gov.nasa.jpf.ListenerAdapter;
-import gov.nasa.jpf.jvm.bytecode.ARETURN;
-import gov.nasa.jpf.jvm.bytecode.IRETURN;
+import gov.nasa.jpf.jvm.bytecode.CHECKCAST;
 import gov.nasa.jpf.jvm.bytecode.JVMInvokeInstruction;
-import gov.nasa.jpf.jvm.bytecode.NATIVERETURN;
 import gov.nasa.jpf.symbc.bytecode.BytecodeUtils.VarType;
 import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.IntegerConstant;
@@ -32,42 +30,27 @@ import gov.nasa.jpf.vm.StackFrame;
 import gov.nasa.jpf.vm.ThreadInfo;
 import gov.nasa.jpf.vm.VM;
 
+import org.objectweb.asm.*;
+
 public class SymbolicListHandler {
 	
-	public static Set<String> pureMethods;
-	public static Set<String> sideEffectMethods;
+	public static Map<String, CollectionOperation> sig2opt = new TreeMap<>();
 	static {
-		pureMethods = new TreeSet<>();
-		pureMethods.add("java.util.ArrayList.get(I)Ljava/lang/Object;");
-		pureMethods.add("java.lang.Integer.valueOf(I)Ljava/lang/Integer;");
-		pureMethods.add("java.lang.Integer.intValue()I");
-		
-		sideEffectMethods = new TreeSet<>();
-		sideEffectMethods.add("java.util.ArrayList.<init>()V");
-		sideEffectMethods.add("java.util.ArrayList.add(Ljava/lang/Object;)Z");
+		for(CollectionOperation opt : CollectionOperation.values()) {
+			sig2opt.put(opt.getSignature(), opt);
+		}
 	}
 
 	public boolean isMethodListSymbolic(JVMInvokeInstruction invInst, ThreadInfo th) {
 		String fullName = invInst.getInvokedMethod().getFullName();
-		if(sideEffectMethods.contains(fullName)) {
+		CollectionOperation opt = sig2opt.get(fullName);
+		if(opt == null) {
+			return false;
+		} else if (opt.isPure()) {
 			StackFrame sf = th.getModifiableTopFrame();
 			int numStackSlots = invInst.getArgSize();
-			for (int i = 0; i < numStackSlots; i++) {
-				if (sf.isOperandRef(i)) {
-					ElementInfo ei = th.getElementInfo(sf.peek(i));
-					Expression sym_v1 = (Expression) sf.getOperandAttr(i);
-					if (sym_v1 != null) {
-						// copy the attr from stack to heap for object
-						ei.setObjectAttr(sym_v1);
-					}
-				}
-			}
-			return true;
-		} else if (pureMethods.contains(fullName)) {
-			StackFrame sf = th.getModifiableTopFrame();
-			int numStackSlots = invInst.getArgSize();
-			int numParam = invInst.getInvokedMethod().isStatic() ? numStackSlots : numStackSlots - 1;
-			for (int i = 0; i < numParam; i++) {
+			int numParams = invInst.getInvokedMethod().isStatic() ? numStackSlots : numStackSlots - 1;
+			for (int i = 0; i < numParams; i++) {
 				if (sf.isOperandRef(i)) {
 					ElementInfo ei = th.getElementInfo(sf.peek(i));
 					Expression sym_v1 = (Expression) sf.getOperandAttr(i);
@@ -104,169 +87,165 @@ public class SymbolicListHandler {
 			}
 			return false;
 		} else {
-			return false;
-		}
+			// have side-effect
+			StackFrame sf = th.getModifiableTopFrame();
+			int numStackSlots = invInst.getArgSize();
+			for (int i = 0; i < numStackSlots; i++) {
+				if (sf.isOperandRef(i)) {
+					ElementInfo ei = th.getElementInfo(sf.peek(i));
+					Expression sym_v1 = (Expression) sf.getOperandAttr(i);
+					if (sym_v1 != null) {
+						// copy the attr from stack to heap for object
+						ei.setObjectAttr(sym_v1);
+					}
+				}
+			}
+			return true;
+		} 
 	}
-
+	
 	public Instruction handleSymbolicLists(JVMInvokeInstruction invInst, ThreadInfo th) {
 		boolean needToHandle = isMethodListSymbolic(invInst, th);
 		if (needToHandle) {
 			String mname = invInst.getInvokedMethod().getFullName();
-			if (mname.equals("java.util.ArrayList.<init>()V")) {
-				ChoiceGenerator<?> cg;
-				if (!th.isFirstStepInsn()) {
-					cg = new PCChoiceGenerator(1);
-					th.getVM().setNextChoiceGenerator(cg);
-					return invInst;
-				} else {
-					handleArrayListInit(invInst, th);
-				}
-			} else if (mname.equals("java.util.ArrayList.add(Ljava/lang/Object;)Z")) {
-				ChoiceGenerator<?> cg;
-				if (!th.isFirstStepInsn()) {
-					cg = new PCChoiceGenerator(1);
-					th.getVM().setNextChoiceGenerator(cg);
-					return invInst;
-				} else {
-					handleArrayListAdd(invInst, th);
-				}
-			} else if (mname.equals("java.util.ArrayList.get(I)Ljava/lang/Object;")) {
-				ChoiceGenerator<?> cg;
-				if (!th.isFirstStepInsn()) {
-					cg = new PCChoiceGenerator(1);
-					th.getVM().setNextChoiceGenerator(cg);
-					return invInst;
-				} else {
-					handleArrayListGet(invInst, th);
-				}
-			} else if (mname.equals("java.lang.Integer.valueOf(I)Ljava/lang/Integer;")) {
-				handleIntegerValueOf(invInst, th);
-			} else if (mname.equals("java.lang.Integer.intValue()I")) {
-				handleIntegerIntValue(invInst, th);
+			CollectionOperation opt = sig2opt.get(mname);
+			return handleCollectionOperationFromat(opt, invInst, th);
+		}
+		return null;
+	}
+	
+	public Instruction handleCollectionOperationFromat(CollectionOperation opt, JVMInvokeInstruction invInst, ThreadInfo th) {
+		String fullName = invInst.getInvokedMethod().getFullName();
+		int offset = fullName.lastIndexOf(".");
+		String className = fullName.substring(0,offset);
+		String methodDesc = fullName.substring(offset+1);
+		if(className.startsWith("java.util")) {
+			ChoiceGenerator<?> cg;
+			if (!th.isFirstStepInsn()) {
+				cg = new PCChoiceGenerator(1);
+				th.getVM().setNextChoiceGenerator(cg);
+				return invInst;
 			} else {
-				throw new RuntimeException("ERROR: symbolic method not handled: " + mname);
+				// turn off symbolic execution
+				Map<ElementInfo, Object> intent = new HashMap<>();
+				StackFrame sf = th.getModifiableTopFrame();
+				int numParams = invInst.getArgSize();
+				Stack<Expression> paramExps = new Stack<>();
+				for (int i = 0; i < numParams; i++) {
+					if(sf.isOperandRef(i)) {
+						ElementInfo pi = th.getModifiableElementInfo(sf.peek(i));
+						Expression sym_pi = pi != null ? (Expression) pi.getObjectAttr() : null;
+						if (sym_pi == null) {
+							String typeName = pi.getClassInfo().getName();
+							if (typeName.equals("java.lang.Integer")) {
+								sym_pi = new IntegerConstant(pi.asInteger());
+								System.out.println("create symbolic expression for concrete Integer " + sym_pi);
+							} else if (typeName.equals("java.util.ArrayList")) {
+								sym_pi = new CollectionExpression(BytecodeUtils.varName("@" + sf.peek(i), VarType.ARRLIST), false);
+								System.out.println("create symbolic expression for empty ArrayList " + sym_pi);
+							} else {
+								throw new JPFException("object is of type " + pi.getClassInfo().getName());
+							}
+						}
+						paramExps.push(sym_pi);
+						// turn off symbolic execution
+						intent.put(pi, sym_pi);
+						pi.removeObjectAttr(sym_pi);
+					} else {
+						int pi = sf.peek(i);
+						IntegerExpression sym_pi = sf.hasOperandAttr() ? (IntegerExpression) sf.getOperandAttr() : null;
+						if(sym_pi == null) {
+							sym_pi = new IntegerConstant(pi);
+							System.out.println("create symbolic expression for concrete int "+sym_pi);
+						}
+						paramExps.push(sym_pi);
+						sf.removeOperandAttr(i, sym_pi);
+					}
+				}
+				CollectionExpression sym_b = null, new_sym_b = null;
+				if(!invInst.getInvokedMethod().isStatic()) {
+					ElementInfo base = th.getModifiableElementInfo(sf.peek(numParams-1));
+					sym_b = (CollectionExpression)paramExps.pop();
+					if(!opt.isPure()) {
+						new_sym_b = updateVersion(sym_b);
+						// update the object symbol
+						intent.put(base, new_sym_b);
+					}
+				}
+				Expression retExp;
+				Type retType = Type.getReturnType(methodDesc);
+				if(retType.getSort() == Type.VOID) {
+					retExp = null;
+				} else if(retType.getSort() == Type.BOOLEAN) {
+					retExp = new SymbolicInteger(BytecodeUtils.varName("rEturn", VarType.INT), 0, 1);
+				} else if(retType.getSort() == Type.OBJECT) {
+					String typeName = retType.getClassName();
+					if(typeName.equals("java.lang.Object")) {
+						Instruction nextInst = invInst.getNext(th);
+						if(nextInst instanceof CHECKCAST) {
+							CHECKCAST checkCast = (CHECKCAST) nextInst;
+							typeName = checkCast.getTypeName();
+						}
+					}
+					if(typeName.equals("java.lang.Integer")) {
+						retExp = new SymbolicInteger(BytecodeUtils.varName("rEturn", VarType.INT));
+					} else {
+						throw new JPFException("object is of type " + retType);
+					}
+				} else {
+					throw new JPFException("object is of type " + retType);
+				}
+				CollectionConstraint cc = new CollectionConstraint(opt, sym_b, paramExps.toArray(new Expression[]{}), retExp, new_sym_b);
+				pushCC2PC(th,cc);
+				sf.setFrameAttr(new FrameAttribute(retExp,intent));
+				addListenerOnReturnInstruction(invInst, th);
+			}
+		} else if(className.startsWith("java.lang")) {
+			StackFrame sf = th.getModifiableTopFrame();
+			int numParams = invInst.getArgSize();
+			if(numParams == 1) {
+				if(sf.isOperandRef()) {
+					ElementInfo p = th.getModifiableElementInfo(sf.peek());
+					Expression sym_p = p != null ? (Expression) p.getObjectAttr() : null;
+					if (sym_p == null) {
+						if (p.getClassInfo().getName().equals("java.lang.Integer")) {
+							sym_p = new IntegerConstant(p.asInteger());
+							System.out.println("create symbolic expression for concrete Integer " + sym_p);
+						} else {
+							throw new JPFException("object is of type " + p.getClassInfo().getName());
+						}
+					}
+					// turn off symbolic execution
+					Map<ElementInfo, Object> intent = new HashMap<>();
+					intent.put(p, sym_p);
+					p.removeObjectAttr(sym_p);
+					sf.setFrameAttr(new FrameAttribute(sym_p,intent));
+				} else {
+					int p = sf.peek();
+					IntegerExpression sym_p = sf.hasOperandAttr() ? (IntegerExpression) sf.getOperandAttr() : null;
+					if(sym_p == null) {
+						sym_p = new IntegerConstant(p);
+						System.out.println("create symbolic expression for concrete int "+sym_p);
+					}
+					sf.removeOperandAttr(sym_p);
+					sf.setFrameAttr(new FrameAttribute(sym_p,null));
+				}
+				addListenerOnReturnInstruction(invInst, th);
+			} else {
+				throw new RuntimeException("ERROR: symbolic method not handled: " + fullName);
 			}
 		}
 		return null;
 	}
-
-	public void handleArrayListAdd(JVMInvokeInstruction invInst, ThreadInfo th) {
-		StackFrame sf = th.getModifiableTopFrame();
-		ElementInfo p1 = th.getModifiableElementInfo(sf.peek(0));
-		ElementInfo base = th.getModifiableElementInfo(sf.peek(1));
-		CollectionExpression sym_b = base != null ? (CollectionExpression) base.getObjectAttr() : null;
-		Expression sym_p = p1 != null ? (Expression) p1.getObjectAttr() : null;
-		if (sym_p == null) {
-			if (p1.getClassInfo().getName().equals("java.lang.Integer")) {
-				sym_p = new IntegerConstant(p1.asInteger());
-				System.out.println("create symbolic expression for concrete Integer " + sym_p);
-			} else {
-				throw new JPFException("object is of type " + p1.getClassInfo().getName());
-			}
-		}
-		IntegerExpression retExp = new SymbolicInteger(BytecodeUtils.varName("rEturn", VarType.INT), 0, 1);
-		CollectionExpression new_sym_b = updateVersion(sym_b);
-		CollectionConstraint cc = new CollectionConstraint(CollectionOperator.ARRAYLIST_ADD, sym_b, new Expression[] { sym_p }, retExp, new_sym_b, null);
-		pushCC2PC(th,cc);
-		// turn off symbolic execution
-		Map<ElementInfo, Object> intent = new HashMap<>();
-		intent.put(base, new_sym_b); // update the object symbol
-	    intent.put(p1, sym_p);
-	    base.removeObjectAttr(sym_b);
-	    p1.removeObjectAttr(sym_p);
-	    sf.setFrameAttr(new FrameAttribute(retExp,intent));
-	    // insert listener to do something when return
-        th.getVM().addListener(new ListenerAdapter() {
-			@Override
-			public void instructionExecuted(VM vm, ThreadInfo currentThread, Instruction nextInstruction,
-					Instruction executedInstruction) {
-				if(executedInstruction instanceof IRETURN) {
-					if(recoverFromSymbolicMethod(currentThread)) {
-						vm.removeListener(this);
-					}
-				}
-			}
-		});
-	}
-
-	public void handleArrayListGet(JVMInvokeInstruction invInst, ThreadInfo th) {
-		StackFrame sf = th.getModifiableTopFrame();
-		int p1 = sf.peek();
-		ElementInfo base = th.getModifiableElementInfo(sf.peek(1));
-		CollectionExpression sym_b = (CollectionExpression) base.getObjectAttr();
-		IntegerExpression sym_p = sf.hasOperandAttr() ? (IntegerExpression) sf.getOperandAttr() : null;
-		if(sym_p == null) {
-			sym_p = new IntegerConstant(p1);
-			System.out.println("create symbolic expression for concrete int "+sym_p);
-		}
-		IntegerExpression retExp = new SymbolicInteger(BytecodeUtils.varName("rEturn", VarType.INT));
-		CollectionConstraint cc = new CollectionConstraint(CollectionOperator.ARRAYLIST_GET, sym_b, new Expression[] { sym_p }, retExp, null, null);
-		pushCC2PC(th, cc);
-		// turn off symbolic execution
-		Map<ElementInfo, Object> intent = new HashMap<>();
-        intent.put(base, sym_b);
-        sf.removeOperandAttr(sym_p);
-        base.removeObjectAttr(sym_b);
-        sf.setFrameAttr(new FrameAttribute(retExp,intent));
-        // insert listener to do something when return
-        th.getVM().addListener(new ListenerAdapter() {
-			@Override
-			public void instructionExecuted(VM vm, ThreadInfo currentThread, Instruction nextInstruction,
-					Instruction executedInstruction) {
-				if(executedInstruction instanceof ARETURN) {
-					if(recoverFromSymbolicMethod(currentThread)) {
-						vm.removeListener(this);
-					}
-				}
-			}
-		});
-	}
-
-	public void handleArrayListInit(JVMInvokeInstruction invInst, ThreadInfo th) {
-		StackFrame sf = th.getModifiableTopFrame();
-		int objRef = sf.peek();
-		ElementInfo ei = th.getModifiableElementInfo(objRef);
-		CollectionExpression sym_v = new CollectionExpression(BytecodeUtils.varName("@" + objRef, VarType.ARRLIST), false);
-		ei.setObjectAttr(sym_v);
-		CollectionConstraint cc = new CollectionConstraint(CollectionOperator.ARRAYLIST_INIT, sym_v, null, null, null, null);
-		pushCC2PC(th, cc);
-	}
 	
-	public void handleIntegerValueOf(JVMInvokeInstruction invInst, ThreadInfo th) {
-		StackFrame sf = th.getModifiableTopFrame();
-		IntegerExpression sym_p = (IntegerExpression) sf.getOperandAttr();
-		// turn off symbolic execution
-        sf.removeOperandAttr(sym_p);
-        sf.setFrameAttr(new FrameAttribute(sym_p,null));
-		// insert listener to do something when return
+	// insert listener to bing retExp to return value and turn on symbolic execution when return
+	public void addListenerOnReturnInstruction(JVMInvokeInstruction invInst, ThreadInfo th) {
+		Instruction inst = invInst.getInvokedMethod().getLastInsn();
         th.getVM().addListener(new ListenerAdapter() {
 			@Override
 			public void instructionExecuted(VM vm, ThreadInfo currentThread, Instruction nextInstruction,
 					Instruction executedInstruction) {
-				if(executedInstruction instanceof NATIVERETURN) {
-					if(recoverFromSymbolicMethod(currentThread)) {
-						vm.removeListener(this);
-					}
-				}
-			}
-		});
-	}
-	
-	public void handleIntegerIntValue(JVMInvokeInstruction invInst, ThreadInfo th) {
-		StackFrame sf = th.getModifiableTopFrame();
-		int objRef = sf.peek();
-		ElementInfo base = th.getElementInfo(objRef);
-		IntegerExpression sym_b = (IntegerExpression) base.getObjectAttr();
-		Map<ElementInfo, Object> intent = new HashMap<>();
-		intent.put(base, sym_b);
-		base.removeObjectAttr(sym_b);
-		sf.setFrameAttr(new FrameAttribute(sym_b, intent));
-		// insert listener to do something when return
-        th.getVM().addListener(new ListenerAdapter() {
-			@Override
-			public void instructionExecuted(VM vm, ThreadInfo currentThread, Instruction nextInstruction,
-					Instruction executedInstruction) {
-				if(executedInstruction instanceof IRETURN) {
+				if(executedInstruction.equals(inst)) {
 					if(recoverFromSymbolicMethod(currentThread)) {
 						vm.removeListener(this);
 					}
