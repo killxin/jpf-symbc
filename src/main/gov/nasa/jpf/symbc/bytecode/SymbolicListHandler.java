@@ -164,11 +164,11 @@ public class SymbolicListHandler {
 				}
 				CollectionExpression sym_b = null, new_sym_b = null;
 				if(!invInst.getInvokedMethod().isStatic()) {
-					ElementInfo base = th.getModifiableElementInfo(sf.peek(numParams-1));
 					sym_b = (CollectionExpression)paramExps.pop();
 					if(!opt.isPure()) {
 						new_sym_b = updateVersion(sym_b);
 						// update the object symbol
+						ElementInfo base = th.getModifiableElementInfo(sf.peek(numParams-1));
 						intent.put(base, new_sym_b);
 					}
 				}

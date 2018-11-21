@@ -37,6 +37,7 @@
 
 package gov.nasa.jpf.symbc.numeric;
 
+import gov.nasa.jpf.JPFException;
 import gov.nasa.jpf.symbc.SymbolicInstructionFactory;
 import gov.nasa.jpf.symbc.arrays.ArrayConstraint;
 import gov.nasa.jpf.symbc.arrays.ArrayExpression;
@@ -61,6 +62,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.Map.Entry;
 
 import edu.nju.seg.symbc.collections.CollectionConstraint;
@@ -73,7 +75,7 @@ import edu.nju.seg.symbc.collections.CollectionOperation;
 public class PCParser {
   static ProblemGeneral pb;
   static public Map<SymbolicReal, Object>	symRealVar; // a map between symbolic real variables and DP variables
-  static Map<SymbolicInteger,Object>	symIntegerVar; // a map between symbolic variables and DP variables
+  static public Map<SymbolicInteger,Object>	symIntegerVar; // a map between symbolic variables and DP variables
   //static Boolean result; // tells whether result is satisfiable or not
   static int tempVars = 0; //Used to construct "or" clauses
 
@@ -1150,7 +1152,8 @@ getExpression(stoex.value)), newae));
 		return constraintResult; // false -> not sat
 
 	}
-  static Map<CollectionExpression,Object>	symCollectionVar;
+  
+  	public static Map<CollectionExpression,Object> symCollectionVar;
 	static Object getExpression(CollectionExpression eRef) {
 		ProblemZ3 pbz3 = (ProblemZ3)pb;
 	 assert eRef != null;
@@ -1164,48 +1167,46 @@ getExpression(stoex.value)), newae));
 
 	public static boolean createCollectionConstraint(final CollectionConstraint cRef) {
 		ProblemZ3 pbz3 = (ProblemZ3)pb;
-		final CollectionOperation opt = cRef.getOpt();
-		if(opt == CollectionOperation.ARRAYLIST_ADD){
-			CollectionExpression base = (CollectionExpression) cRef.getBase();
-			CollectionExpression _base = (CollectionExpression) cRef._getBase();
-			Expression param = cRef.getParams()[0];
-			IntegerExpression rEturn = (IntegerExpression) cRef.getrEturn();
-			if(param instanceof IntegerExpression) {
-				IntegerExpression ie = (IntegerExpression) param;
-				Object sym_b = getExpression(base);
-				Object sym_p = ie instanceof IntegerConstant ? ie : getExpression(ie);
-				Object new_sym_b = getExpression(_base);
-				Object sym_r = getExpression(rEturn);
-				// pc is prepend, so the former pc happens latter
-				if(sym_p instanceof IntegerConstant) {
-					pbz3.post(pbz3.seqAdd(sym_b, pbz3.makeIntConst(((IntegerConstant)sym_p).value), new_sym_b, sym_r));
-				} else {
-					pbz3.post(pbz3.seqAdd(sym_b, sym_p, new_sym_b, null));
-				}
+		if(smtFormats.containsKey(cRef.getOpt())) {
+			String smt = smtFormats.get(cRef.getOpt());
+			smt = smt.replaceAll("\\?b", exp2str(cRef.getBase()));
+			for(int i=0;i<cRef.getParams().length;i++) {
+				Expression pi = cRef.getParams()[i];
+				smt = smt.replaceAll("\\?p"+i, exp2str(pi));
 			}
-		} else if(opt == CollectionOperation.ARRAYLIST_GET){
-			CollectionExpression base = (CollectionExpression) cRef.getBase();
-			Expression param = cRef.getParams()[0];
-			IntegerExpression rEtrun = (IntegerExpression) cRef.getrEturn();
-			if(param instanceof IntegerExpression) {
-				IntegerExpression ie = (IntegerExpression) param;
-				Object sym_b = getExpression(base);
-				Object sym_p = ie instanceof IntegerConstant ? ie : getExpression(ie);
-				Object sym_r = getExpression(rEtrun);
-				if(sym_p instanceof IntegerConstant) {
-					pbz3.post(pbz3.seqGet(sym_b, pbz3.makeIntConst(((IntegerConstant)sym_p).value), sym_r));
-				} else {
-					pbz3.post(pbz3.seqGet(sym_b, sym_p, sym_r));
-				}
-			} 
-		} else if(opt == CollectionOperation.ARRAYLIST_INIT2){
-			CollectionExpression le = (CollectionExpression) cRef.getBase();
-			Object sym = getExpression(le);
-			pbz3.post(pbz3.seqEmpty(sym));
+			smt = smt.replaceAll("\\?r", exp2str(cRef.getrEturn()));
+			smt = smt.replaceAll("\\?_b", exp2str(cRef._getBase()));
+			pbz3.post(pbz3.parseSMTLIB2String(smt));
 		} else {
-	        throw new RuntimeException("error in createCollectionConstraint");
+			throw new RuntimeException("error in createCollectionConstraint");
 		}
-	    return true;
+		return true;
+	}
+	
+	static Map<CollectionOperation,String> smtFormats;
+	static {
+		smtFormats = new TreeMap<>();
+		smtFormats.put(CollectionOperation.ARRAYLIST_INIT2, "(assert (= (as seq.empty (Seq Int)) ?_b))");
+		smtFormats.put(CollectionOperation.ARRAYLIST_ADD, "(assert (= ?_b (seq.++ ?b (seq.unit ?p0))))");
+		smtFormats.put(CollectionOperation.ARRAYLIST_GET, "(assert (= (seq.unit ?r) (seq.at ?b ?p0)))");
+	}
+	
+	public static String exp2str(Expression exp) {
+		if(exp == null) {
+			return "";
+		} else if(exp instanceof CollectionExpression) {
+			CollectionExpression ce = (CollectionExpression) exp;
+			return getExpression(ce).toString();
+		} else if(exp instanceof IntegerExpression) {
+			IntegerExpression ie = (IntegerExpression) exp;
+			if(ie instanceof IntegerConstant) {
+				return String.valueOf(((IntegerConstant)ie).value);
+			} else {
+				return getExpression(ie).toString();
+			}
+		} else {
+			throw new JPFException("object is of type " + exp);
+		}
 	}
   
 }

@@ -39,6 +39,7 @@ package gov.nasa.jpf.symbc.numeric.solvers;
 
 import java.io.PrintWriter;
 import java.util.*;
+import java.util.Map.Entry;
 
 //TODO: problem: we do not distinguish between ints and reals?
 // still needs a lot of work: do not use!
@@ -46,7 +47,11 @@ import java.util.*;
 
 import com.microsoft.z3.*;
 
+import edu.nju.seg.symbc.collections.CollectionExpression;
 import gov.nasa.jpf.symbc.SymbolicInstructionFactory;
+import gov.nasa.jpf.symbc.numeric.PCParser;
+import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
+import gov.nasa.jpf.symbc.numeric.SymbolicReal;
 import symlib.Util;
 
 public class ProblemZ3 extends ProblemGeneral {
@@ -1188,30 +1193,29 @@ public class ProblemZ3 extends ProblemGeneral {
             throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
         }
     }
-    
-    public Object seqAdd(Object sym_b, Object sym_p, Object new_sym_b, Object sym_r) {
-    	try {
-            return ctx.mkEq((Expr) new_sym_b, ctx.mkConcat((SeqExpr)sym_b,ctx.mkUnit((Expr)sym_p)));
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
-        }
-    }
-
-	public Object seqGet(Object sym_b, Object sym_p, Object sym_r) {
-		try {
-            return ctx.mkEq(ctx.mkUnit((Expr)sym_r), ctx.mkAt((SeqExpr)sym_b,(IntExpr)sym_p));
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
-        }
-	}
 	
-	public Object seqEmpty(Object sym) {
+	public Object parseSMTLIB2String(String smt/*, Symbol[] symb1, Sort[] sort, Symbol[] symb2, FuncDecl[] func*/) {
 		try {
-			SeqExpr seqExp = (SeqExpr) sym;
-            return ctx.mkEq(ctx.mkEmptySeq(seqExp.getSort()),seqExp);
-        } catch (Exception e) {
+			Map<Symbol, FuncDecl> symb2func = new HashMap<>();
+			for(Entry<SymbolicInteger, Object> entry : PCParser.symIntegerVar.entrySet()) {
+				Symbol key = ctx.mkSymbol(entry.getKey().toString());
+				FuncDecl value = ctx.mkConstDecl(key, ctx.mkIntSort());
+				symb2func.put(key, value);
+			}
+			for(Entry<SymbolicReal, Object> entry : PCParser.symRealVar.entrySet()) {
+				Symbol key = ctx.mkSymbol(entry.getKey().toString());
+				FuncDecl value = ctx.mkConstDecl(key, ctx.mkRealSort());
+				symb2func.put(key, value);
+			}
+			for(Entry<CollectionExpression,Object> entry : PCParser.symCollectionVar.entrySet()) {
+				Symbol key = ctx.mkSymbol(entry.getKey().toString());
+				FuncDecl value = ctx.mkConstDecl(key, ctx.mkSeqSort(ctx.mkIntSort()));
+				symb2func.put(key, value);
+			}
+			Symbol[] symbs = symb2func.keySet().toArray(new Symbol[] {});
+			FuncDecl[] funcs = symb2func.values().toArray(new FuncDecl[] {});
+			return ctx.parseSMTLIB2String(smt, null, null, symbs, funcs);
+		} catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
         }

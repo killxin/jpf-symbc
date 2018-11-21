@@ -1,9 +1,6 @@
 package edu.nju.seg.symbc.collections;
 
 public enum CollectionOperation {
-//	ARRAYLIST_ADD(" ArrayList_add "), 
-//	ARRAYLIST_GET(" ArrayList_get "), 
-//	ARRAYLIST_INIT(" ArrayList_init ");
 
 	COLLECTION_SIZE("java.util.Collection.size()I", true),
 	COLLECTION_ISEMPTY("java.util.Collection.isEmpty()Z", true),
