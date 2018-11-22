@@ -48,6 +48,7 @@ import java.util.Map.Entry;
 import com.microsoft.z3.*;
 
 import edu.nju.seg.symbc.collections.CollectionExpression;
+import gov.nasa.jpf.JPFException;
 import gov.nasa.jpf.symbc.SymbolicInstructionFactory;
 import gov.nasa.jpf.symbc.numeric.PCParser;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
@@ -1183,42 +1184,123 @@ public class ProblemZ3 extends ProblemGeneral {
             throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
         }
     }
-    
-    public Object makeCollectionVar(String name) {
+	
+	public Object parseSMTLIB2String(String smt/*, Symbol[] symb1, Sort[] sort, Symbol[] symb2, FuncDecl[] func*/) {
+		try {
+			Set<Sort> sortSet = new LinkedHashSet<>();
+			Set<FuncDecl> funcSet = new LinkedHashSet<>();
+			for(Entry<SymbolicInteger, Object> entry : PCParser.symIntegerVar.entrySet()) {
+				Symbol key = ctx.mkSymbol(entry.getKey().toString());
+				FuncDecl value = ctx.mkConstDecl(key, ctx.mkIntSort());
+				funcSet.add(value);
+			}
+			for(Entry<SymbolicReal, Object> entry : PCParser.symRealVar.entrySet()) {
+				Symbol key = ctx.mkSymbol(entry.getKey().toString());
+				FuncDecl value = ctx.mkConstDecl(key, ctx.mkRealSort());
+				funcSet.add(value);
+			}
+			for(Entry<CollectionExpression,Object> entry : PCParser.symCollectionVar.entrySet()) {
+				Sort sort = entry.getKey().getSort();
+				Symbol key = ctx.mkSymbol(entry.getKey().toString());
+				FuncDecl value = ctx.mkConstDecl(key, sort);
+				funcSet.add(value);
+				sortSet.add(sort);
+				FuncDecl[][] acc = ((DatatypeSort)sort).getAccessors();
+				for(int i=0;i<acc.length;i++) {
+					for(int j=0;j<acc[i].length;j++) {
+						funcSet.add(acc[i][j]);
+					}
+				}
+			}
+			Symbol[] symbs1 = new Symbol[sortSet.size()];
+			Sort[] sorts = new Sort[sortSet.size()];
+			int i;
+			i = 0;
+			for(Sort sort : sortSet) {
+				symbs1[i] = sort.getName();
+				sorts[i] = sort;
+				i++;
+			}
+			Symbol[] symbs2 = new Symbol[funcSet.size()];
+			FuncDecl[] funcs = new FuncDecl[funcSet.size()];
+			i = 0;
+			for(FuncDecl func : funcSet) {
+				symbs2[i] = func.getName();
+				funcs[i] = func;
+				i++;
+			}
+			System.out.println(smt);
+			return ctx.parseSMTLIB2String(smt, symbs1, sorts, symbs2, funcs);
+		} catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
+        }
+	}
+	
+	public Object makeCollectionVar(CollectionExpression cRef) {
     	try {
-            Sort sort = ctx.mkSeqSort(ctx.mkIntSort());
-            return ctx.mkConst(name, sort);
+    		Sort sort;
+    		switch(cRef.getTypeName()) {
+    		case "java.util.ArrayList":
+    			if(cRef.getSort() == null) {
+    				sort = mkArrayListSort(mkSortFromTypeName(cRef.getElementTypeName()));
+    				cRef.setSort(sort);
+    			} else {
+    				sort = cRef.getSort();
+    			}
+    			return ctx.mkConst(cRef.getName(), sort);
+    		default:
+    			throw new RuntimeException("symbol is of type " + cRef.getTypeName());
+    		}
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
         }
     }
 	
-	public Object parseSMTLIB2String(String smt/*, Symbol[] symb1, Sort[] sort, Symbol[] symb2, FuncDecl[] func*/) {
-		try {
-			Map<Symbol, FuncDecl> symb2func = new HashMap<>();
-			for(Entry<SymbolicInteger, Object> entry : PCParser.symIntegerVar.entrySet()) {
-				Symbol key = ctx.mkSymbol(entry.getKey().toString());
-				FuncDecl value = ctx.mkConstDecl(key, ctx.mkIntSort());
-				symb2func.put(key, value);
-			}
-			for(Entry<SymbolicReal, Object> entry : PCParser.symRealVar.entrySet()) {
-				Symbol key = ctx.mkSymbol(entry.getKey().toString());
-				FuncDecl value = ctx.mkConstDecl(key, ctx.mkRealSort());
-				symb2func.put(key, value);
-			}
-			for(Entry<CollectionExpression,Object> entry : PCParser.symCollectionVar.entrySet()) {
-				Symbol key = ctx.mkSymbol(entry.getKey().toString());
-				FuncDecl value = ctx.mkConstDecl(key, ctx.mkSeqSort(ctx.mkIntSort()));
-				symb2func.put(key, value);
-			}
-			Symbol[] symbs = symb2func.keySet().toArray(new Symbol[] {});
-			FuncDecl[] funcs = symb2func.values().toArray(new FuncDecl[] {});
-			return ctx.parseSMTLIB2String(smt, null, null, symbs, funcs);
-		} catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
-        }
+	public Sort mkSortFromTypeName(String typeName) {
+		switch(typeName) {
+		case "java.lang.Integer": return ctx.mkIntSort();
+		default:
+			throw new RuntimeException("symbol is of type " + typeName);
+		}
 	}
+	
+	public Map<String, DatatypeSort> dataTypeSortMap = new TreeMap<>();
+	public Sort mkArrayListSort(Sort element_sort) {
+		String sort_name = "ArrayList_" + element_sort;
+		if(dataTypeSortMap.containsKey(sort_name)) {
+			return dataTypeSortMap.get(sort_name);
+		} else {
+			String[] size_element = new String[] {"size","element"};
+			Sort[] sorts = new Sort[] {ctx.mkIntSort(), ctx.mkArraySort(ctx.mkIntSort(), element_sort)};
+			int[] sort_refs = null;
+			Constructor arraylist_cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
+			DatatypeSort arraylist_sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { arraylist_cons });
+			dataTypeSortMap.put(sort_name, arraylist_sort);
+			System.out.println(arraylist_sort.getConstructors()[0]);
+			System.out.println(arraylist_sort.getAccessors()[0][0]);
+			System.out.println(arraylist_sort.getAccessors()[0][1]);
+			return arraylist_sort;
+		}
+	}
+	
+//	public Expr mkArrayListConst(DatatypeSort sort) {
+//		sort.getConstructors()
+//		nil_decl = nil_con.ConstructorDecl();
+//        is_nil_decl = nil_con.getTesterDecl();
+//        cons_decl = cons_con.ConstructorDecl();
+//        is_cons_decl = cons_con.getTesterDecl();
+//        FuncDecl[] cons_accessors = cons_con.getAccessorDecls();
+//        car_decl = cons_accessors[0];
+//        cdr_decl = cons_accessors[1];
+//
+//        nil = ctx.mkConst(nil_decl);
+//        l1 = ctx.mkApp(cons_decl, nil, nil);
+//        l2 = ctx.mkApp(cons_decl, l1, nil);
+//
+//        /* nil != cons(nil, nil) */
+//        prove(ctx, ctx.mkNot(ctx.mkEq(nil, l1)), false);
+//	}
 
 }

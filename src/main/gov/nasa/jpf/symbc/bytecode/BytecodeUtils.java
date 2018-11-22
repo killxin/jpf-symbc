@@ -227,7 +227,7 @@ public class BytecodeUtils {
         // End string handling
         
         // Start list handling
-        SymbolicListHandler slh = new SymbolicListHandler();
+        SymbolicCollectionHandler slh = new SymbolicCollectionHandler();
         Instruction handled = slh.handleSymbolicLists(invInst, th);
         if (handled != null) {
             return new InstructionOrSuper(false, handled);
@@ -354,7 +354,7 @@ public class BytecodeUtils {
                     } 
                     // add by rhjiang
                     else if (argTypes[j].equalsIgnoreCase("java.util.ArrayList")) {
-                    	CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.ARRLIST), true);
+                    	CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.ARRLIST), argTypes[j], true);
                     	expressionMap.put(name, sym_v);
                     	assert sf.isOperandRef(stackIdx);
                         int objRef = sf.peek(stackIdx);

@@ -45,6 +45,7 @@ import gov.nasa.jpf.symbc.arrays.RealArrayConstraint;
 import gov.nasa.jpf.symbc.arrays.RealStoreExpression;
 import gov.nasa.jpf.symbc.arrays.SelectExpression;
 import gov.nasa.jpf.symbc.arrays.StoreExpression;
+import gov.nasa.jpf.symbc.bytecode.SymbolicCollectionHandler;
 import gov.nasa.jpf.symbc.numeric.solvers.IncrementalListener;
 import gov.nasa.jpf.symbc.numeric.solvers.IncrementalSolver;
 import gov.nasa.jpf.symbc.numeric.solvers.ProblemCoral;
@@ -56,6 +57,9 @@ import gov.nasa.jpf.symbc.numeric.solvers.ProblemZ3BitVectorIncremental;
 import gov.nasa.jpf.symbc.numeric.solvers.ProblemZ3Incremental;
 import gov.nasa.jpf.symbc.numeric.solvers.ProblemZ3Optimize;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -1159,7 +1163,7 @@ getExpression(stoex.value)), newae));
 	 assert eRef != null;
 	 Object dp_var = symCollectionVar.get(eRef);
 	   if (dp_var == null) {
-		   dp_var = pbz3.makeCollectionVar(eRef.getName());
+		   dp_var = pbz3.makeCollectionVar(eRef);
 		   symCollectionVar.put(eRef, dp_var);
 	   }
 	   return dp_var;
@@ -1186,9 +1190,35 @@ getExpression(stoex.value)), newae));
 	static Map<CollectionOperation,String> smtFormats;
 	static {
 		smtFormats = new TreeMap<>();
-		smtFormats.put(CollectionOperation.ARRAYLIST_INIT2, "(assert (= (as seq.empty (Seq Int)) ?_b))");
-		smtFormats.put(CollectionOperation.ARRAYLIST_ADD, "(assert (= ?_b (seq.++ ?b (seq.unit ?p0))))");
-		smtFormats.put(CollectionOperation.ARRAYLIST_GET, "(assert (= (seq.unit ?r) (seq.at ?b ?p0)))");
+//		smtFormats.put(CollectionOperation.ARRAYLIST_INIT2, "(assert (= (as seq.empty (Seq Int)) ?_b))");
+//		smtFormats.put(CollectionOperation.ARRAYLIST_ADD, "(assert (= ?_b (seq.++ ?b (seq.unit ?p0))))");
+//		smtFormats.put(CollectionOperation.ARRAYLIST_GET, "(assert (= (seq.unit ?r) (seq.at ?b ?p0)))");
+		try {
+            BufferedReader in = new BufferedReader(new FileReader("../jpf-symbc/src/main/edu/nju/seg/symbc/collections/CollectionConstraint.smt"));
+            String line = in.readLine();
+            for(;!line.equals(";START");line=in.readLine());
+            line = in.readLine();
+            String mname = line.substring(1);
+            StringBuilder smtFormat = new StringBuilder();
+            line = in.readLine();
+            while (line != null) {
+                if (line.startsWith(";")) {
+                	smtFormats.put(SymbolicCollectionHandler.sig2opt.get(mname), smtFormat.toString());
+                	mname = line.substring(1);
+                	if(line.equals(";END")) {
+                		break;
+                	}
+                	smtFormat = new StringBuilder();
+                } else {
+                    smtFormat.append(line + "\n");
+                }
+                line = in.readLine();
+            }
+            in.close();
+        } catch (IOException e){
+        	e.printStackTrace();
+//            throw new RuntimeException("load constraint constraints error!");
+        }
 	}
 	
 	public static String exp2str(Expression exp) {

@@ -32,7 +32,7 @@ import gov.nasa.jpf.vm.VM;
 
 import org.objectweb.asm.*;
 
-public class SymbolicListHandler {
+public class SymbolicCollectionHandler {
 	
 	public static Map<String, CollectionOperation> sig2opt = new TreeMap<>();
 	static {
@@ -141,7 +141,7 @@ public class SymbolicListHandler {
 								sym_pi = new IntegerConstant(pi.asInteger());
 								System.out.println("create symbolic expression for concrete Integer " + sym_pi);
 							} else if (typeName.equals("java.util.ArrayList")) {
-								sym_pi = new CollectionExpression(BytecodeUtils.varName("@" + sf.peek(i), VarType.ARRLIST), false);
+								sym_pi = new CollectionExpression(BytecodeUtils.varName("@" + sf.peek(i), VarType.ARRLIST), typeName, false);
 								System.out.println("create symbolic expression for empty ArrayList " + sym_pi);
 							} else {
 								throw new JPFException("object is of type " + pi.getClassInfo().getName());
@@ -164,7 +164,9 @@ public class SymbolicListHandler {
 				}
 				CollectionExpression sym_b = null, new_sym_b = null;
 				if(!invInst.getInvokedMethod().isStatic()) {
-					sym_b = (CollectionExpression)paramExps.pop();
+					sym_b = (CollectionExpression) paramExps.pop();
+					// ensure the element type of sym_b
+					sym_b.setElementTypeName(opt, invInst, th);
 					if(!opt.isPure()) {
 						new_sym_b = updateVersion(sym_b);
 						// update the object symbol
@@ -316,7 +318,9 @@ public class SymbolicListHandler {
 		Matcher mat = pat.matcher(sym.getName());
 		mat.find();
 		// clone sym, the version number increase, if sym isSYM then the result isSYM too
-		return new CollectionExpression(BytecodeUtils.varName(mat.group(1), VarType.ARRLIST), sym.isSYM());
+		CollectionExpression copy_sym = sym.clone();
+		copy_sym.setName(BytecodeUtils.varName(mat.group(1), VarType.ARRLIST));
+		return copy_sym;
 	}
 
 }

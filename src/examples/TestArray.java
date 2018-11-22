@@ -108,8 +108,8 @@ public class TestArray {
 	public static void main(String[] args) {
 		//testBasic(0);
 //		testArrayList(0);
-		testArrayList2(0,3);
+//		testArrayList2(0,3);
 //		testMyArray(new ArrayList(), new ArrayList());
-//		testMyArray2(new ArrayList(), 5);
+		testMyArray2(new ArrayList(), 5);
 	}
 }
