@@ -249,6 +249,12 @@ public class SymbolicLibraryHandler {
 			pc = ((PCChoiceGenerator) prev_cg).getCurrentPC();
 		}
 		assert pc != null;
+		// if currentPC has constraints, append them to pc
+		LibraryConstraint currentLPC = ((PCChoiceGenerator) cg).getCurrentPC().lpc.header;
+		while(currentLPC != null) {
+			pc.lpc._addOpt(currentLPC);
+			currentLPC = currentLPC.and;
+		}
 		pc.lpc._addOpt(cc);
 		((PCChoiceGenerator) cg).setCurrentPC(pc);
 	}
@@ -307,7 +313,11 @@ public class SymbolicLibraryHandler {
 			LibraryConstraint cc = new LibraryConstraint(LibraryOperation.ARRAYLIST_INIT,
 					new Expression[] { null, new IntegerConstant(ei.arrayLength()) }, null,
 					new Expression[] { sym_ei, null });
-			pushCC2PC(th, cc);
+			// add this constraint to current PC
+			ChoiceGenerator<?> cg = th.getVM().getChoiceGenerator();
+			PathCondition pc = ((PCChoiceGenerator) cg).getCurrentPC();
+			pc.lpc._addOpt(cc);
+			((PCChoiceGenerator) cg).setCurrentPC(pc);
 			System.out.println("create symbolic expression for byte[] " + sym_ei);
 		} else {
 			throw new JPFException("object is of type " + ei.getClassInfo().getName());
