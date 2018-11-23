@@ -56,7 +56,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
-import edu.nju.seg.symbc.collections.CollectionExpression;
+import edu.nju.seg.symbc.CollectionExpression;
 
 public class BytecodeUtils {
 
@@ -227,7 +227,7 @@ public class BytecodeUtils {
         // End string handling
         
         // Start list handling
-        SymbolicCollectionHandler slh = new SymbolicCollectionHandler();
+        SymbolicLibraryHandler slh = new SymbolicLibraryHandler();
         Instruction handled = slh.handleSymbolicLists(invInst, th);
         if (handled != null) {
             return new InstructionOrSuper(false, handled);
@@ -354,7 +354,7 @@ public class BytecodeUtils {
                     } 
                     // add by rhjiang
                     else if (argTypes[j].equalsIgnoreCase("java.util.ArrayList")) {
-                    	CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.ARRLIST), argTypes[j], true);
+                    	CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.OBJECT), argTypes[j], true);
                     	expressionMap.put(name, sym_v);
                     	assert sf.isOperandRef(stackIdx);
                         int objRef = sf.peek(stackIdx);
@@ -657,7 +657,7 @@ public class BytecodeUtils {
     }
 
     public enum VarType {
-        INT, REAL, REF, STRING, ARRLIST
+        INT, REAL, REF, STRING, OBJECT
     };
 
     public static String varName(String name, VarType type) {
@@ -675,8 +675,8 @@ public class BytecodeUtils {
         case STRING:
             suffix = "_SYMSTRING";
             break;
-        case ARRLIST:
-        	suffix = "_SYMAL";
+        case OBJECT:
+        	suffix = "_SYMOBJECT";
         	break;
         default:
             throw new RuntimeException("Unhandled SymVarType: " + type);

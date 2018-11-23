@@ -1,4 +1,4 @@
-package edu.nju.seg.symbc.collections;
+package edu.nju.seg.symbc;
 
 import java.util.Collections;
 import java.util.Map;
@@ -6,29 +6,29 @@ import java.util.Map.Entry;
 
 import gov.nasa.jpf.symbc.numeric.PathCondition;
 
-public class CollectionPathCondition {
+public class LibraryPathCondition {
 	static boolean flagSolved = false;
 
 	public String smtlib = "";
 	public Map<String, String> solution = Collections.<String, String>emptyMap();
-	public CollectionConstraint header;
+	public LibraryConstraint header;
 	int count = 0;
 
 	private PathCondition npc = null;
 
-	public CollectionPathCondition(PathCondition npc) {
+	public LibraryPathCondition(PathCondition npc) {
 		this.setNpc(npc);
 		header = null;
 	}
 
-	public CollectionPathCondition make_copy(PathCondition npc) {
-		CollectionPathCondition pc_new = new CollectionPathCondition(npc);
+	public LibraryPathCondition make_copy(PathCondition npc) {
+		LibraryPathCondition pc_new = new LibraryPathCondition(npc);
 		pc_new.header = this.header;
 		pc_new.count = this.count;
 		return pc_new;
 	}
 
-	public void _addOpt(CollectionConstraint cc) {
+	public void _addOpt(LibraryConstraint cc) {
 		flagSolved = false;
 		if (!hasConstraint(cc)) {
 			cc.and = header;
@@ -41,8 +41,8 @@ public class CollectionPathCondition {
 		return count;
 	}
 
-	public boolean hasConstraint(CollectionConstraint c) {
-		CollectionConstraint t = header;
+	public boolean hasConstraint(LibraryConstraint c) {
+		LibraryConstraint t = header;
 
 		while (t != null) {
 			if (c.equals(t)) {

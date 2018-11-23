@@ -1,4 +1,4 @@
-package edu.nju.seg.symbc.collections;
+package edu.nju.seg.symbc;
 
 import java.util.Map;
 

@@ -42,7 +42,7 @@ import za.ac.sun.cs.green.Instance;
 import java.util.HashMap;
 import java.util.Map;
 
-import edu.nju.seg.symbc.collections.CollectionPathCondition;
+import edu.nju.seg.symbc.LibraryPathCondition;
 import gov.nasa.jpf.symbc.SymbolicInstructionFactory;
 import gov.nasa.jpf.symbc.arrays.ArrayConstraint;
 import gov.nasa.jpf.symbc.arrays.ArrayExpression;
@@ -79,7 +79,7 @@ public class PathCondition implements Comparable<PathCondition> {
     public StringPathCondition spc = new StringPathCondition(this);
     
     // add by rhjiang
-    public CollectionPathCondition cpc = new CollectionPathCondition(this);
+    public LibraryPathCondition lpc = new LibraryPathCondition(this);
 
     private Integer hashCode = null;
 
@@ -111,7 +111,7 @@ public class PathCondition implements Comparable<PathCondition> {
         pc_new.header = this.header;
         pc_new.count = this.count;
         pc_new.spc = this.spc.make_copy(pc_new); // TODO: to review
-        pc_new.cpc = this.cpc.make_copy(pc_new); // add by rhjiang
+        pc_new.lpc = this.lpc.make_copy(pc_new); // add by rhjiang
         pc_new.solverCalls = this.solverCalls;
         pc_new.arrayExpressions = this.arrayExpressions;
         return pc_new;

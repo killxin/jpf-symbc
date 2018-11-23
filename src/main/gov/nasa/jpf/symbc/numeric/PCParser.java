@@ -45,7 +45,7 @@ import gov.nasa.jpf.symbc.arrays.RealArrayConstraint;
 import gov.nasa.jpf.symbc.arrays.RealStoreExpression;
 import gov.nasa.jpf.symbc.arrays.SelectExpression;
 import gov.nasa.jpf.symbc.arrays.StoreExpression;
-import gov.nasa.jpf.symbc.bytecode.SymbolicCollectionHandler;
+import gov.nasa.jpf.symbc.bytecode.SymbolicLibraryHandler;
 import gov.nasa.jpf.symbc.numeric.solvers.IncrementalListener;
 import gov.nasa.jpf.symbc.numeric.solvers.IncrementalSolver;
 import gov.nasa.jpf.symbc.numeric.solvers.ProblemCoral;
@@ -56,22 +56,21 @@ import gov.nasa.jpf.symbc.numeric.solvers.ProblemZ3BitVector;
 import gov.nasa.jpf.symbc.numeric.solvers.ProblemZ3BitVectorIncremental;
 import gov.nasa.jpf.symbc.numeric.solvers.ProblemZ3Incremental;
 import gov.nasa.jpf.symbc.numeric.solvers.ProblemZ3Optimize;
+import gov.nasa.jpf.symbc.string.StringConstant;
+import gov.nasa.jpf.symbc.string.StringExpression;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
-import java.util.Map.Entry;
 
-import edu.nju.seg.symbc.collections.CollectionConstraint;
-import edu.nju.seg.symbc.collections.CollectionExpression;
-import edu.nju.seg.symbc.collections.CollectionOperation;
+import edu.nju.seg.symbc.LibraryConstraint;
+import edu.nju.seg.symbc.LibraryExpression;
+import edu.nju.seg.symbc.LibraryOperation;
 
 
 // parses PCs
@@ -1066,7 +1065,7 @@ getExpression(stoex.value)), newae));
     symRealVar = new HashMap<SymbolicReal,Object>();
     symIntegerVar = new HashMap<SymbolicInteger,Object>();
     // add by rhjiang
-    symCollectionVar = new HashMap<CollectionExpression,Object>();
+    symLibraryVar = new HashMap<LibraryExpression,Object>();
     //result = null;
     tempVars = 0;
 
@@ -1092,7 +1091,7 @@ getExpression(stoex.value)), newae));
         cRef = cRef.and;
       }
       //add by rhjiang
-      CollectionConstraint cc = pc.cpc.header;
+      LibraryConstraint cc = pc.lpc.header;
       while (cc != null) {
           if(addConstraint(cc) == false) {
             return null;
@@ -1146,10 +1145,10 @@ getExpression(stoex.value)), newae));
   }
   
   // add by rhjiang
-  private static boolean addConstraint(CollectionConstraint cRef) {
+  private static boolean addConstraint(LibraryConstraint cRef) {
 		boolean constraintResult = true;
 		if(pb instanceof ProblemCoral || pb instanceof ProblemZ3|| pb instanceof ProblemZ3Optimize || pb instanceof ProblemZ3BitVector || pb instanceof ProblemZ3Incremental || pb instanceof ProblemZ3BitVectorIncremental) {
-   		 constraintResult = createCollectionConstraint(cRef);
+   		 constraintResult = createLibraryConstraint(cRef);
    	 } else {
    		 throw new RuntimeException("## Error: Non Linear Integer Constraint not handled " + cRef);
    	 }
@@ -1157,44 +1156,41 @@ getExpression(stoex.value)), newae));
 
 	}
   
-  	public static Map<CollectionExpression,Object> symCollectionVar;
-	static Object getExpression(CollectionExpression eRef) {
+  	public static Map<LibraryExpression,Object> symLibraryVar;
+	static Object getExpression(LibraryExpression eRef) {
 		ProblemZ3 pbz3 = (ProblemZ3)pb;
 	 assert eRef != null;
-	 Object dp_var = symCollectionVar.get(eRef);
+	 Object dp_var = symLibraryVar.get(eRef);
 	   if (dp_var == null) {
-		   dp_var = pbz3.makeCollectionVar(eRef);
-		   symCollectionVar.put(eRef, dp_var);
+		   dp_var = pbz3.makeLibraryVar(eRef);
+		   symLibraryVar.put(eRef, dp_var);
 	   }
 	   return dp_var;
 	 }
 
-	public static boolean createCollectionConstraint(final CollectionConstraint cRef) {
+	public static boolean createLibraryConstraint(final LibraryConstraint cRef) {
 		ProblemZ3 pbz3 = (ProblemZ3)pb;
 		if(smtFormats.containsKey(cRef.getOpt())) {
 			String smt = smtFormats.get(cRef.getOpt());
-			smt = smt.replaceAll("\\?b", exp2str(cRef.getBase()));
 			for(int i=0;i<cRef.getParams().length;i++) {
 				Expression pi = cRef.getParams()[i];
+				Expression _pi = cRef._getParams()[i];
 				smt = smt.replaceAll("\\?p"+i, exp2str(pi));
+				smt = smt.replaceAll("\\?_p"+i, exp2str(_pi));
 			}
 			smt = smt.replaceAll("\\?r", exp2str(cRef.getrEturn()));
-			smt = smt.replaceAll("\\?_b", exp2str(cRef._getBase()));
 			pbz3.post(pbz3.parseSMTLIB2String(smt));
 		} else {
-			throw new RuntimeException("error in createCollectionConstraint");
+			throw new RuntimeException("error in createLibraryConstraint: "+ cRef.getOpt());
 		}
 		return true;
 	}
 	
-	static Map<CollectionOperation,String> smtFormats;
+	public static Map<LibraryOperation,String> smtFormats;
 	static {
 		smtFormats = new TreeMap<>();
-//		smtFormats.put(CollectionOperation.ARRAYLIST_INIT2, "(assert (= (as seq.empty (Seq Int)) ?_b))");
-//		smtFormats.put(CollectionOperation.ARRAYLIST_ADD, "(assert (= ?_b (seq.++ ?b (seq.unit ?p0))))");
-//		smtFormats.put(CollectionOperation.ARRAYLIST_GET, "(assert (= (seq.unit ?r) (seq.at ?b ?p0)))");
 		try {
-            BufferedReader in = new BufferedReader(new FileReader("../jpf-symbc/src/main/edu/nju/seg/symbc/collections/CollectionConstraint.smt"));
+            BufferedReader in = new BufferedReader(new FileReader("../jpf-symbc/src/main/edu/nju/seg/symbc/LibraryConstraint.smt"));
             String line = in.readLine();
             for(;!line.equals(";START");line=in.readLine());
             line = in.readLine();
@@ -1203,7 +1199,7 @@ getExpression(stoex.value)), newae));
             line = in.readLine();
             while (line != null) {
                 if (line.startsWith(";")) {
-                	smtFormats.put(SymbolicCollectionHandler.sig2opt.get(mname), smtFormat.toString());
+                	smtFormats.put(SymbolicLibraryHandler.sig2opt.get(mname), smtFormat.toString());
                 	mname = line.substring(1);
                 	if(line.equals(";END")) {
                 		break;
@@ -1217,15 +1213,15 @@ getExpression(stoex.value)), newae));
             in.close();
         } catch (IOException e){
         	e.printStackTrace();
-//            throw new RuntimeException("load constraint constraints error!");
+            throw new RuntimeException("load constraint constraints error!");
         }
 	}
 	
 	public static String exp2str(Expression exp) {
 		if(exp == null) {
 			return "";
-		} else if(exp instanceof CollectionExpression) {
-			CollectionExpression ce = (CollectionExpression) exp;
+		} else if(exp instanceof LibraryExpression) {
+			LibraryExpression ce = (LibraryExpression) exp;
 			return getExpression(ce).toString();
 		} else if(exp instanceof IntegerExpression) {
 			IntegerExpression ie = (IntegerExpression) exp;
@@ -1234,7 +1230,16 @@ getExpression(stoex.value)), newae));
 			} else {
 				return getExpression(ie).toString();
 			}
-		} else {
+		} else if(exp instanceof StringExpression) {
+			StringExpression se = (StringExpression) exp;
+			if(se instanceof StringConstant) {
+				return ((StringConstant) se).value();
+			} else {
+				//TODO: don't deal with StringExpression yet
+				return null;
+			}
+		}
+		else {
 			throw new JPFException("object is of type " + exp);
 		}
 	}

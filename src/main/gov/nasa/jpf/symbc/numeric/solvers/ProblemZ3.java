@@ -44,10 +44,10 @@ import java.util.Map.Entry;
 //TODO: problem: we do not distinguish between ints and reals?
 // still needs a lot of work: do not use!
 
-
 import com.microsoft.z3.*;
 
-import edu.nju.seg.symbc.collections.CollectionExpression;
+import edu.nju.seg.symbc.CollectionExpression;
+import edu.nju.seg.symbc.LibraryExpression;
 import gov.nasa.jpf.JPFException;
 import gov.nasa.jpf.symbc.SymbolicInstructionFactory;
 import gov.nasa.jpf.symbc.numeric.PCParser;
@@ -57,11 +57,11 @@ import symlib.Util;
 
 public class ProblemZ3 extends ProblemGeneral {
 
-  //This class acts as a safeguard to prevent
-  //issues when referencing ProblemZ3 in case the z3 libs are
-  //not on the ld_library_path. If the
-  //Z3 solver object and context were class fields,
-  //we would likely encounter a linker error
+	// This class acts as a safeguard to prevent
+	// issues when referencing ProblemZ3 in case the z3 libs are
+	// not on the ld_library_path. If the
+	// Z3 solver object and context were class fields,
+	// we would likely encounter a linker error
 	private static class Z3Wrapper {
 		private Context ctx;
 		private Solver solver;
@@ -91,9 +91,9 @@ public class ProblemZ3 extends ProblemGeneral {
 		}
 	}
 
-	/*private*/ public Solver solver;
-	/*private*/ public Context ctx;
-	
+	/* private */ public Solver solver;
+	/* private */ public Context ctx;
+
 	// Do we use the floating point theory or linear arithmetic over reals
 	private boolean useFpForReals = false;
 
@@ -121,7 +121,7 @@ public class ProblemZ3 extends ProblemGeneral {
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in makeIntVar: \n" + e);
-	    }
+		}
 	}
 
 	public Object makeRealVar(String name, double min, double max) {
@@ -140,32 +140,32 @@ public class ProblemZ3 extends ProblemGeneral {
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
-	    }
+		}
 	}
 
-	public Object eq(long value, Object exp){
+	public Object eq(long value, Object exp) {
 		try {
-			return ctx.mkEq( ctx.mkInt(value), (Expr)exp);
+			return ctx.mkEq(ctx.mkInt(value), (Expr) exp);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
-	    }
+		}
 	}
 
-	public Object eq(Object exp, long value){
+	public Object eq(Object exp, long value) {
 
-		return ctx.mkEq(ctx.mkInt(value), (Expr)exp);
+		return ctx.mkEq(ctx.mkInt(value), (Expr) exp);
 	}
 
 	// should we use Expr or ArithExpr?
-	public Object eq(Object exp1, Object exp2){
-		try{
-			return  ctx.mkEq((Expr)exp1, (Expr)exp2);
+	public Object eq(Object exp1, Object exp2) {
+		try {
+			return ctx.mkEq((Expr) exp1, (Expr) exp2);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 
-	    }
+		}
 	}
 
 	// TODO: should convert double to rational
@@ -189,32 +189,31 @@ public class ProblemZ3 extends ProblemGeneral {
 //	    }
 //	}
 
-	public Object neq(long value, Object exp){
-		return ctx.mkNot(ctx.mkEq(ctx.mkInt(value), (Expr)exp));
-	}
-
-
-	public Object neq(Object exp, long value){
+	public Object neq(long value, Object exp) {
 		return ctx.mkNot(ctx.mkEq(ctx.mkInt(value), (Expr) exp));
 	}
 
-	public Object neq(Object exp1, Object exp2){
-		try{
-			return  ctx.mkNot(ctx.mkEq((Expr)exp1, (Expr)exp2));
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
-	    }
+	public Object neq(Object exp, long value) {
+		return ctx.mkNot(ctx.mkEq(ctx.mkInt(value), (Expr) exp));
 	}
 
-	public Object not(Object exp1){
-		try{
-			return  ctx.mkNot((BoolExpr)exp1);
+	public Object neq(Object exp1, Object exp2) {
+		try {
+			return ctx.mkNot(ctx.mkEq((Expr) exp1, (Expr) exp2));
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
+		}
+	}
+
+	public Object not(Object exp1) {
+		try {
+			return ctx.mkNot((BoolExpr) exp1);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 
-	    }
+		}
 	}
 
 	// TODO: convert doubles to rationals
@@ -238,34 +237,34 @@ public class ProblemZ3 extends ProblemGeneral {
 //	    }
 //	}
 
-	public Object leq(long value, Object exp){
-		try{
-			return  ctx.mkLe(ctx.mkInt(value), (IntExpr)exp);
+	public Object leq(long value, Object exp) {
+		try {
+			return ctx.mkLe(ctx.mkInt(value), (IntExpr) exp);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 
-	    }
+		}
 	}
 
-	public Object leq(Object exp, long value){
-		try{
-			return  ctx.mkLe((IntExpr)exp,ctx.mkInt(value));
+	public Object leq(Object exp, long value) {
+		try {
+			return ctx.mkLe((IntExpr) exp, ctx.mkInt(value));
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 
-	    }
+		}
 	}
 
-	public Object leq(Object exp1, Object exp2){
-		try{
-			return  ctx.mkLe((ArithExpr)exp1, (ArithExpr)exp2);
+	public Object leq(Object exp1, Object exp2) {
+		try {
+			return ctx.mkLe((ArithExpr) exp1, (ArithExpr) exp2);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 
-	    }
+		}
 	}
 
 //	public Object leq(double value, Object exp){
@@ -288,34 +287,34 @@ public class ProblemZ3 extends ProblemGeneral {
 //	    }
 //	}
 //
-	public Object geq(long value, Object exp){
-		try{
-			return  ctx.mkGe(ctx.mkInt(value),(IntExpr)exp);
+	public Object geq(long value, Object exp) {
+		try {
+			return ctx.mkGe(ctx.mkInt(value), (IntExpr) exp);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 
-	    }
+		}
 	}
 
-	public Object geq(Object exp, long value){
-		try{
-			return  ctx.mkGe((IntExpr)exp,ctx.mkInt(value));
+	public Object geq(Object exp, long value) {
+		try {
+			return ctx.mkGe((IntExpr) exp, ctx.mkInt(value));
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 
-	    }
+		}
 	}
 
-	public Object geq(Object exp1, Object exp2){
-		try{
-			return  ctx.mkGe((ArithExpr)exp1,(ArithExpr)exp2);
+	public Object geq(Object exp1, Object exp2) {
+		try {
+			return ctx.mkGe((ArithExpr) exp1, (ArithExpr) exp2);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 
-	    }
+		}
 	}
 
 //	public Object geq(double value, Object exp){
@@ -338,34 +337,34 @@ public class ProblemZ3 extends ProblemGeneral {
 //	    }
 //	}
 //
-	public Object lt(long value, Object exp){
-		try{
-			return  ctx.mkLt(ctx.mkInt(value),(IntExpr)exp);
+	public Object lt(long value, Object exp) {
+		try {
+			return ctx.mkLt(ctx.mkInt(value), (IntExpr) exp);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 
-	    }
+		}
 	}
 
-	public Object lt(Object exp, long value){
-		try{
-			return  ctx.mkLt((IntExpr)exp,ctx.mkInt(value));
+	public Object lt(Object exp, long value) {
+		try {
+			return ctx.mkLt((IntExpr) exp, ctx.mkInt(value));
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 
-	    }
+		}
 	}
 
-	public Object lt(Object exp1, Object exp2){
-		try{
-			return  ctx.mkLt((ArithExpr)exp1,(ArithExpr)exp2);
+	public Object lt(Object exp1, Object exp2) {
+		try {
+			return ctx.mkLt((ArithExpr) exp1, (ArithExpr) exp2);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 
-	    }
+		}
 	}
 
 //	public Object lt(double value, Object exp){
@@ -389,34 +388,34 @@ public class ProblemZ3 extends ProblemGeneral {
 //	}
 //
 //
-	public Object gt(long value, Object exp){
-		try{
-			return  ctx.mkGt(ctx.mkInt(value),(IntExpr)exp);
+	public Object gt(long value, Object exp) {
+		try {
+			return ctx.mkGt(ctx.mkInt(value), (IntExpr) exp);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 
-	    }
+		}
 	}
 
-	public Object gt(Object exp, long value){
-		try{
-			return  ctx.mkGt((IntExpr)exp,ctx.mkInt(value));
+	public Object gt(Object exp, long value) {
+		try {
+			return ctx.mkGt((IntExpr) exp, ctx.mkInt(value));
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 
-	    }
+		}
 	}
 
-	public Object gt(Object exp1, Object exp2){
-		try{
-			return  ctx.mkGt((ArithExpr)exp1,(ArithExpr)exp2);
+	public Object gt(Object exp1, Object exp2) {
+		try {
+			return ctx.mkGt((ArithExpr) exp1, (ArithExpr) exp2);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 
-	    }
+		}
 	}
 
 //	public Object implies(Object exp1, Object exp2){
@@ -453,8 +452,8 @@ public class ProblemZ3 extends ProblemGeneral {
 //
 //
 	public Object plus(long value, Object exp) {
-		try{
-			return  ctx.mkAdd(new ArithExpr[] { ctx.mkInt(value), (IntExpr)exp});
+		try {
+			return ctx.mkAdd(new ArithExpr[] { ctx.mkInt(value), (IntExpr) exp });
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
@@ -462,8 +461,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	}
 
 	public Object plus(Object exp, long value) {
-		try{
-			return  ctx.mkAdd(new ArithExpr[] { ctx.mkInt(value), (IntExpr)exp});
+		try {
+			return ctx.mkAdd(new ArithExpr[] { ctx.mkInt(value), (IntExpr) exp });
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
@@ -471,8 +470,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	}
 
 	public Object plus(Object exp1, Object exp2) {
-		try{
-			return  ctx.mkAdd(new ArithExpr[] { (ArithExpr)exp1, (ArithExpr)exp2});
+		try {
+			return ctx.mkAdd(new ArithExpr[] { (ArithExpr) exp1, (ArithExpr) exp2 });
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
@@ -498,8 +497,8 @@ public class ProblemZ3 extends ProblemGeneral {
 //	}
 
 	public Object minus(long value, Object exp) {
-		try{
-			return  ctx.mkSub(new ArithExpr[] { ctx.mkInt(value), (IntExpr)exp});
+		try {
+			return ctx.mkSub(new ArithExpr[] { ctx.mkInt(value), (IntExpr) exp });
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
@@ -507,8 +506,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	}
 
 	public Object minus(Object exp, long value) {
-		try{
-			return  ctx.mkSub(new ArithExpr[] {(IntExpr)exp, ctx.mkInt(value)});
+		try {
+			return ctx.mkSub(new ArithExpr[] { (IntExpr) exp, ctx.mkInt(value) });
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
@@ -516,8 +515,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	}
 
 	public Object minus(Object exp1, Object exp2) {
-		try{
-			return  ctx.mkSub(new ArithExpr[] { (ArithExpr)exp1, (ArithExpr)exp2});
+		try {
+			return ctx.mkSub(new ArithExpr[] { (ArithExpr) exp1, (ArithExpr) exp2 });
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
@@ -543,8 +542,8 @@ public class ProblemZ3 extends ProblemGeneral {
 //	}
 
 	public Object mult(long value, Object exp) {
-		try{
-			return  ctx.mkMul(new ArithExpr[] {(IntExpr)exp, ctx.mkInt(value)});
+		try {
+			return ctx.mkMul(new ArithExpr[] { (IntExpr) exp, ctx.mkInt(value) });
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
@@ -552,8 +551,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	}
 
 	public Object mult(Object exp, long value) {
-		try{
-			return  ctx.mkMul(new ArithExpr[] {(IntExpr)exp, ctx.mkInt(value)});
+		try {
+			return ctx.mkMul(new ArithExpr[] { (IntExpr) exp, ctx.mkInt(value) });
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
@@ -561,8 +560,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	}
 
 	public Object mult(Object exp1, Object exp2) {
-		try{
-			return  ctx.mkMul(new ArithExpr[] {(ArithExpr)exp1, (ArithExpr)exp2});
+		try {
+			return ctx.mkMul(new ArithExpr[] { (ArithExpr) exp1, (ArithExpr) exp2 });
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
@@ -588,8 +587,8 @@ public class ProblemZ3 extends ProblemGeneral {
 //
 
 	public Object div(long value, Object exp) {
-		try{
-			return  ctx.mkDiv(ctx.mkInt(value), (IntExpr)exp);
+		try {
+			return ctx.mkDiv(ctx.mkInt(value), (IntExpr) exp);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
@@ -597,8 +596,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	}
 
 	public Object div(Object exp, long value) {
-		try{
-			return  ctx.mkDiv((IntExpr)exp,ctx.mkInt(value));
+		try {
+			return ctx.mkDiv((IntExpr) exp, ctx.mkInt(value));
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
@@ -606,8 +605,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	}
 
 	public Object div(Object exp1, Object exp2) {
-		try{
-			return  ctx.mkDiv((ArithExpr)exp1,(ArithExpr)exp2);
+		try {
+			return ctx.mkDiv((ArithExpr) exp1, (ArithExpr) exp2);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
@@ -615,28 +614,30 @@ public class ProblemZ3 extends ProblemGeneral {
 	}
 
 	public Object rem(Object exp, long value) {// added by corina
-		try{
+		try {
 
-			return  ctx.mkRem((IntExpr) exp, ctx.mkInt(value));
+			return ctx.mkRem((IntExpr) exp, ctx.mkInt(value));
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 		}
 	}
+
 	public Object rem(long value, Object exp) {// added by corina
-		try{
+		try {
 
-			return  ctx.mkRem(ctx.mkInt(value), (IntExpr) exp);
+			return ctx.mkRem(ctx.mkInt(value), (IntExpr) exp);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 		}
 	}
+
 	public Object rem(Object exp1, Object exp2) {// added by corina
-		try{
-			if(exp2 instanceof Integer)
-				return  ctx.mkRem((IntExpr)exp1,ctx.mkInt((Integer)exp2));
-			return  ctx.mkRem((IntExpr) exp1, (IntExpr) exp2);
+		try {
+			if (exp2 instanceof Integer)
+				return ctx.mkRem((IntExpr) exp1, ctx.mkInt((Integer) exp2));
+			return ctx.mkRem((IntExpr) exp1, (IntExpr) exp2);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
@@ -660,36 +661,36 @@ public class ProblemZ3 extends ProblemGeneral {
 //		}
 //	}
 
-    public long getIntValue(Object dpVar) {
-        try {
-            Model model = solver.getModel();
-            return Long.parseLong((model.evaluate((IntExpr) dpVar, false)).toString());
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
-        }
-    }
+	public long getIntValue(Object dpVar) {
+		try {
+			Model model = solver.getModel();
+			return Long.parseLong((model.evaluate((IntExpr) dpVar, false)).toString());
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
+		}
+	}
 
 	public Boolean solve() {
-        try {
-            if (Status.SATISFIABLE == solver.check()) {
-                return true;
-            } else {
-                return false;
-            }
-        } catch(Exception e){
-        	e.printStackTrace();
-        	throw new RuntimeException("## Error Z3: " + e);
-        }
+		try {
+			if (Status.SATISFIABLE == solver.check()) {
+				return true;
+			} else {
+				return false;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("## Error Z3: " + e);
+		}
 	}
 
 	public void post(Object constraint) {
-		try{
-			solver.add((BoolExpr)constraint);
+		try {
+			solver.add((BoolExpr) constraint);
 		} catch (Exception e) {
 			e.printStackTrace();
-        	throw new RuntimeException("## Error posting constraint to Z3 \n" + e);
-	    }
+			throw new RuntimeException("## Error posting constraint to Z3 \n" + e);
+		}
 	}
 
 	@Override
@@ -864,7 +865,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	public Object plus(double value, Object exp) {
 		try {
 			if (useFpForReals) {
-				return ctx.mkFPAdd(ctx.mkFPRoundNearestTiesToEven(), ctx.mkFPNumeral(value, ctx.mkFPSort64()), (FPExpr) exp);
+				return ctx.mkFPAdd(ctx.mkFPRoundNearestTiesToEven(), ctx.mkFPNumeral(value, ctx.mkFPSort64()),
+						(FPExpr) exp);
 			} else {
 				return ctx.mkAdd(ctx.mkReal("" + value), (ArithExpr) exp);
 			}
@@ -878,7 +880,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	public Object plus(Object exp, double value) {
 		try {
 			if (useFpForReals) {
-				return ctx.mkFPAdd(ctx.mkFPRoundNearestTiesToEven(), (FPExpr) exp, ctx.mkFPNumeral(value, ctx.mkFPSort64()));
+				return ctx.mkFPAdd(ctx.mkFPRoundNearestTiesToEven(), (FPExpr) exp,
+						ctx.mkFPNumeral(value, ctx.mkFPSort64()));
 			} else {
 				return ctx.mkAdd((ArithExpr) exp, ctx.mkReal("" + value));
 			}
@@ -892,7 +895,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	public Object minus(double value, Object exp) {
 		try {
 			if (useFpForReals) {
-				return ctx.mkFPSub(ctx.mkFPRoundNearestTiesToEven(), ctx.mkFPNumeral(value, ctx.mkFPSort64()), (FPExpr) exp);
+				return ctx.mkFPSub(ctx.mkFPRoundNearestTiesToEven(), ctx.mkFPNumeral(value, ctx.mkFPSort64()),
+						(FPExpr) exp);
 			} else {
 				return ctx.mkSub(ctx.mkReal("" + value), (ArithExpr) exp);
 			}
@@ -906,7 +910,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	public Object minus(Object exp, double value) {
 		try {
 			if (useFpForReals) {
-				return ctx.mkFPSub(ctx.mkFPRoundNearestTiesToEven(), (FPExpr) exp, ctx.mkFPNumeral(value, ctx.mkFPSort64()));
+				return ctx.mkFPSub(ctx.mkFPRoundNearestTiesToEven(), (FPExpr) exp,
+						ctx.mkFPNumeral(value, ctx.mkFPSort64()));
 			} else {
 				return ctx.mkSub((ArithExpr) exp, ctx.mkReal("" + value));
 			}
@@ -920,7 +925,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	public Object mult(double value, Object exp) {
 		try {
 			if (useFpForReals) {
-				return ctx.mkFPMul(ctx.mkFPRoundNearestTiesToEven(), ctx.mkFPNumeral(value, ctx.mkFPSort64()), (FPExpr) exp);
+				return ctx.mkFPMul(ctx.mkFPRoundNearestTiesToEven(), ctx.mkFPNumeral(value, ctx.mkFPSort64()),
+						(FPExpr) exp);
 			} else {
 				return ctx.mkMul(ctx.mkReal("" + value), (ArithExpr) exp);
 			}
@@ -934,7 +940,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	public Object mult(Object exp, double value) {
 		try {
 			if (useFpForReals) {
-				return ctx.mkFPMul(ctx.mkFPRoundNearestTiesToEven(), (FPExpr) exp, ctx.mkFPNumeral(value, ctx.mkFPSort64()));
+				return ctx.mkFPMul(ctx.mkFPRoundNearestTiesToEven(), (FPExpr) exp,
+						ctx.mkFPNumeral(value, ctx.mkFPSort64()));
 			} else {
 				return ctx.mkMul((ArithExpr) exp, ctx.mkReal("" + value));
 			}
@@ -948,7 +955,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	public Object div(double value, Object exp) {
 		try {
 			if (useFpForReals) {
-				return ctx.mkFPDiv(ctx.mkFPRoundNearestTiesToEven(), ctx.mkFPNumeral(value, ctx.mkFPSort64()), (FPExpr) exp);
+				return ctx.mkFPDiv(ctx.mkFPRoundNearestTiesToEven(), ctx.mkFPNumeral(value, ctx.mkFPSort64()),
+						(FPExpr) exp);
 			} else {
 				return ctx.mkDiv(ctx.mkReal("" + value), (ArithExpr) exp);
 			}
@@ -962,7 +970,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	public Object div(Object exp, double value) {
 		try {
 			if (useFpForReals) {
-				return ctx.mkFPDiv(ctx.mkFPRoundNearestTiesToEven(), (FPExpr) exp, ctx.mkFPNumeral(value, ctx.mkFPSort64()));
+				return ctx.mkFPDiv(ctx.mkFPRoundNearestTiesToEven(), (FPExpr) exp,
+						ctx.mkFPNumeral(value, ctx.mkFPSort64()));
 			} else {
 				return ctx.mkDiv((ArithExpr) exp, ctx.mkReal("" + value));
 			}
@@ -1068,31 +1077,31 @@ public class ProblemZ3 extends ProblemGeneral {
 		throw new RuntimeException("## Error Z3 \n");
 	}
 
-    @Override
-    public double getRealValueInf(Object dpVar) {
-        throw new RuntimeException("## Error Z3 \n");//return 0;
-    }
+	@Override
+	public double getRealValueInf(Object dpVar) {
+		throw new RuntimeException("## Error Z3 \n");// return 0;
+	}
 
 	@Override
 	public double getRealValueSup(Object dpVar) {
 		// TODO Auto-generated method stub
-	    throw new RuntimeException("## Error Z3 \n");//return 0;
+		throw new RuntimeException("## Error Z3 \n");// return 0;
 	}
 
 	@Override
 	public double getRealValue(Object dpVar) {
 		try {
-            Model model = solver.getModel();
-            String strResult = model.eval((Expr) dpVar, true).toString().replaceAll("\\s+", "");
-            Expr temp = model.eval((Expr) dpVar, false);
-            if (temp instanceof com.microsoft.z3.RatNum) {
-                strResult = ((com.microsoft.z3.RatNum) temp).toDecimalString(10);
-            }
-            return Double.parseDouble(strResult.replace('?', '0'));
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
-        }
+			Model model = solver.getModel();
+			String strResult = model.eval((Expr) dpVar, true).toString().replaceAll("\\s+", "");
+			Expr temp = model.eval((Expr) dpVar, false);
+			if (temp instanceof com.microsoft.z3.RatNum) {
+				strResult = ((com.microsoft.z3.RatNum) temp).toDecimalString(10);
+			}
+			return Double.parseDouble(strResult.replace('?', '0'));
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
+		}
 	}
 
 	@Override
@@ -1101,113 +1110,113 @@ public class ProblemZ3 extends ProblemGeneral {
 		throw new RuntimeException("## Error Z3 \n");
 	}
 
-    // Added by Aymeric to support arrays
-    @Override
-    public Object makeArrayVar(String name) {
-        try {
-            Sort int_type = ctx.mkIntSort();
-            return ctx.mkArrayConst(name, int_type, int_type);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
-        }
-    }
+	// Added by Aymeric to support arrays
+	@Override
+	public Object makeArrayVar(String name) {
+		try {
+			Sort int_type = ctx.mkIntSort();
+			return ctx.mkArrayConst(name, int_type, int_type);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
+		}
+	}
 
-    @Override
-    public Object makeRealArrayVar(String name) {
-        try {
-            Sort int_type = ctx.mkIntSort();
-            Sort real_type = ctx.mkRealSort();
-            return ctx.mkArrayConst(name, int_type, real_type);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
-        }
-    }
+	@Override
+	public Object makeRealArrayVar(String name) {
+		try {
+			Sort int_type = ctx.mkIntSort();
+			Sort real_type = ctx.mkRealSort();
+			return ctx.mkArrayConst(name, int_type, real_type);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
+		}
+	}
 
-    @Override
-    public Object select(Object exp1, Object exp2) {
-        try {
-            return ctx.mkSelect((ArrayExpr)exp1, (IntExpr)exp2);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
-        }
-    }
+	@Override
+	public Object select(Object exp1, Object exp2) {
+		try {
+			return ctx.mkSelect((ArrayExpr) exp1, (IntExpr) exp2);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
+		}
+	}
 
-    @Override
-    public Object store(Object exp1, Object exp2, Object exp3) {
-        try {
-            return ctx.mkStore((ArrayExpr)exp1, (IntExpr)exp2, (IntExpr)exp3);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
-        }
-    }
+	@Override
+	public Object store(Object exp1, Object exp2, Object exp3) {
+		try {
+			return ctx.mkStore((ArrayExpr) exp1, (IntExpr) exp2, (IntExpr) exp3);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
+		}
+	}
 
-    @Override
-    public Object realSelect(Object exp1, Object exp2) {
-        try {
-            return ctx.mkSelect((ArrayExpr)exp1, (IntExpr)exp2);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
-        }
-    }
+	@Override
+	public Object realSelect(Object exp1, Object exp2) {
+		try {
+			return ctx.mkSelect((ArrayExpr) exp1, (IntExpr) exp2);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
+		}
+	}
 
-    @Override
-    public Object realStore(Object exp1, Object exp2, Object exp3) {
-        try {
-            return ctx.mkStore((ArrayExpr)exp1, (IntExpr)exp2, (RealExpr)exp3);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
-        }
-    }
+	@Override
+	public Object realStore(Object exp1, Object exp2, Object exp3) {
+		try {
+			return ctx.mkStore((ArrayExpr) exp1, (IntExpr) exp2, (RealExpr) exp3);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
+		}
+	}
 
-    @Override
-    public Object makeIntConst(long value) {
-        try {
-            return ctx.mkInt(value);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
-        }
-    }
+	@Override
+	public Object makeIntConst(long value) {
+		try {
+			return ctx.mkInt(value);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
+		}
+	}
 
-    @Override
-    public Object makeRealConst(double value) {
-        try {
-            return ctx.mkReal("" + value);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
-        }
-    }
-	
-	public Object parseSMTLIB2String(String smt/*, Symbol[] symb1, Sort[] sort, Symbol[] symb2, FuncDecl[] func*/) {
+	@Override
+	public Object makeRealConst(double value) {
+		try {
+			return ctx.mkReal("" + value);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
+		}
+	}
+
+	public Object parseSMTLIB2String(String smt/* , Symbol[] symb1, Sort[] sort, Symbol[] symb2, FuncDecl[] func */) {
 		try {
 			Set<Sort> sortSet = new LinkedHashSet<>();
 			Set<FuncDecl> funcSet = new LinkedHashSet<>();
-			for(Entry<SymbolicInteger, Object> entry : PCParser.symIntegerVar.entrySet()) {
+			for (Entry<SymbolicInteger, Object> entry : PCParser.symIntegerVar.entrySet()) {
 				Symbol key = ctx.mkSymbol(entry.getKey().toString());
 				FuncDecl value = ctx.mkConstDecl(key, ctx.mkIntSort());
 				funcSet.add(value);
 			}
-			for(Entry<SymbolicReal, Object> entry : PCParser.symRealVar.entrySet()) {
+			for (Entry<SymbolicReal, Object> entry : PCParser.symRealVar.entrySet()) {
 				Symbol key = ctx.mkSymbol(entry.getKey().toString());
 				FuncDecl value = ctx.mkConstDecl(key, ctx.mkRealSort());
 				funcSet.add(value);
 			}
-			for(Entry<CollectionExpression,Object> entry : PCParser.symCollectionVar.entrySet()) {
+			for (Entry<LibraryExpression, Object> entry : PCParser.symLibraryVar.entrySet()) {
 				Sort sort = entry.getKey().getSort();
 				Symbol key = ctx.mkSymbol(entry.getKey().toString());
 				FuncDecl value = ctx.mkConstDecl(key, sort);
 				funcSet.add(value);
 				sortSet.add(sort);
-				FuncDecl[][] acc = ((DatatypeSort)sort).getAccessors();
-				for(int i=0;i<acc.length;i++) {
-					for(int j=0;j<acc[i].length;j++) {
+				FuncDecl[][] acc = ((DatatypeSort) sort).getAccessors();
+				for (int i = 0; i < acc.length; i++) {
+					for (int j = 0; j < acc[i].length; j++) {
 						funcSet.add(acc[i][j]);
 					}
 				}
@@ -1216,7 +1225,7 @@ public class ProblemZ3 extends ProblemGeneral {
 			Sort[] sorts = new Sort[sortSet.size()];
 			int i;
 			i = 0;
-			for(Sort sort : sortSet) {
+			for (Sort sort : sortSet) {
 				symbs1[i] = sort.getName();
 				sorts[i] = sort;
 				i++;
@@ -1224,7 +1233,7 @@ public class ProblemZ3 extends ProblemGeneral {
 			Symbol[] symbs2 = new Symbol[funcSet.size()];
 			FuncDecl[] funcs = new FuncDecl[funcSet.size()];
 			i = 0;
-			for(FuncDecl func : funcSet) {
+			for (FuncDecl func : funcSet) {
 				symbs2[i] = func.getName();
 				funcs[i] = func;
 				i++;
@@ -1232,75 +1241,85 @@ public class ProblemZ3 extends ProblemGeneral {
 			System.out.println(smt);
 			return ctx.parseSMTLIB2String(smt, symbs1, sorts, symbs2, funcs);
 		} catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
-        }
+			e.printStackTrace();
+			throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
+		}
 	}
-	
-	public Object makeCollectionVar(CollectionExpression cRef) {
-    	try {
-    		Sort sort;
-    		switch(cRef.getTypeName()) {
-    		case "java.util.ArrayList":
-    			if(cRef.getSort() == null) {
-    				sort = mkArrayListSort(mkSortFromTypeName(cRef.getElementTypeName()));
-    				cRef.setSort(sort);
-    			} else {
-    				sort = cRef.getSort();
-    			}
-    			return ctx.mkConst(cRef.getName(), sort);
-    		default:
-    			throw new RuntimeException("symbol is of type " + cRef.getTypeName());
-    		}
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
-        }
-    }
-	
+
+	public Object makeLibraryVar(LibraryExpression cRef) {
+		try {
+			Sort sort = cRef.getSort();
+			if (sort == null) {
+				switch (cRef.getTypeName()) {
+				case "java.util.ArrayList":
+					CollectionExpression ce = (CollectionExpression) cRef;
+					sort = mkArrayListSort(mkSortFromTypeName(ce.getElementTypeName()));
+					break;
+				case "java.io.FileInputStream":
+					sort = mkFileInputStreamSort();
+					break;
+				default:
+					throw new RuntimeException("symbol is of type " + cRef.getTypeName());
+				}
+				cRef.setSort(sort);
+			}
+			return ctx.mkConst(cRef.getName(), sort);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
+		}
+	}
+
 	public Sort mkSortFromTypeName(String typeName) {
-		switch(typeName) {
-		case "java.lang.Integer": return ctx.mkIntSort();
+		switch (typeName) {
+		case "java.lang.Integer":
+		case "java.lang.Byte":
+			return ctx.mkIntSort();
 		default:
 			throw new RuntimeException("symbol is of type " + typeName);
 		}
 	}
-	
+
 	public Map<String, DatatypeSort> dataTypeSortMap = new TreeMap<>();
+
 	public Sort mkArrayListSort(Sort element_sort) {
 		String sort_name = "ArrayList_" + element_sort;
-		if(dataTypeSortMap.containsKey(sort_name)) {
+		if (dataTypeSortMap.containsKey(sort_name)) {
 			return dataTypeSortMap.get(sort_name);
 		} else {
-			String[] size_element = new String[] {"size","element"};
-			Sort[] sorts = new Sort[] {ctx.mkIntSort(), ctx.mkArraySort(ctx.mkIntSort(), element_sort)};
+			String[] size_element = new String[] { "size", "element" };
+			Sort[] sorts = new Sort[] { ctx.mkIntSort(), ctx.mkArraySort(ctx.mkIntSort(), element_sort) };
 			int[] sort_refs = null;
-			Constructor arraylist_cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
-			DatatypeSort arraylist_sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { arraylist_cons });
-			dataTypeSortMap.put(sort_name, arraylist_sort);
-			System.out.println(arraylist_sort.getConstructors()[0]);
-			System.out.println(arraylist_sort.getAccessors()[0][0]);
-			System.out.println(arraylist_sort.getAccessors()[0][1]);
-			return arraylist_sort;
+			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
+			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
+			dataTypeSortMap.put(sort_name, sort);
+			System.out.println(sort.getConstructors()[0]);
+			System.out.println(sort.getAccessors()[0][0]);
+			System.out.println(sort.getAccessors()[0][1]);
+			return sort;
 		}
 	}
-	
-//	public Expr mkArrayListConst(DatatypeSort sort) {
-//		sort.getConstructors()
-//		nil_decl = nil_con.ConstructorDecl();
-//        is_nil_decl = nil_con.getTesterDecl();
-//        cons_decl = cons_con.ConstructorDecl();
-//        is_cons_decl = cons_con.getTesterDecl();
-//        FuncDecl[] cons_accessors = cons_con.getAccessorDecls();
-//        car_decl = cons_accessors[0];
-//        cdr_decl = cons_accessors[1];
-//
-//        nil = ctx.mkConst(nil_decl);
-//        l1 = ctx.mkApp(cons_decl, nil, nil);
-//        l2 = ctx.mkApp(cons_decl, l1, nil);
-//
-//        /* nil != cons(nil, nil) */
-//        prove(ctx, ctx.mkNot(ctx.mkEq(nil, l1)), false);
-//	}
+
+	public Sort mkFileInputStreamSort() {
+		String sort_name = "FileInpurStream";
+		if (dataTypeSortMap.containsKey(sort_name)) {
+			return dataTypeSortMap.get(sort_name);
+		} else {
+			String[] size_element = new String[] { "content", "readPoint", "isOpen" };
+			Sort[] sorts = new Sort[] { mkArrayListSort(ctx.mkIntSort()), ctx.mkIntSort(), ctx.mkBoolSort() };
+			int[] sort_refs = null;
+			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
+			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
+			dataTypeSortMap.put(sort_name, sort);
+			FuncDecl[][] acc = sort.getAccessors();
+			System.out.println(sort.getConstructors()[0]);
+			for (int i = 0; i < acc.length; i++) {
+				for (int j = 0; j < acc[i].length; j++) {
+					System.out.println(sort.getAccessors()[i][j]);
+				}
+			}
+			return sort;
+		}
+	}
 
 }
