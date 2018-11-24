@@ -674,9 +674,9 @@ public class ProblemZ3 extends ProblemGeneral {
 	public Boolean solve() {
 		try {
 	        System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
-	        Params p = ctx.mkParams();
-			p.add("timeout", 2000);
-			solver.setParameters(p);
+//	        Params p = ctx.mkParams();
+//			p.add("timeout", 300000);
+//			solver.setParameters(p);
 			Status status = solver.check();
 			if (Status.SATISFIABLE == status) {
 				System.out.println("rh: SAT: Model: " + solver.getModel());

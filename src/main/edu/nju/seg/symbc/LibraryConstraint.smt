@@ -15,7 +15,7 @@
 (assert (and (>= ?p1 0) (< ?p1 (size ?p0))))
 (assert (= ?r (select (element ?p0) ?p1)))
 ;java.io.FileInputStream.<init>(Ljava/lang/String;)V
-(assert (and (>= (size (content ?_p0)) 1024) (<= (size (content ?_p0)) 4096)))
+(assert (and (>= (size (content ?_p0)) 0) (<= (size (content ?_p0)) 4096)))
 (assert (= (readPosition ?_p0) 0))
 (assert (= (isOpen ?_p0) true))
 ;java.io.FileInputStream.read([B)I
@@ -34,7 +34,7 @@
                 (forall ((x Int))
                     (=> (and (>= x ?r) (< x (size ?p1))) 
                         (= (select (element ?_p1) x) (select (element ?p1) x))
-                    ))
+                ))
             )))
 (assert (= (size ?_p1) (size ?p1)))
 (assert (= (content ?_p0) (content ?p0)))
