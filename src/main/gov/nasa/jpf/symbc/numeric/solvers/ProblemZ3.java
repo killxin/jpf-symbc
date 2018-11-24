@@ -91,8 +91,8 @@ public class ProblemZ3 extends ProblemGeneral {
 		}
 	}
 
-	/* private */ public Solver solver;
-	/* private */ public Context ctx;
+	private Solver solver;
+	private Context ctx;
 
 	// Do we use the floating point theory or linear arithmetic over reals
 	private boolean useFpForReals = false;
@@ -673,9 +673,20 @@ public class ProblemZ3 extends ProblemGeneral {
 
 	public Boolean solve() {
 		try {
-			if (Status.SATISFIABLE == solver.check()) {
+	        System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
+	        Params p = ctx.mkParams();
+			p.add("timeout", 2000);
+			solver.setParameters(p);
+			Status status = solver.check();
+			if (Status.SATISFIABLE == status) {
+				System.out.println("rh: SAT: Model: " + solver.getModel());
 				return true;
+			} 
+			else if(Status.UNSATISFIABLE == status) {
+				System.out.println("rh: UNSAT: Core: "+ Arrays.toString(solver.getUnsatCore()));
+				return false;
 			} else {
+				System.out.println("rh: UNKNOWN");
 				return false;
 			}
 		} catch (Exception e) {
@@ -1194,7 +1205,7 @@ public class ProblemZ3 extends ProblemGeneral {
 		}
 	}
 
-	public Object parseSMTLIB2String(String smt/* , Symbol[] symb1, Sort[] sort, Symbol[] symb2, FuncDecl[] func */) {
+	public BoolExpr[] parseSMTLIB2String(String smt/* , Symbol[] symb1, Sort[] sort, Symbol[] symb2, FuncDecl[] func */) {
 		try {
 			Set<Sort> sortSet = new LinkedHashSet<>();
 			Set<FuncDecl> funcSet = new LinkedHashSet<>();
@@ -1305,7 +1316,7 @@ public class ProblemZ3 extends ProblemGeneral {
 		if (dataTypeSortMap.containsKey(sort_name)) {
 			return dataTypeSortMap.get(sort_name);
 		} else {
-			String[] size_element = new String[] { "content", "readPoint", "isOpen" };
+			String[] size_element = new String[] { "content", "readPosition", "isOpen" };
 			Sort[] sorts = new Sort[] { mkArrayListSort(ctx.mkIntSort()), ctx.mkIntSort(), ctx.mkBoolSort() };
 			int[] sort_refs = null;
 			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);

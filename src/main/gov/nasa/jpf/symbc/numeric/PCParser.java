@@ -63,6 +63,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1091,12 +1092,12 @@ getExpression(stoex.value)), newae));
         cRef = cRef.and;
       }
       //add by rhjiang
-      LibraryConstraint cc = pc.lpc.header;
-      while (cc != null) {
-          if(addConstraint(cc) == false) {
+      LibraryConstraint lc = pc.lpc.header;
+      while (lc != null) {
+          if(addConstraint(lc) == false) {
             return null;
           }
-          cc = cc.and;
+          lc = lc.and;
         }
     }
 
@@ -1179,7 +1180,7 @@ getExpression(stoex.value)), newae));
 				smt = smt.replaceAll("\\?_p"+i, exp2str(_pi));
 			}
 			smt = smt.replaceAll("\\?r", exp2str(cRef.getrEturn()));
-			pbz3.post(pbz3.parseSMTLIB2String(smt));
+			Arrays.stream(pbz3.parseSMTLIB2String(smt)).forEach(x->pbz3.post(x));
 		} else {
 			throw new RuntimeException("error in createLibraryConstraint: "+ cRef.getOpt());
 		}

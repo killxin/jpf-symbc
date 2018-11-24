@@ -127,11 +127,6 @@ public class SymbolicConstraintsGeneral {
          * e.g. with Z3.
          */
         ProblemGeneral tempPb = PCParser.parse(pc, pb);
-        
-        com.microsoft.z3.Context ctx = ((ProblemZ3)tempPb).ctx;
-        com.microsoft.z3.Solver solver = ((ProblemZ3)tempPb).solver;
-        com.microsoft.z3.BoolExpr[] exprs = solver.getAssertions();
-        System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
 
         if (tempPb == null)
             result = Boolean.FALSE;
@@ -147,11 +142,6 @@ public class SymbolicConstraintsGeneral {
             }
 
             result = pb.solve();
-        }
-        
-        System.out.println("rh: Solving Result "+result);
-        if (result == Boolean.TRUE) {
-        	System.out.println("rh: Model: " + solver.getModel());
         }
 
         if (SymbolicInstructionFactory.debugMode)
