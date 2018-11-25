@@ -64,6 +64,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1187,9 +1188,9 @@ getExpression(stoex.value)), newae));
 		return true;
 	}
 	
-	public static Map<LibraryOperation,String> smtFormats;
+	public static EnumMap<LibraryOperation,String> smtFormats;
 	static {
-		smtFormats = new TreeMap<>();
+		smtFormats = new EnumMap<LibraryOperation, String>(LibraryOperation.class);
 		try {
             BufferedReader in = new BufferedReader(new FileReader("../jpf-symbc/src/main/edu/nju/seg/symbc/LibraryConstraint.smt"));
             String line = in.readLine();
