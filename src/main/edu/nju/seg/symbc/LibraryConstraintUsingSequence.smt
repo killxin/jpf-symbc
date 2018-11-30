@@ -100,8 +100,10 @@
 (assert (= (mapping ?_p0) (mapping ?p1)))
 ;java.util.HashSet.clone()Ljava/lang/Object;
 ;java.util.TreeSet.clone()Ljava/lang/Object;
+;java.util.NavigableSet.descendingSet()Ljava/util/NavigableSet;
 ;java.util.TreeSet.descendingSet()Ljava/util/NavigableSet;
 (assert (= (mapping ?r) (mapping ?p0)))
+;java.util.NavigableSet.subSet(Ljava/lang/Object;ZLjava/lang/Object;Z)Ljava/util/NavigableSet;
 ;java.util.TreeSet.subSet(Ljava/lang/Object;ZLjava/lang/Object;Z)Ljava/util/NavigableSet;
 (assert (forall ((x ?T))
     (ite 
@@ -110,6 +112,7 @@
         (= (select (mapping ?r) x) false)
     )
 ))
+;java.util.NavigableSet.headSet(Ljava/lang/Object;Z)Ljava/util/NavigableSet;
 ;java.util.TreeSet.headSet(Ljava/lang/Object;Z)Ljava/util/NavigableSet;
 (assert (forall ((x ?T))
     (ite 
@@ -118,6 +121,7 @@
         (= (select (mapping ?r) x) false)
     )
 ))
+;java.util.NavigableSet.tailSet(Ljava/lang/Object;Z)Ljava/util/NavigableSet;
 ;java.util.TreeSet.tailSet(Ljava/lang/Object;Z)Ljava/util/NavigableSet;
 (assert (forall ((x ?T))
     (ite 
@@ -126,6 +130,8 @@
         (= (select (mapping ?r) x) false)
     )
 ))
+;java.util.NavigableSet.subSet(Ljava/lang/Object;Ljava/lang/Object;)Ljava/util/SortedSet;
+;java.util.SortedSet.subSet(Ljava/lang/Object;Ljava/lang/Object;)Ljava/util/SortedSet;
 ;java.util.TreeSet.subSet(Ljava/lang/Object;Ljava/lang/Object;)Ljava/util/SortedSet;
 (assert (forall ((x ?T))
     (ite 
@@ -134,6 +140,8 @@
         (= (select (mapping ?r) x) false)
     )
 ))
+;java.util.NavigableSet.headSet(Ljava/lang/Object;)Ljava/util/SortedSet;
+;java.util.SortedSet.headSet(Ljava/lang/Object;)Ljava/util/SortedSet;
 ;java.util.TreeSet.headSet(Ljava/lang/Object;)Ljava/util/SortedSet;
 (assert (forall ((x ?T))
     (ite 
@@ -142,6 +150,8 @@
         (= (select (mapping ?r) x) false)
     )
 ))
+;java.util.NavigableSet.tailSet(Ljava/lang/Object;)Ljava/util/SortedSet;
+;java.util.SortedSet.tailSet(Ljava/lang/Object;)Ljava/util/SortedSet;
 ;java.util.TreeSet.tailSet(Ljava/lang/Object;)Ljava/util/SortedSet;
 (assert (forall ((x ?T))
     (ite 
@@ -150,6 +160,7 @@
         (= (select (mapping ?r) x) false)
     )
 ))
+;java.util.SortedSet.first()Ljava/lang/Object;
 ;java.util.TreeSet.first()Ljava/lang/Object;
 (assert (and
     (= true (select (mapping ?p0) ?r))
@@ -157,6 +168,7 @@
         (=> (= true (select (mapping ?p0) x)) (<= ?r x))
     )
 ))
+;java.util.SortedSet.last()Ljava/lang/Object;
 ;java.util.TreeSet.last()Ljava/lang/Object;
 (assert (and
     (= true (select (mapping ?p0) ?r))
@@ -164,6 +176,7 @@
         (=> (= true (select (mapping ?p0) x)) (>= ?r x))
     )
 ))
+;java.util.NavigableSet.lower(Ljava/lang/Object;)Ljava/lang/Object;
 ;java.util.TreeSet.lower(Ljava/lang/Object;)Ljava/lang/Object;
 (assert (and
     (= true (select (mapping ?p0) ?r))
@@ -171,6 +184,7 @@
         (=> (and (= true (select (mapping ?p0) x)) (< x ?p1)) (>= ?r x))
     )
 ))
+;java.util.NavigableSet.floor(Ljava/lang/Object;)Ljava/lang/Object;
 ;java.util.TreeSet.floor(Ljava/lang/Object;)Ljava/lang/Object;
 (assert (and
     (= true (select (mapping ?p0) ?r))
@@ -178,6 +192,7 @@
         (=> (and (= true (select (mapping ?p0) x)) (<= x ?p1)) (>= ?r x))
     )
 ))
+;java.util.NavigableSet.ceiling(Ljava/lang/Object;)Ljava/lang/Object;
 ;java.util.TreeSet.ceiling(Ljava/lang/Object;)Ljava/lang/Object;
 (assert (and
     (= true (select (mapping ?p0) ?r))
@@ -185,6 +200,7 @@
         (=> (and (= true (select (mapping ?p0) x)) (>= x ?p1)) (<= ?r x))
     )
 ))
+;java.util.NavigableSet.higher(Ljava/lang/Object;)Ljava/lang/Object;
 ;java.util.TreeSet.higher(Ljava/lang/Object;)Ljava/lang/Object;
 (assert (and
     (= true (select (mapping ?p0) ?r))
@@ -192,6 +208,7 @@
         (=> (and (= true (select (mapping ?p0) x)) (> x ?p1)) (<= ?r x))
     )
 ))
+;java.util.NavigableSet.pollFirst()Ljava/lang/Object;
 ;java.util.TreeSet.pollFirst()Ljava/lang/Object;
 (assert (and
     (= true (select (mapping ?p0) ?r))
@@ -205,6 +222,7 @@
         )
     )
 ))
+;java.util.NavigableSet.pollLast()Ljava/lang/Object;
 ;java.util.TreeSet.pollLast()Ljava/lang/Object;
 (assert (and
     (= true (select (mapping ?p0) ?r))
@@ -593,12 +611,16 @@
 (assert (= (key ?_p0) ((as const (Array ?K Bool)) false)))
 ;java.util.Map.keySet()Ljava/util/Set;
 ;java.util.HashMap.keySet()Ljava/util/Set;
+;java.util.SortedMap.keySet()Ljava/util/Set;
 ;java.util.TreeMap.keySet()Ljava/util/Set;
+;java.util.NavigableMap.descendingKeySet()Ljava/util/NavigableSet;
 ;java.util.TreeMap.descendingKeySet()Ljava/util/NavigableSet;
+;;java.util.NavigableMap.navigableKeySet()Ljava/util/NavigableSet;
 ;java.util.TreeMap.navigableKeySet()Ljava/util/NavigableSet;
 (assert (= ?r (key ?p0)))
 ;java.util.Map.values()Ljava/util/Collection;
 ;java.util.HashMap.values()Ljava/util/Collection;
+;java.util.SortedMap.values()Ljava/util/Collection;
 ;java.util.TreeMap.values()Ljava/util/Collection;
 (assert (and 
     (forall ((k ?K)) 
@@ -610,6 +632,7 @@
 ))
 ;java.util.Map.entrySet()Ljava/util/Set;
 ;java.util.HashMap.entrySet()Ljava/util/Set;
+;java.util.SortedMap.entrySet()Ljava/util/Set;
 ;java.util.TreeMap.entrySet()Ljava/util/Set;
 (assert (and 
     (forall ((k ?K)) 
@@ -667,6 +690,7 @@
 ))
 ;java.util.HashMap.clone()Ljava/lang/Object;
 ;java.util.TreeMap.clone()Ljava/lang/Object;
+;java.util.NavigableMap.descendingMap()Ljava/util/NavigableMap;
 ;java.util.TreeMap.descendingMap()Ljava/util/NavigableMap;
 (assert (and
     (= (key ?r) (key ?p0))
@@ -679,6 +703,7 @@
     (= (key ?_p0) (key ?p1))
     (= (mapping ?_p0) (mapping ?p1))
 ))
+;java.util.SortedMap.firstKey()Ljava/lang/Object;
 ;java.util.TreeMap.firstKey()Ljava/lang/Object;
 (assert (and
     (= true (select (key ?p0) ?r))
@@ -686,6 +711,7 @@
         (=> (= true (select (key ?p0) x)) (<= ?r x))
     )
 ))
+;java.util.SortedMap.lastKey()Ljava/lang/Object;
 ;java.util.TreeMap.lastKey()Ljava/lang/Object;
 (assert (and
     (= true (select (key ?p0) ?r))
@@ -693,6 +719,7 @@
         (=> (= true (select (key ?p0) x)) (>= ?r x))
     )
 ))
+;java.util.NavigableMap.firstEntry()Ljava/util/Map$Entry;
 ;java.util.TreeMap.firstEntry()Ljava/util/Map$Entry;
 (assert (and
     (= true (select (key ?p0) (key ?r)))
@@ -701,6 +728,7 @@
     )
     (= (value ?r) (select (mapping ?p0) (key ?r)))
 ))
+;java.util.NavigableMap.lastEntry()Ljava/util/Map$Entry;
 ;java.util.TreeMap.lastEntry()Ljava/util/Map$Entry;
 (assert (and
     (= true (select (key ?p0) (key ?r)))
@@ -709,6 +737,7 @@
     )
     (= (value ?r) (select (mapping ?p0) (key ?r)))
 ))
+;java.util.NavigableMap.pollFirstEntry()Ljava/util/Map$Entry;
 ;java.util.TreeMap.pollFirstEntry()Ljava/util/Map$Entry;
 (assert (and
     (= true (select (key ?p0) (key ?r)))
@@ -724,6 +753,7 @@
     )
     (= (mapping ?_p0) (mapping ?p0))
 ))
+;java.util.NavigableMap.pollLastEntry()Ljava/util/Map$Entry;
 ;java.util.TreeMap.pollLastEntry()Ljava/util/Map$Entry;
 (assert (and
     (= true (select (key ?p0) (key ?r)))
@@ -739,6 +769,7 @@
     )
     (= (mapping ?_p0) (mapping ?p0))
 ))
+;java.util.NavigableMap.lowerEntry(Ljava/lang/Object;)Ljava/util/Map$Entry;
 ;java.util.TreeMap.lowerEntry(Ljava/lang/Object;)Ljava/util/Map$Entry;
 (assert (and
     (= true (select (key ?p0) (key ?r)))
@@ -750,6 +781,7 @@
     )
     (= (value ?r) (select (mapping ?p0) (key ?r)))
 ))
+;java.util.NavigableMap.lowerKey(Ljava/lang/Object;)Ljava/lang/Object;
 ;java.util.TreeMap.lowerKey(Ljava/lang/Object;)Ljava/lang/Object;
 (assert (and
     (= true (select (key ?p0) ?r))
@@ -760,6 +792,7 @@
         )
     )
 ))
+;java.util.NavigableMap.floorEntry(Ljava/lang/Object;)Ljava/util/Map$Entry;
 ;java.util.TreeMap.floorEntry(Ljava/lang/Object;)Ljava/util/Map$Entry;
 (assert (and
     (= true (select (key ?p0) (key ?r)))
@@ -771,6 +804,7 @@
     )
     (= (value ?r) (select (mapping ?p0) (key ?r)))
 ))
+;java.util.NavigableMap.floorKey(Ljava/lang/Object;)Ljava/lang/Object;
 ;java.util.TreeMap.floorKey(Ljava/lang/Object;)Ljava/lang/Object;
 (assert (and
     (= true (select (key ?p0) ?r))
@@ -781,6 +815,7 @@
         )
     )
 ))
+;java.util.NavigableMap.ceilingEntry(Ljava/lang/Object;)Ljava/util/Map$Entry;
 ;java.util.TreeMap.ceilingEntry(Ljava/lang/Object;)Ljava/util/Map$Entry;
 (assert (and
     (= true (select (key ?p0) (key ?r)))
@@ -792,6 +827,7 @@
     )
     (= (value ?r) (select (mapping ?p0) (key ?r)))
 ))
+;java.util.NavigableMap.ceilingKey(Ljava/lang/Object;)Ljava/lang/Object;
 ;java.util.TreeMap.ceilingKey(Ljava/lang/Object;)Ljava/lang/Object;
 (assert (and
     (= true (select (key ?p0) ?r))
@@ -802,6 +838,7 @@
         )
     )
 ))
+;java.util.NavigableMap.higherEntry(Ljava/lang/Object;)Ljava/util/Map$Entry;
 ;java.util.TreeMap.higherEntry(Ljava/lang/Object;)Ljava/util/Map$Entry;
 (assert (and
     (= true (select (key ?p0) (key ?r)))
@@ -813,6 +850,7 @@
     )
     (= (value ?r) (select (mapping ?p0) (key ?r)))
 ))
+;java.util.NavigableMap.higherKey(Ljava/lang/Object;)Ljava/lang/Object;
 ;java.util.TreeMap.higherKey(Ljava/lang/Object;)Ljava/lang/Object;
 (assert (and
     (= true (select (key ?p0) ?r))
@@ -823,6 +861,7 @@
         )
     )
 ))
+;java.util.NavigableMap.subMap(Ljava/lang/Object;ZLjava/lang/Object;Z)Ljava/util/NavigableMap;
 ;java.util.TreeMap.subMap(Ljava/lang/Object;ZLjava/lang/Object;Z)Ljava/util/NavigableMap;
 (assert (and
     (forall ((x ?K))
@@ -834,6 +873,7 @@
     )
     (= (mapping ?r) (mapping ?p0))
 ))
+;java.util.NavigableMap.headMap(Ljava/lang/Object;Z)Ljava/util/NavigableMap;
 ;java.util.TreeMap.headMap(Ljava/lang/Object;Z)Ljava/util/NavigableMap;
 (assert (and
     (forall ((x ?K))
@@ -845,6 +885,7 @@
     )
     (= (mapping ?r) (mapping ?p0))
 ))
+;java.util.NavigableMap.tailMap(Ljava/lang/Object;Z)Ljava/util/NavigableMap;
 ;java.util.TreeMap.tailMap(Ljava/lang/Object;Z)Ljava/util/NavigableMap;
 (assert (and
     (forall ((x ?K))
@@ -856,6 +897,8 @@
     )
     (= (mapping ?r) (mapping ?p0))
 ))
+;java.util.NavigableMap.subMap(Ljava/lang/Object;Ljava/lang/Object;)Ljava/util/SortedMap;
+;java.util.SortedMap.subMap(Ljava/lang/Object;Ljava/lang/Object;)Ljava/util/SortedMap;
 ;java.util.TreeMap.subMap(Ljava/lang/Object;Ljava/lang/Object;)Ljava/util/SortedMap;
 (assert (and
     (forall ((x ?K))
@@ -867,6 +910,8 @@
     )
     (= (mapping ?r) (mapping ?p0))
 ))
+;java.util.NavigableMap.headMap(Ljava/lang/Object;)Ljava/util/SortedMap;
+;java.util.SortedMap.headMap(Ljava/lang/Object;)Ljava/util/SortedMap;
 ;java.util.TreeMap.headMap(Ljava/lang/Object;)Ljava/util/SortedMap;
 (assert (and
     (forall ((x ?K))
@@ -878,6 +923,8 @@
     )
     (= (mapping ?r) (mapping ?p0))
 ))
+;java.util.NavigableMap.tailMap(Ljava/lang/Object;)Ljava/util/SortedMap;
+;java.util.SortedMap.tailMap(Ljava/lang/Object;)Ljava/util/SortedMap;
 ;java.util.TreeMap.tailMap(Ljava/lang/Object;)Ljava/util/SortedMap;
 (assert (and
     (forall ((x ?K))
