@@ -673,7 +673,7 @@ public class ProblemZ3 extends ProblemGeneral {
 
 	public Boolean solve() {
 		try {
-	        System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
+	        System.out.println("rh: "+Arrays.toString(Arrays.copyOfRange(solver.getAssertions(),2,10)));
 //	        Params p = ctx.mkParams();
 //			p.add("timeout", 300000);
 //	        p.add("unsat_core", true);
@@ -1252,7 +1252,7 @@ public class ProblemZ3 extends ProblemGeneral {
 				funcs[i] = func;
 				i++;
 			}
-			System.out.println(smt);
+//			System.out.println(smt);
 			return ctx.parseSMTLIB2String(smt, symbs1, sorts, symbs2, funcs);
 		} catch (Exception e) {
 			e.printStackTrace();
