@@ -676,17 +676,20 @@ public class ProblemZ3 extends ProblemGeneral {
 	        System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
 //	        Params p = ctx.mkParams();
 //			p.add("timeout", 300000);
+//	        p.add("unsat_core", true);
 //			solver.setParameters(p);
 			Status status = solver.check();
 			if (Status.SATISFIABLE == status) {
-				System.out.println("rh: SAT: Model: " + solver.getModel());
+				System.out.println("********rh: SAT********");
+//				System.out.println("rh: Model: " + solver.getModel());
 				return true;
 			} 
 			else if(Status.UNSATISFIABLE == status) {
-				System.out.println("rh: UNSAT: Core: "+ Arrays.toString(solver.getUnsatCore()));
+				System.out.println("********rh: UNSAT********");
+//				System.out.println("rh: Core: "+ solver.getUnsatCore().length + Arrays.toString(solver.getUnsatCore()));
 				return false;
 			} else {
-				System.out.println("rh: UNKNOWN");
+				System.out.println("********rh: UNKNOWN********");
 				return false;
 			}
 		} catch (Exception e) {
@@ -1263,8 +1266,9 @@ public class ProblemZ3 extends ProblemGeneral {
 			if (sort == null) {
 				switch (cRef.getTypeName()) {
 				case "java.util.ArrayList":
+				case "java.util.LinkedList":
 					CollectionExpression ce = (CollectionExpression) cRef;
-					sort = mkArrayListSort(mkSortFromTypeName(ce.getElementTypeName()));
+					sort = mkListSort(mkSortFromTypeName(ce.getElementTypeName()));
 					break;
 				case "java.io.FileInputStream":
 					sort = mkFileInputStreamSort();
@@ -1293,20 +1297,22 @@ public class ProblemZ3 extends ProblemGeneral {
 
 	public Map<String, DatatypeSort> dataTypeSortMap = new TreeMap<>();
 
-	public Sort mkArrayListSort(Sort element_sort) {
-		String sort_name = "ArrayList_" + element_sort;
+	public Sort mkListSort(Sort element_sort) {
+		String sort_name = "List_" + element_sort;
 		if (dataTypeSortMap.containsKey(sort_name)) {
 			return dataTypeSortMap.get(sort_name);
 		} else {
-			String[] size_element = new String[] { "size", "element" };
-			Sort[] sorts = new Sort[] { ctx.mkIntSort(), ctx.mkArraySort(ctx.mkIntSort(), element_sort) };
+			String[] size_element = new String[] { "mapping", "element" };
+			Sort[] sorts = new Sort[] { ctx.mkArraySort(element_sort, ctx.mkBoolSort()), ctx.mkSeqSort(element_sort) };
 			int[] sort_refs = null;
 			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
 			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
 			dataTypeSortMap.put(sort_name, sort);
+			System.out.println("Datatype Summary:");
 			System.out.println(sort.getConstructors()[0]);
 			System.out.println(sort.getAccessors()[0][0]);
 			System.out.println(sort.getAccessors()[0][1]);
+			System.out.println("=====");
 			return sort;
 		}
 	}
@@ -1316,12 +1322,13 @@ public class ProblemZ3 extends ProblemGeneral {
 		if (dataTypeSortMap.containsKey(sort_name)) {
 			return dataTypeSortMap.get(sort_name);
 		} else {
-			String[] size_element = new String[] { "content", "readPosition", "isOpen" };
-			Sort[] sorts = new Sort[] { mkArrayListSort(ctx.mkIntSort()), ctx.mkIntSort(), ctx.mkBoolSort() };
+			String[] size_element = new String[] { "length", "readPosition", "isOpen" };
+			Sort[] sorts = new Sort[] { ctx.mkIntSort(), ctx.mkIntSort(), ctx.mkBoolSort() };
 			int[] sort_refs = null;
 			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
 			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
 			dataTypeSortMap.put(sort_name, sort);
+			System.out.println("Datatype Summary:");
 			FuncDecl[][] acc = sort.getAccessors();
 			System.out.println(sort.getConstructors()[0]);
 			for (int i = 0; i < acc.length; i++) {
@@ -1329,6 +1336,7 @@ public class ProblemZ3 extends ProblemGeneral {
 					System.out.println(sort.getAccessors()[i][j]);
 				}
 			}
+			System.out.println("=====");
 			return sort;
 		}
 	}

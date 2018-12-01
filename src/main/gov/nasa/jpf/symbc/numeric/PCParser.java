@@ -70,6 +70,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import edu.nju.seg.symbc.CollectionExpression;
 import edu.nju.seg.symbc.LibraryConstraint;
 import edu.nju.seg.symbc.LibraryExpression;
 import edu.nju.seg.symbc.LibraryOperation;
@@ -1181,6 +1182,13 @@ getExpression(stoex.value)), newae));
 				smt = smt.replaceAll("\\?_p"+i, exp2str(_pi));
 			}
 			smt = smt.replaceAll("\\?r", exp2str(cRef.getrEturn()));
+			if(smt.contains("?T")) {
+				CollectionExpression base = (CollectionExpression) cRef.getParams()[0];
+				if(base == null) {
+					base = (CollectionExpression) cRef._getParams()[0];
+				}
+				smt = smt.replaceAll("\\?T", base.getElementSort());
+			}
 			Arrays.stream(pbz3.parseSMTLIB2String(smt)).forEach(x->pbz3.post(x));
 		} else {
 			throw new RuntimeException("error in createLibraryConstraint: "+ cRef.getOpt());
@@ -1192,21 +1200,30 @@ getExpression(stoex.value)), newae));
 	static {
 		smtFormats = new EnumMap<LibraryOperation, String>(LibraryOperation.class);
 		try {
-            BufferedReader in = new BufferedReader(new FileReader("../jpf-symbc/src/main/edu/nju/seg/symbc/LibraryConstraint.smt"));
+            BufferedReader in = new BufferedReader(new FileReader("../jpf-symbc/src/main/edu/nju/seg/symbc/LibraryConstraintUsingSequence.smt"));
             String line = in.readLine();
             for(;!line.equals(";START");line=in.readLine());
             line = in.readLine();
-            String mname = line.substring(1);
+            List<String> mnames = new ArrayList<>();
+            while(line != null && line.startsWith(";")) {
+            	mnames.add(line.substring(1));
+            	line = in.readLine();
+            }
             StringBuilder smtFormat = new StringBuilder();
-            line = in.readLine();
             while (line != null) {
                 if (line.startsWith(";")) {
-                	smtFormats.put(SymbolicLibraryHandler.sig2opt.get(mname), smtFormat.toString());
-                	mname = line.substring(1);
+                	if(smtFormat.length() != 0) {
+	                	for(String mname : mnames) {
+	                		LibraryOperation opt = SymbolicLibraryHandler.sig2opt.get(mname);
+	                		smtFormats.put(opt, smtFormat.toString());
+	                	}
+	                	mnames.clear();
+	                	smtFormat = new StringBuilder();
+                	}
+                	mnames.add(line.substring(1));
                 	if(line.equals(";END")) {
                 		break;
                 	}
-                	smtFormat = new StringBuilder();
                 } else {
                     smtFormat.append(line + "\n");
                 }

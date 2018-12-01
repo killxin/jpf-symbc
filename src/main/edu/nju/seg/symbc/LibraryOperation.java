@@ -328,7 +328,6 @@ public enum LibraryOperation {
 	LISTITERATOR_REMOVE("java.util.ListIterator.remove()V"),
 	LISTITERATOR_SET("java.util.ListIterator.set(Ljava/lang/Object;)V"),
 	LISTITERATOR_ADD("java.util.ListIterator.add(Ljava/lang/Object;)V"),
-	
 	NAVIGABLESET_LOWER("java.util.NavigableSet.lower(Ljava/lang/Object;)Ljava/lang/Object;"),
 	NAVIGABLESET_FLOOR("java.util.NavigableSet.floor(Ljava/lang/Object;)Ljava/lang/Object;"),
 	NAVIGABLESET_CEILING("java.util.NavigableSet.ceiling(Ljava/lang/Object;)Ljava/lang/Object;"),
@@ -381,7 +380,6 @@ public enum LibraryOperation {
 	SORTEDMAP_KEYSET("java.util.SortedMap.keySet()Ljava/util/Set;"),
 	SORTEDMAP_VALUES("java.util.SortedMap.values()Ljava/util/Collection;"),
 	SORTEDMAP_ENTRYSET("java.util.SortedMap.entrySet()Ljava/util/Set;"),
-
 	// java.lang
 	INTEGER_VALUEOF("java.lang.Integer.valueOf(I)Ljava/lang/Integer;"),
 	INTEGER_INTVALUE("java.lang.Integer.intValue()I"),

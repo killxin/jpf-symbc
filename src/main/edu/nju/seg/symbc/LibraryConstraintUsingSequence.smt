@@ -7,6 +7,9 @@
     (Entry (mk-pair (key K) (value V)))
     (Map (mk-pair (key (Set K)) (mapping (Array K V))))
 ))
+(declare-datatypes () (
+    (FileInputStream (mk-pair (length Int) (readPosition Int) (isOpen Bool)))
+))
 ;START
 ;java.util.Collection.size()I
 ;java.util.Set.size()I
@@ -321,11 +324,15 @@
 ;java.util.List.clear()V
 ;java.util.ArrayList.clear()V
 ;java.util.LinkedList.clear()V
-;java.util.ArrayList.<init>(I)V
 ;java.util.ArrayList.<init>()V
 ;java.util.LinkedList.<init>()V
 (assert (and
-    (= (element ?_p0)) (as seq.empty (Seq ?T))
+    (= (element ?_p0) (as seq.empty (Seq ?T)))
+    (= (mapping ?_p0) ((as const (Array ?T Bool)) false))
+))
+;java.util.ArrayList.<init>(I)V
+(assert (and
+    (= (seq.len (element ?_p0)) ?p1)
     (= (mapping ?_p0) ((as const (Array ?T Bool)) false))
 ))
 ;java.util.List.get(I)Ljava/lang/Object;
@@ -615,7 +622,7 @@
 ;java.util.TreeMap.keySet()Ljava/util/Set;
 ;java.util.NavigableMap.descendingKeySet()Ljava/util/NavigableSet;
 ;java.util.TreeMap.descendingKeySet()Ljava/util/NavigableSet;
-;;java.util.NavigableMap.navigableKeySet()Ljava/util/NavigableSet;
+;java.util.NavigableMap.navigableKeySet()Ljava/util/NavigableSet;
 ;java.util.TreeMap.navigableKeySet()Ljava/util/NavigableSet;
 (assert (= ?r (key ?p0)))
 ;java.util.Map.values()Ljava/util/Collection;
@@ -943,4 +950,33 @@
 ;java.util.Map$Entry.setValue(Ljava/lang/Object;)Ljava/lang/Object;
 (assert (= ?r (key ?p0)))
 (assert (= (value ?_p0) ?p1))
+;java.io.FileInputStream.<init>(Ljava/lang/String;)V
+(assert (and 
+    (>= (length ?_p0) 0) (<= (length ?_p0) 2048)
+    (= (readPosition ?_p0) 0)
+    (= (isOpen ?_p0) true)
+))
+;java.io.FileInputStream.read([B)I
+(assert (= true (isOpen ?p0)))
+(assert (and
+    (= (isOpen ?_p0) true)
+    (= (length ?_p0) (length ?p0))
+))
+(assert (ite 
+    (= (readPosition ?p0) (length ?p0))
+    (and (= ?r -1) (= (readPosition ?_p0) 0))
+    (and 
+        (let ((bufferLength (seq.len (element ?p1)))) 
+            (ite 
+                (>= (+ (readPosition ?p0) bufferLength) (length ?p0))
+                (= ?r (- (length ?p0) (readPosition ?p0)))
+                (= ?r bufferLength)
+            )
+        )
+        (= (readPosition ?_p0) (+ (readPosition ?p0) ?r))
+    )
+))
+;java.io.FileInputStream.close()V
+(assert (= (isOpen ?p0) true))
+(assert (= (isOpen ?_p0) false))
 ;END

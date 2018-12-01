@@ -25,6 +25,16 @@ public class CollectionExpression extends LibraryExpression {
 	public String getElementTypeName() {
 		return elementTypeName;
 	}
+	
+	public String getElementSort() {
+		switch (elementTypeName) {
+		case "java.lang.Integer":
+		case "java.lang.Byte":
+			return "Int";
+		default:
+			return elementTypeName;
+		}
+	}
 
 	public void setElementTypeName(String elementTypeName) {
 		this.elementTypeName = elementTypeName;

@@ -49,8 +49,10 @@ public class LibraryConstraint {
 	}
 
 	public String toString() {
-		return rEturn.toString() + "," + Arrays.toString(_params) + " = " + opt.toString() + "( "
-				+ Arrays.toString(params) + ")\n" + ((and == null) ? "" : " and " + and);
+		return ((rEturn == null) ? "" : rEturn.toString() + ",") +
+			((params == null) ? "" : Arrays.toString(_params)) + " = " + opt.toString() + "( " + 
+			((params == null) ? "" : Arrays.toString(params)) + ")\n" + 
+			((and == null) ? "" : " and " + and);
 	}
 
 	public boolean equals(Object o) {

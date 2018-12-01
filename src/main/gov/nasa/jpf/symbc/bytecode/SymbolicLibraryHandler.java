@@ -109,12 +109,12 @@ public class SymbolicLibraryHandler {
 		if (needToHandle) {
 			String mname = invInst.getInvokedMethod().getFullName();
 			LibraryOperation opt = sig2opt.get(mname);
-			return handleCollectionOperationFromat(opt, invInst, th);
+			return handleLibraryOperationFromat(opt, invInst, th);
 		}
 		return null;
 	}
 
-	public Instruction handleCollectionOperationFromat(LibraryOperation opt, JVMInvokeInstruction invInst,
+	public Instruction handleLibraryOperationFromat(LibraryOperation opt, JVMInvokeInstruction invInst,
 			ThreadInfo th) {
 		String fullName = invInst.getInvokedMethod().getFullName();
 		int offset = fullName.lastIndexOf(".");
