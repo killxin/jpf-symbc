@@ -2,6 +2,8 @@
 (declare-datatypes (T) (
     (Set (mk-pair (mapping (Array T Bool))))
     (List (mk-pair (mapping (Array T Bool)) (element (Seq T))))
+    (Iterator (mk-pair (mapping (Array T Bool)) (previous (Array T Bool))))
+    (ListIterator (mk-pair (position Int) (element (Seq T))))
 ))
 (declare-datatypes (K V) (
     (Entry (mk-pair (key K) (value V)))
@@ -17,7 +19,7 @@
 ;java.util.TreeSet.size()I
 (assert (ite 
     (= (mapping ?p0) ((as const (Array ?T Bool)) false)) 
-    (= ?r 0) 
+    (= ?r 0)
     (> ?r 0)
 ))
 ;java.util.Collection.isEmpty()Z
@@ -338,17 +340,20 @@
 ;java.util.List.get(I)Ljava/lang/Object;
 ;java.util.ArrayList.get(I)Ljava/lang/Object;
 ;java.util.LinkedList.get(I)Ljava/lang/Object;
-(assert (= (seq.unit ?r) (seq.at (element ?p0) ?p1)))
+(assert (and
+    (and (>= ?p1 0) (< ?p1 (seq.len (element ?p0))))
+    (= (seq.unit ?r) (seq.at (element ?p0) ?p1))
+))
 ;java.util.List.set(ILjava/lang/Object;)Ljava/lang/Object;
 ;java.util.ArrayList.set(ILjava/lang/Object;)Ljava/lang/Object;
 ;java.util.LinkedList.set(ILjava/lang/Object;)Ljava/lang/Object;
 (assert (= (seq.unit ?r) (seq.at (element ?p0) ?p1)))
-(assert (and 
-    (let ((size (seq.len (element ?p0))))
-        (= (element ?_p0) (seq.++ 
-            (seq.extract (element ?p0) 0 ?p1)
-            (seq.unit ?p2)
-            (seq.extract (element ?p0) (+ ?p1 1) (- (- size ?p1) 1)))))
+(assert (let ((size (seq.len (element ?p0))))
+    (= (element ?_p0) (seq.++ 
+        (seq.extract (element ?p0) 0 ?p1)
+        (seq.unit ?p2)
+        (seq.extract (element ?p0) (+ ?p1 1) (- (- size ?p1) 1))
+    ))
 ))
 (assert (ite 
     (seq.contains (element ?_p0) (seq.unit ?r))
@@ -950,6 +955,111 @@
 ;java.util.Map$Entry.setValue(Ljava/lang/Object;)Ljava/lang/Object;
 (assert (= ?r (key ?p0)))
 (assert (= (value ?_p0) ?p1))
+;java.util.Iterator.hasNext()Z
+(assert (exists ((x ?T))
+    (= true (select (mapping ?p0) x))
+    (= false (select (previous ?p0) x))
+))
+;java.util.Iterator.next()Ljava/lang/Object;
+(assert and (
+    (= true (select (mapping ?p0) ?r))
+    (= false (select (previous ?p0) ?r))
+    (= (mapping ?_p0) (mapping ?p0))
+    (forall ((x ?T))
+        (ite (= x ?r)
+            (= (select (previous ?_p0) x) true)
+            (= (select (previous ?_p0) x) (select (previous ?p0) x))
+        )
+    )
+))
+;java.util.Iterator.remove()V
+(assert and (
+    (= (previous ?_p0) (previous ?p0))
+    (forall ((x ?T))
+        (ite (= x ?r)
+            (= (select (mapping ?_p0) x) false)
+            (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
+        )
+    )
+))
+;java.util.ListIterator.hasNext()Z
+(assert (and 
+    (>= (position ?p0) 0)
+    (< (position ?p0) (seq.len (element ?p0)))
+    (= ?r (< (+ (position ?p0) 1) (seq.len (element ?p0))))
+))
+;java.util.ListIterator.next()Ljava/lang/Object;
+(assert (and
+    (>= (position ?p0) 0)
+    (< (position ?p0) (seq.len (element ?p0)))
+    (= (seq.unit ?r) (seq.at (element ?p0) (+ (position ?p0) 1)))
+    (= (position ?_p0) (+ (position ?p0) 1))
+    (= (element ?_p0) (element ?p0))
+))
+;java.util.ListIterator.hasPrevious()Z
+(assert (and
+    (>= (position ?p0) 0)
+    (< (position ?p0) (seq.len (element ?p0)))
+    (= ?r (>= (- (position ?p0) 1) 0))
+))
+;java.util.ListIterator.previous()Ljava/lang/Object;
+(assert (and
+    (>= (position ?p0) 0)
+    (< (position ?p0) (seq.len (element ?p0)))
+    (= (seq.unit ?r) (seq.at (element ?p0) (- (position ?p0) 1)))
+    (= (position ?_p0) (- (position ?p0) 1))
+    (= (element ?_p0) (element ?p0))
+))
+;java.util.ListIterator.nextIndex()I
+(assert (and 
+    (>= (position ?p0) 0)
+    (< (position ?p0) (seq.len (element ?p0)))
+    (= ?r (+ (position ?p0) 1))
+))
+;java.util.ListIterator.previousIndex()I
+(assert (and
+    (>= (position ?p0) 0)
+    (< (position ?p0) (seq.len (element ?p0)))
+    (= ?r (- (position ?p0) 1))
+))
+;java.util.ListIterator.remove()V
+(assert (and
+    (>= (position ?p0) 0)
+    (< (position ?p0) (seq.len (element ?p0)))
+    (let ((size (seq.len (element ?p0)) (pos (position ?p0))))
+        (= (element ?_p0) (seq.++ 
+            (seq.extract (element ?p0) 0 pos)
+            (seq.extract (element ?p0) (+ pos 1) (- (- size pos) 1))
+        ))
+    )
+    (= (position ?p_0) (position ?p0))
+))
+;java.util.ListIterator.set(Ljava/lang/Object;)V
+(assert (and 
+    (>= (position ?p0) 0)
+    (< (position ?p0) (seq.len (element ?p0)))
+    (let ((size (seq.len (element ?p0)) (pos (position ?p0))))
+        (= (element ?_p0) (seq.++ 
+            (seq.extract (element ?p0) 0 pos)
+            (seq.unit ?p2)
+            (seq.extract (element ?p0) (+ pos 1) (- (- size pos) 1))
+        ))
+    )
+    (= (position ?p_0) (position ?p0))
+))
+;java.util.ListIterator.add(Ljava/lang/Object;)V
+(assert (and 
+    (>= (position ?p0) 0)
+    (< (position ?p0) (seq.len (element ?p0)))
+    (let ((size (seq.len (element ?p0)) (pos (position ?p0))))
+        (= (element ?_p0) (seq.++ 
+            (seq.extract (element ?p0) 0 pos)
+            (seq.unit ?p2)
+            (seq.extract (element ?p0) pos (- size pos))
+        ))
+    )
+    (= (position ?p_0) (position ?p0))
+))
 ;java.io.FileInputStream.<init>(Ljava/lang/String;)V
 (assert (and 
     (>= (length ?_p0) 0) (<= (length ?_p0) 2048)

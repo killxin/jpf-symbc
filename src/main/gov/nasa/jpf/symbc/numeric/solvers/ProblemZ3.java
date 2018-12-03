@@ -671,9 +671,15 @@ public class ProblemZ3 extends ProblemGeneral {
 		}
 	}
 
+	// add by rhjiang
+	public static Model getCurrentModel() {
+		return Z3Wrapper.getInstance().solver.getModel();
+	}
+	
 	public Boolean solve() {
 		try {
-	        System.out.println("rh: "+Arrays.toString(Arrays.copyOfRange(solver.getAssertions(),2,10)));
+//	        System.out.println("rh: "+Arrays.toString(Arrays.copyOfRange(solver.getAssertions(),2,10)));
+			System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
 //	        Params p = ctx.mkParams();
 //			p.add("timeout", 300000);
 //	        p.add("unsat_core", true);
@@ -1264,11 +1270,17 @@ public class ProblemZ3 extends ProblemGeneral {
 		try {
 			Sort sort = cRef.getSort();
 			if (sort == null) {
+				CollectionExpression ce;
 				switch (cRef.getTypeName()) {
+				case "java.util.List":
 				case "java.util.ArrayList":
 				case "java.util.LinkedList":
-					CollectionExpression ce = (CollectionExpression) cRef;
+					ce = (CollectionExpression) cRef;
 					sort = mkListSort(mkSortFromTypeName(ce.getElementTypeName()));
+					break;
+				case "java.util.ListIterator":
+					ce = (CollectionExpression) cRef;
+					sort = mkListIterator(mkSortFromTypeName(ce.getElementTypeName()));
 					break;
 				case "java.io.FileInputStream":
 					sort = mkFileInputStreamSort();
@@ -1297,13 +1309,33 @@ public class ProblemZ3 extends ProblemGeneral {
 
 	public Map<String, DatatypeSort> dataTypeSortMap = new TreeMap<>();
 
-	public Sort mkListSort(Sort element_sort) {
+	private Sort mkListSort(Sort element_sort) {
 		String sort_name = "List_" + element_sort;
 		if (dataTypeSortMap.containsKey(sort_name)) {
 			return dataTypeSortMap.get(sort_name);
 		} else {
 			String[] size_element = new String[] { "mapping", "element" };
 			Sort[] sorts = new Sort[] { ctx.mkArraySort(element_sort, ctx.mkBoolSort()), ctx.mkSeqSort(element_sort) };
+			int[] sort_refs = null;
+			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
+			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
+			dataTypeSortMap.put(sort_name, sort);
+			System.out.println("Datatype Summary:");
+			System.out.println(sort.getConstructors()[0]);
+			System.out.println(sort.getAccessors()[0][0]);
+			System.out.println(sort.getAccessors()[0][1]);
+			System.out.println("=====");
+			return sort;
+		}
+	}
+	
+	private Sort mkListIterator(Sort element_sort) {
+		String sort_name = "ListIterator_" + element_sort;
+		if (dataTypeSortMap.containsKey(sort_name)) {
+			return dataTypeSortMap.get(sort_name);
+		} else {
+			String[] size_element = new String[] { "position", "element" };
+			Sort[] sorts = new Sort[] { ctx.mkIntSort(), ctx.mkSeqSort(element_sort) };
 			int[] sort_refs = null;
 			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
 			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });

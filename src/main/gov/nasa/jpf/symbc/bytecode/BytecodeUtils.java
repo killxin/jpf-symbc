@@ -19,6 +19,7 @@
 package gov.nasa.jpf.symbc.bytecode;
 
 import gov.nasa.jpf.Config;
+import gov.nasa.jpf.ListenerAdapter;
 import gov.nasa.jpf.jvm.bytecode.JVMInvokeInstruction;
 import gov.nasa.jpf.symbc.arrays.ArrayExpression;
 import gov.nasa.jpf.symbc.heap.Helper;
@@ -47,6 +48,7 @@ import gov.nasa.jpf.vm.MethodInfo;
 import gov.nasa.jpf.vm.StackFrame;
 import gov.nasa.jpf.vm.SystemState;
 import gov.nasa.jpf.vm.ThreadInfo;
+import gov.nasa.jpf.vm.VM;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -167,7 +169,7 @@ public class BytecodeUtils {
          */
         public final Instruction inst;
     }
-
+    
     /**
      * Execute INVOKESPECIAL, INVOKESTATIC, and INVOKEVIRTUAL symbolically.
      * 
@@ -226,17 +228,21 @@ public class BytecodeUtils {
         }
         // End string handling
         
-        // Start list handling
-        SymbolicLibraryHandler slh = new SymbolicLibraryHandler();
-        Instruction handled = slh.handleSymbolicLists(invInst, th);
-        if (handled != null) {
-            return new InstructionOrSuper(false, handled);
+        boolean symlibraries_flag = conf.getBoolean("symbolic.libraries");
+        if(symlibraries_flag) {
+	        // Start library handling
+	        SymbolicLibraryHandler slh = new SymbolicLibraryHandler();
+	        Instruction handled = slh.handleSymbolicLists(invInst, th);
+	        if (handled != null) {
+	            return new InstructionOrSuper(false, handled);
+	        }
         }
-        // End string handling
 
         boolean symClass = BytecodeUtils.isClassSymbolic(conf, cname, mi, mname);
         boolean found = (BytecodeUtils.isMethodSymbolic(conf, longName, argSize, args) || symClass);
         if (found) {
+        	// add by rhjiang
+        	SymbolicLibraryHandler.isSymbolicMethod = true;
             // method is symbolic
 
             // create a choice generator to associate the precondition with it
@@ -353,11 +359,15 @@ public class BytecodeUtils {
                         outputString = outputString.concat(" " + sym_v + ",");
                     } 
                     // add by rhjiang
-                    else if (argTypes[j].equalsIgnoreCase("java.util.ArrayList")) {
+                    else if (symlibraries_flag && argTypes[j].matches("java\\.util\\..+")) {
                     	CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.OBJECT), argTypes[j], true);
                     	expressionMap.put(name, sym_v);
                     	assert sf.isOperandRef(stackIdx);
                         int objRef = sf.peek(stackIdx);
+                        if(CollectionExpression.objRef2elemType.containsKey(objRef)) {
+                        	// ensure the element type
+                        	sym_v.setElementTypeName(CollectionExpression.objRef2elemType.get(objRef));
+                        }
                         ElementInfo ei = th.getModifiableElementInfo(objRef);
                         ei.setObjectAttr(sym_v);
                         outputString = outputString.concat(" " + sym_v + ",");

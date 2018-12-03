@@ -43,16 +43,31 @@ public class SymbolicLibraryHandler {
 			sig2opt.put(opt.getSignature(), opt);
 		}
 	}
+	
+    public static boolean isSymbolicMethod = false;
 
 	public boolean isMethodListSymbolic(JVMInvokeInstruction invInst, ThreadInfo th) {
 		String fullName = invInst.getInvokedMethod().getFullName();
 		LibraryOperation opt = sig2opt.get(fullName);
 		if (opt == null) {
+			// java.util.ArrayList$ListItr.nextIndex()I is too detail
+			String upperName = invInst.getInvokedMethodClassName()+"."+invInst.getInvokedMethodName();
+			opt = sig2opt.get(upperName);
+		}
+		if(opt == null) {
+			return false;
+		} else if(!isSymbolicMethod) {
+			CollectionExpression.ensureElementType(opt, invInst, th);
 			return false;
 		} else {
 			String smtFormat = PCParser.smtFormats.get(opt);
 			if (smtFormat == null) {
-				throw new RuntimeException("error in get LibraryConstraint: " + opt);
+				String className = fullName.substring(0, fullName.lastIndexOf("."));
+				if (className.startsWith("java.lang")) {
+					smtFormat = "java.lang does not need smtFormat";
+				} else {
+					throw new RuntimeException("error in get LibraryConstraint: " + opt);
+				}
 			}
 			if (smtFormat.contains("?_")) {
 				// have side-effect
@@ -109,6 +124,11 @@ public class SymbolicLibraryHandler {
 		if (needToHandle) {
 			String mname = invInst.getInvokedMethod().getFullName();
 			LibraryOperation opt = sig2opt.get(mname);
+			if (opt == null) {
+				// java.util.ArrayList$ListItr.nextIndex()I is too detail
+				String upperName = invInst.getInvokedMethodClassName()+"."+invInst.getInvokedMethodName();
+				opt = sig2opt.get(upperName);
+			}
 			return handleLibraryOperationFromat(opt, invInst, th);
 		}
 		return null;
@@ -168,6 +188,7 @@ public class SymbolicLibraryHandler {
 							System.out.println("create symbolic expression for concrete int " + sym_pi);
 						}
 						paramExps.push(sym_pi);
+						_paramExps.push(null);
 						sf.removeOperandAttr(i, sym_pi);
 					}
 				}
