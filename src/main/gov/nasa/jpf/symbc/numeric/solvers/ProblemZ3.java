@@ -671,22 +671,24 @@ public class ProblemZ3 extends ProblemGeneral {
 		}
 	}
 
+	public static String modelPicture = null;
 	// add by rhjiang
-	public static Model getCurrentModel() {
-		return Z3Wrapper.getInstance().solver.getModel();
+	public static String getCurrentModel() {
+		return modelPicture;
 	}
 	
 	public Boolean solve() {
 		try {
 //	        System.out.println("rh: "+Arrays.toString(Arrays.copyOfRange(solver.getAssertions(),2,10)));
 			System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
-//	        Params p = ctx.mkParams();
-//			p.add("timeout", 300000);
+	        Params p = ctx.mkParams();
+			p.add("timeout", 10000);
 //	        p.add("unsat_core", true);
-//			solver.setParameters(p);
+			solver.setParameters(p);
 			Status status = solver.check();
 			if (Status.SATISFIABLE == status) {
 				System.out.println("********rh: SAT********");
+				modelPicture = solver.getModel().toString();
 //				System.out.println("rh: Model: " + solver.getModel());
 				return true;
 			} 
@@ -1258,7 +1260,7 @@ public class ProblemZ3 extends ProblemGeneral {
 				funcs[i] = func;
 				i++;
 			}
-//			System.out.println(smt);
+			System.out.println(smt);
 			return ctx.parseSMTLIB2String(smt, symbs1, sorts, symbs2, funcs);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -1272,15 +1274,26 @@ public class ProblemZ3 extends ProblemGeneral {
 			if (sort == null) {
 				CollectionExpression ce;
 				switch (cRef.getTypeName()) {
+				case "java.util.Collection":
+				case "java.util.Set":
+				case "java.util.HashSet":
+				case "java.util.TreeSet":
+					ce = (CollectionExpression) cRef;
+					sort = mkSetSort(mkSortFromTypeName(ce.getElementTypeName()));
+					break;
 				case "java.util.List":
 				case "java.util.ArrayList":
 				case "java.util.LinkedList":
 					ce = (CollectionExpression) cRef;
 					sort = mkListSort(mkSortFromTypeName(ce.getElementTypeName()));
 					break;
+				case "java.util.Iterator":
+					ce = (CollectionExpression) cRef;
+					sort = mkIteratorSort(mkSortFromTypeName(ce.getElementTypeName()));
+					break;
 				case "java.util.ListIterator":
 					ce = (CollectionExpression) cRef;
-					sort = mkListIterator(mkSortFromTypeName(ce.getElementTypeName()));
+					sort = mkListIteratorSort(mkSortFromTypeName(ce.getElementTypeName()));
 					break;
 				case "java.io.FileInputStream":
 					sort = mkFileInputStreamSort();
@@ -1309,6 +1322,30 @@ public class ProblemZ3 extends ProblemGeneral {
 
 	public Map<String, DatatypeSort> dataTypeSortMap = new TreeMap<>();
 
+	private Sort mkSetSort(Sort element_sort) {
+		String sort_name = "Set_" + element_sort;
+		if (dataTypeSortMap.containsKey(sort_name)) {
+			return dataTypeSortMap.get(sort_name);
+		} else {
+			String[] size_element = new String[] { "mapping" };
+			Sort[] sorts = new Sort[] { ctx.mkArraySort(element_sort, ctx.mkBoolSort()) };
+			int[] sort_refs = null;
+			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
+			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
+			dataTypeSortMap.put(sort_name, sort);
+			System.out.println("Datatype Summary:");
+			FuncDecl[][] acc = sort.getAccessors();
+			System.out.println(sort.getConstructors()[0]);
+			for (int i = 0; i < acc.length; i++) {
+				for (int j = 0; j < acc[i].length; j++) {
+					System.out.println(sort.getAccessors()[i][j]);
+				}
+			}
+			System.out.println("=====");
+			return sort;
+		}
+	}
+	
 	private Sort mkListSort(Sort element_sort) {
 		String sort_name = "List_" + element_sort;
 		if (dataTypeSortMap.containsKey(sort_name)) {
@@ -1321,15 +1358,43 @@ public class ProblemZ3 extends ProblemGeneral {
 			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
 			dataTypeSortMap.put(sort_name, sort);
 			System.out.println("Datatype Summary:");
+			FuncDecl[][] acc = sort.getAccessors();
 			System.out.println(sort.getConstructors()[0]);
-			System.out.println(sort.getAccessors()[0][0]);
-			System.out.println(sort.getAccessors()[0][1]);
+			for (int i = 0; i < acc.length; i++) {
+				for (int j = 0; j < acc[i].length; j++) {
+					System.out.println(sort.getAccessors()[i][j]);
+				}
+			}
 			System.out.println("=====");
 			return sort;
 		}
 	}
 	
-	private Sort mkListIterator(Sort element_sort) {
+	private Sort mkIteratorSort(Sort element_sort) {
+		String sort_name = "Iterator_" + element_sort;
+		if (dataTypeSortMap.containsKey(sort_name)) {
+			return dataTypeSortMap.get(sort_name);
+		} else {
+			String[] size_element = new String[] { "mapping", "previous" };
+			Sort[] sorts = new Sort[] { ctx.mkArraySort(element_sort, ctx.mkBoolSort()), ctx.mkArraySort(element_sort, ctx.mkBoolSort()) };
+			int[] sort_refs = null;
+			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
+			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
+			dataTypeSortMap.put(sort_name, sort);
+			System.out.println("Datatype Summary:");
+			FuncDecl[][] acc = sort.getAccessors();
+			System.out.println(sort.getConstructors()[0]);
+			for (int i = 0; i < acc.length; i++) {
+				for (int j = 0; j < acc[i].length; j++) {
+					System.out.println(sort.getAccessors()[i][j]);
+				}
+			}
+			System.out.println("=====");
+			return sort;
+		}
+	}
+	
+	private Sort mkListIteratorSort(Sort element_sort) {
 		String sort_name = "ListIterator_" + element_sort;
 		if (dataTypeSortMap.containsKey(sort_name)) {
 			return dataTypeSortMap.get(sort_name);
@@ -1341,9 +1406,13 @@ public class ProblemZ3 extends ProblemGeneral {
 			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
 			dataTypeSortMap.put(sort_name, sort);
 			System.out.println("Datatype Summary:");
+			FuncDecl[][] acc = sort.getAccessors();
 			System.out.println(sort.getConstructors()[0]);
-			System.out.println(sort.getAccessors()[0][0]);
-			System.out.println(sort.getAccessors()[0][1]);
+			for (int i = 0; i < acc.length; i++) {
+				for (int j = 0; j < acc[i].length; j++) {
+					System.out.println(sort.getAccessors()[i][j]);
+				}
+			}
 			System.out.println("=====");
 			return sort;
 		}

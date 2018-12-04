@@ -98,7 +98,36 @@ public class CollectionExpression extends LibraryExpression {
 			String typeName = th.getModifiableElementInfo(sf.peek(0)).getClassInfo().getName();
 			int objRef = sf.peek(1);
 			objRef2elemType.put(objRef, typeName);
-		} else if(opt == LibraryOperation.ARRAYLIST_LISTITERATOR) {
+		} else if(opt == LibraryOperation.COLLECTION_ITERATOR ||
+				opt == LibraryOperation.LIST_ITERATOR ||
+				opt == LibraryOperation.ARRAYLIST_ITERATOR ||
+				opt == LibraryOperation.SET_ITERATOR ||
+				opt == LibraryOperation.HASHSET_ITERATOR ||
+				opt == LibraryOperation.TREESET_ITERATOR ||
+				opt == LibraryOperation.LIST_LISTITERATOR ||
+				opt == LibraryOperation.ARRAYLIST_LISTITERATOR ||
+				opt == LibraryOperation.LINKEDLIST_LISTITERATOR
+		) {
+			int objRef = sf.peek();
+			if(objRef2elemType.containsKey(objRef)) {
+				String typeName = objRef2elemType.get(objRef);
+				Instruction inst = invInst.getInvokedMethod().getLastInsn();
+				th.getVM().addListener(new ListenerAdapter() {
+					@Override
+					public void instructionExecuted(VM vm, ThreadInfo currentThread, Instruction nextInstruction,
+							Instruction executedInstruction) {
+						if (executedInstruction.equals(inst)) {
+							StackFrame frame = th.getModifiableTopFrame();
+							int retRef = frame.peek();
+							objRef2elemType.put(retRef, typeName);
+							vm.removeListener(this);
+						}
+					}
+				});
+			}
+		} else if(opt == LibraryOperation.LIST_LISTITERATOR2 ||
+				opt == LibraryOperation.ARRAYLIST_LISTITERATOR2 
+		) {
 			int objRef = sf.peek(1);
 			if(objRef2elemType.containsKey(objRef)) {
 				String typeName = objRef2elemType.get(objRef);

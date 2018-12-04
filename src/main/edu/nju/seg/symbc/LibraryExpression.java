@@ -39,6 +39,10 @@ public class LibraryExpression extends Expression {
 		return isSYM;
 	}
 	
+	public void setSYM(boolean isSYM) {
+		this.isSYM = isSYM;
+	}
+	
 	public String toString() {
 		return name;
 	}

@@ -229,9 +229,9 @@ public class BytecodeUtils {
         // End string handling
         
         boolean symlibraries_flag = conf.getBoolean("symbolic.libraries");
+        SymbolicLibraryHandler slh = new SymbolicLibraryHandler();
         if(symlibraries_flag) {
 	        // Start library handling
-	        SymbolicLibraryHandler slh = new SymbolicLibraryHandler();
 	        Instruction handled = slh.handleSymbolicLists(invInst, th);
 	        if (handled != null) {
 	            return new InstructionOrSuper(false, handled);

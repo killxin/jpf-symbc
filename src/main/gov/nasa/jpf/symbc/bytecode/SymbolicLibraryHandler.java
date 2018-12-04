@@ -5,6 +5,9 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.bcel.generic.Type;
+
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
@@ -32,8 +35,6 @@ import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.StackFrame;
 import gov.nasa.jpf.vm.ThreadInfo;
 import gov.nasa.jpf.vm.VM;
-
-import org.objectweb.asm.*;
 
 public class SymbolicLibraryHandler {
 
@@ -122,13 +123,16 @@ public class SymbolicLibraryHandler {
 	public Instruction handleSymbolicLists(JVMInvokeInstruction invInst, ThreadInfo th) {
 		boolean needToHandle = isMethodListSymbolic(invInst, th);
 		if (needToHandle) {
-			String mname = invInst.getInvokedMethod().getFullName();
+			// java.util.Collection.size()I cannot be regard as java.util.ArrayList.size()I
+			String mname = invInst.getInvokedMethodClassName()+"."+invInst.getInvokedMethodName();
 			LibraryOperation opt = sig2opt.get(mname);
-			if (opt == null) {
+//			String mname = invInst.getInvokedMethod().getFullName();
+//			LibraryOperation opt = sig2opt.get(mname);
+//			if (opt == null) {
 				// java.util.ArrayList$ListItr.nextIndex()I is too detail
-				String upperName = invInst.getInvokedMethodClassName()+"."+invInst.getInvokedMethodName();
-				opt = sig2opt.get(upperName);
-			}
+//				String upperName = invInst.getInvokedMethodClassName()+"."+invInst.getInvokedMethodName();
+//				opt = sig2opt.get(upperName);
+//			}
 			return handleLibraryOperationFromat(opt, invInst, th);
 		}
 		return null;
@@ -182,7 +186,7 @@ public class SymbolicLibraryHandler {
 						pi.removeObjectAttr(sym_pi);
 					} else {
 						int pi = sf.peek(i);
-						IntegerExpression sym_pi = sf.hasOperandAttr() ? (IntegerExpression) sf.getOperandAttr() : null;
+						IntegerExpression sym_pi = sf.hasOperandAttr(i) ? (IntegerExpression) sf.getOperandAttr(i) : null;
 						if (sym_pi == null) {
 							sym_pi = new IntegerConstant(pi);
 							System.out.println("create symbolic expression for concrete int " + sym_pi);
@@ -193,7 +197,7 @@ public class SymbolicLibraryHandler {
 					}
 				}
 				Type retType = Type.getReturnType(methodDesc);
-				Expression retExp = createReturnExpression(retType, invInst, th);
+				Expression retExp = createReturnExpression(retType, invInst, th, intent);
 				LibraryConstraint cc = new LibraryConstraint(opt, paramExps.toArray(new Expression[] {}), retExp,
 						_paramExps.toArray(new Expression[] {}));
 				pushCC2PC(th, cc);
@@ -304,7 +308,8 @@ public class SymbolicLibraryHandler {
 			Map<ElementInfo, Object> intent = fAttr.symbcInfo;
 			if (intent != null) {
 				for (Entry<ElementInfo, Object> entry : intent.entrySet()) {
-					entry.getKey().setObjectAttr(entry.getValue());
+					ElementInfo ei = entry.getKey();
+					ei.getModifiableInstance().setObjectAttr(entry.getValue());
 				}
 			}
 			frame.removeFrameAttr(fAttr);
@@ -346,27 +351,55 @@ public class SymbolicLibraryHandler {
 		return sym_ei;
 	}
 
-	Expression createReturnExpression(Type retType, Instruction invInst, ThreadInfo th) {
+	Expression createReturnExpression(Type retType, JVMInvokeInstruction invInst, ThreadInfo th, Map<ElementInfo, Object> intent) {
 		Expression retExp;
-		if (retType.getSort() == Type.VOID) {
+		if (retType == Type.VOID) {
 			retExp = null;
-		} else if (retType.getSort() == Type.BOOLEAN) {
-			retExp = new SymbolicInteger(BytecodeUtils.varName("rEturn", VarType.INT), 0, 1);
-		} else if (retType.getSort() == Type.INT) {
-			retExp = new SymbolicInteger(BytecodeUtils.varName("rEturn", VarType.INT));
-		} else if (retType.getSort() == Type.OBJECT) {
-			String typeName = retType.getClassName();
-			if (typeName.equals("java.lang.Object")) {
-				Instruction nextInst = invInst.getNext(th);
-				if (nextInst instanceof CHECKCAST) {
-					CHECKCAST checkCast = (CHECKCAST) nextInst;
-					typeName = checkCast.getTypeName();
+		} else if (retType == Type.BOOLEAN) {
+			retExp = new SymbolicInteger(BytecodeUtils.varName("ret", VarType.INT), 0, 1);
+		} else if (retType == Type.INT) {
+			retExp = new SymbolicInteger(BytecodeUtils.varName("ret", VarType.INT));
+		} else if (retType.getType() == Type.OBJECT.getType()) {
+			CollectionExpression sym_b = null;
+			StackFrame sf = th.getModifiableTopFrame();
+			int objRef = invInst.getArgSize() - 1;
+			if(sf.isOperandRef(objRef)) {
+				ElementInfo base = th.getElementInfo(sf.peek(objRef));
+				if(intent.get(base) instanceof CollectionExpression) {
+					sym_b = (CollectionExpression) intent.get(base);
 				}
 			}
-			if (typeName.equals("java.lang.Integer")) {
-				retExp = new SymbolicInteger(BytecodeUtils.varName("rEturn", VarType.INT));
-			} else {
-				throw new JPFException("object is of type " + retType);
+			String typeName = retType.toString();
+			if(typeName.equals("java.util.Iterator") ||
+				typeName.equals("java.util.List")
+			){
+				String suffix = typeName.substring(typeName.lastIndexOf(".")+1);
+				retExp = new CollectionExpression(BytecodeUtils.varName("ret@"+suffix, VarType.OBJECT), 
+						typeName, false);
+				if(sym_b != null) {
+					((CollectionExpression) retExp)
+						.setElementTypeName(sym_b.getElementTypeName());
+					((CollectionExpression) retExp).setSYM(sym_b.isSYM());
+				}
+			}
+			else {
+				if (typeName.equals("java.lang.Object")) {
+					Instruction nextInst = invInst.getNext(th);
+					if (nextInst instanceof CHECKCAST) {
+						CHECKCAST checkCast = (CHECKCAST) nextInst;
+						typeName = checkCast.getTypeName();
+					}
+				}
+				if (typeName.equals("java.lang.Object") && sym_b != null) {
+					if(sym_b.getElementTypeName() != null) {
+						typeName = sym_b.getElementTypeName();
+					}
+				}
+				if (typeName.equals("java.lang.Integer")) {
+					retExp = new SymbolicInteger(BytecodeUtils.varName("ret", VarType.INT));
+				} else {
+					throw new JPFException("object is of type " + retType);
+				}
 			}
 		} else {
 			throw new JPFException("object is of type " + retType);

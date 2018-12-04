@@ -36,6 +36,5 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/proteus.jar"/>
 	<classpathentry kind="lib" path="/Users/rhjiang/z3-4.8.3/bin/com.microsoft.z3.jar"/>
-	<classpathentry kind="lib" path="lib/asm-7.0.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>
