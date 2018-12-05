@@ -7,7 +7,7 @@
 ))
 (declare-datatypes (K V) (
     (Entry (mk-pair (key K) (value V)))
-    (Map (mk-pair (key (Set K)) (mapping (Array K V))))
+    (Map (mk-pair (key (Array K Bool)) (mapping (Array K V))))
 ))
 (declare-datatypes () (
     (FileInputStream (mk-pair (length Int) (readPosition Int) (isOpen Bool)))
@@ -52,8 +52,8 @@
 ;java.util.TreeSet.add(Ljava/lang/Object;)Z
 (assert (ite 
     (= true (select (mapping ?p0) ?p1))
-    (and (= ?r false) (= (mapping ?_p0) (mapping ?p0)))
-    (and (= ?r true)
+    (and (= ?r 0) (= (mapping ?_p0) (mapping ?p0)))
+    (and (= ?r 1)
         (forall ((x ?T))
             (ite (= x ?p1)
                 (= (select (mapping ?_p0) x) true)
@@ -68,7 +68,7 @@
 ;java.util.TreeSet.remove(Ljava/lang/Object;)Z
 (assert (ite 
     (= true (select (mapping ?p0) ?p1))
-    (and (= ?r true)
+    (and (= ?r 1)
         (forall ((x ?T))
             (ite (= x ?p1)
                 (= (select (mapping ?_p0) x) false)
@@ -76,7 +76,7 @@
             )
         )
     )
-    (and (= ?r false) (= (mapping ?_p0) (mapping ?p0)))
+    (and (= ?r 0) (= (mapping ?_p0) (mapping ?p0)))
 ))
 ;java.util.Collection.containsAll(Ljava/util/Collection;)Z
 ;java.util.Set.containsAll(Ljava/util/Collection;)Z
@@ -258,7 +258,12 @@
 ;java.util.List.size()I
 ;java.util.ArrayList.size()I
 ;java.util.LinkedList.size()I
-(assert (= ?r (seq.len (element ?p0))))
+(assert (and
+    (= ?r (seq.len (element ?p0)))
+    (let ((clause (= (mapping ?p0) ((as const (Array ?T Bool)) false))))
+        (ite (= ?r 0) clause (not clause))
+    )
+))
 ;java.util.List.isEmpty()Z
 ;java.util.ArrayList.isEmpty()Z
 (assert (= ?r 
@@ -300,7 +305,7 @@
 ;java.util.LinkedList.add(Ljava/lang/Object;)Z
 ;java.util.LinkedList.offer(Ljava/lang/Object;)Z
 ;java.util.LinkedList.offerLast(Ljava/lang/Object;)Z
-(assert (= ?r true))
+(assert (= ?r 1))
 (assert (= (element ?_p0) (seq.++ (element ?p0) (seq.unit ?p1))))
 (assert (forall ((x ?T))
     (ite (= x ?p1)
@@ -315,7 +320,7 @@
 (assert (ite
     (seq.contains (element ?p0) (seq.unit ?p1))
     (and 
-        (= ?r true)
+        (= ?r 1)
         (let ((size (seq.len (element ?p0))) (idx (seq.indexof (element ?p0) ?p1)))
             (= (element ?_p0) (seq.++
                 (seq.extract (element ?p0) 0 idx)
@@ -324,7 +329,7 @@
         )
     )
     (and
-        (= ?r false)
+        (= ?r 0)
         (= (element ?_p0) (element ?p0))
         (= (mapping ?_p0) (mapping ?p0))
     )
@@ -541,7 +546,7 @@
     )
 ))
 ;java.util.LinkedList.offerFirst(Ljava/lang/Object;)Z
-(assert (= ?r true))
+(assert (= ?r 1))
 (assert (= (element ?_p0) (seq.++ (seq.unit ?p1) (element ?p0))))
 (assert (forall ((x ?T))
     (ite (= x ?p1)
@@ -553,7 +558,7 @@
 (assert (ite
     (seq.contains (element ?p0) (seq.unit ?p1))
     (and 
-        (= ?r true)
+        (= ?r 1)
         (let ((size (seq.len (element ?p0)))(idx (seq.indexof (element ?p0) ?p1 idx)))
             (= (element ?_p0) (seq.++
                 (seq.extract (element ?p0) 0 idx)
@@ -562,7 +567,7 @@
         )
     )
     (and
-        (= ?r false)
+        (= ?r 0)
         (= (element ?_p0) (element ?p0))
         (= (mapping ?_p0) (mapping ?p0))
     )
@@ -581,14 +586,14 @@
 ;java.util.HashMap.size()I
 ;java.util.TreeMap.size()I
 (assert (ite 
-    (= (key ?p0) ((as const (Array ?K Bool)) false)) 
+    (forall ((k ?K)) (= (select (key ?p0) k) false))
     (= ?r 0) 
     (> ?r 0)
 ))
 ;java.util.Map.isEmpty()Z
 ;java.util.HashMap.isEmpty()Z
 (assert (= ?r 
-    (ite (= (key ?p0) ((as const (Array ?K Bool)) false)) 1 0)
+    (ite (forall ((k ?K)) (= (select (key ?p0) k) false)) 1 0)
 ))
 ;java.util.Map.containsKey(Ljava/lang/Object;)Z
 ;java.util.HashMap.containsKey(Ljava/lang/Object;)Z
@@ -618,37 +623,27 @@
 ;java.util.HashMap.put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 ;java.util.TreeMap.put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 (assert (and
-    (forall (k ?K)
-        (ite (= k ?p1)
-            (and
-                (= (select (key ?_p0) k) true)
-                (= (select (mapping ?_p0) ?p1) ?p2)
-            )
-            (and
-                (= (select (key ?_p0) k) (select (key ?p0) k))
-                (= (select (mapping ?_p0) ?p1) (select (mapping ?p0) ?p1))
-            )
-        )
-    )
+    (= (select (mapping ?p0) ?p1) ?r)
+    (= (select (mapping ?_p0) ?p1) ?p2)
+    (forall ((k ?K)) (or (= k ?p1) (= (select (mapping ?_p0) k) (select (mapping ?p0) k))))
+    (= (select (key ?_p0) ?p1) true)
+    (forall ((k ?K)) (or (= k ?p1) (= (select (key ?_p0) k) (select (key ?p0) k))))
 ))
 ;java.util.Map.remove(Ljava/lang/Object;)Ljava/lang/Object;
 ;java.util.HashMap.remove(Ljava/lang/Object;)Ljava/lang/Object;
 ;java.util.TreeMap.remove(Ljava/lang/Object;)Ljava/lang/Object;
 (assert (and
     (= true (select (key ?p0) ?p1))
-    (forall (k ?K)
-        (ite (= k ?p1)
-            (= (select (key ?_p0) k) false)
-            (= (select (key ?_p0) k) (select (key ?p0) k))
-        )
-    )
+    (= (select (key ?_p0) ?p1) false)
+    (forall ((k ?K)) (or (= k ?p1) (= (select (key ?_p0) k) (select (key ?p0) k))))
     (= (mapping ?_p0) (mapping ?p0))
 ))
 ;java.util.Map.putAll(Ljava/util/Map;)V
 ;java.util.HashMap.putAll(Ljava/util/Map;)V
 ;java.util.TreeMap.putAll(Ljava/util/Map;)V
+    ;maybe timeout
 (assert (forall ((k ?K))
-    (ite (= (select (key ?p1) k) true)
+    (ite (= true (select (key ?p1) k))
         (and 
             (= (select (key ?_p0) k) true)
             (= (select (mapping ?_p0) k) (select (mapping ?p1) k))
@@ -666,7 +661,7 @@
 ;java.util.HashMap.<init>(I)V
 ;java.util.HashMap.<init>()V
 ;java.util.TreeMap.<init>()V
-(assert (= (key ?_p0) ((as const (Array ?K Bool)) false)))
+(assert (forall ((k ?K)) (= (select (key ?p0) k) false)))
 ;java.util.Map.keySet()Ljava/util/Set;
 ;java.util.HashMap.keySet()Ljava/util/Set;
 ;java.util.SortedMap.keySet()Ljava/util/Set;
@@ -682,8 +677,7 @@
 ;java.util.TreeMap.values()Ljava/util/Collection;
 (assert (and 
     (forall ((k ?K)) 
-        (=> 
-            (= true (select (key ?p0) k))
+        (=> (= true (select (key ?p0) k))
             (= true (select (mapping ?r) (select (mapping ?p0) k)))
         )
     )
@@ -715,10 +709,8 @@
         (= ?p2 (select (mapping ?p0) ?p1))
     )
     (and
-        (forall (k ?K)
-            (ite (= k ?p1)
-                (= (select (key ?_p0) k) false)
-                (= (select (key ?_p0) k) (select (key ?p0) k))))
+        (= (select (key ?_p0) ?p1) false)
+        (forall ((k ?K)) (or (= k ?p1) (= (select (key ?_p0) k) (select (key ?p0) k))))
         (= (mapping ?_p0) (mapping ?p0))
     )
     (and
@@ -732,19 +724,10 @@
 (assert (and
     (= true (select (key ?p0) ?p1))
     (= ?r (select (mapping ?p0) ?p1))
-    (forall (k ?K)
-        (ite 
-            (= k ?p1)
-            (and
-                (= (select (key ?_p0) k) true)
-                (= (select (mapping ?_p0) k) ?p2)
-            )
-            (and
-                (= (select (key ?_p0) k) (select (key ?p0) k))
-                (= (select (mapping ?_p0) k) (select (mapping ?p0) k))
-            )
-        )
-    )
+    (= (select (mapping ?_p0) ?p1) ?p2)
+    (forall ((k ?K)) (or (= k ?p1) (= (select (mapping ?_p0) k) (select (mapping ?p0) k))))
+    (= (select (key ?_p0) ?p1) true)
+    (forall ((k ?K)) (or (= k ?p1) (= (select (key ?_p0) k) (select (key ?p0) k))))
 ))
 ;java.util.HashMap.clone()Ljava/lang/Object;
 ;java.util.TreeMap.clone()Ljava/lang/Object;
@@ -803,12 +786,8 @@
         (=> (= true (select (key ?p0) x)) (<= (key ?r) x))
     )
     (= (value ?r) (select (mapping ?p0) (key ?r)))
-    (forall (k ?K)
-        (ite (= k (key ?r))
-            (= (select (key ?_p0) k) false)
-            (= (select (key ?_p0) k) (select (key ?p0) k))
-        )
-    )
+    (= (select (key ?_p0) (key ?r)) false)
+    (forall ((k ?K)) (or (= k (key ?r)) (= (select (key ?_p0) k) (select (key ?p0) k))))
     (= (mapping ?_p0) (mapping ?p0))
 ))
 ;java.util.NavigableMap.pollLastEntry()Ljava/util/Map$Entry;
@@ -819,12 +798,8 @@
         (=> (= true (select (key ?p0) x)) (>= (key ?r) x))
     )
     (= (value ?r) (select (mapping ?p0) (key ?r)))
-    (forall (k ?K)
-        (ite (= k (key ?r))
-            (= (select (key ?_p0) k) false)
-            (= (select (key ?_p0) k) (select (key ?p0) k))
-        )
-    )
+    (= (select (key ?_p0) (key ?r)) false)
+    (forall ((k ?K)) (or (= k (key ?r)) (= (select (key ?_p0) k) (select (key ?p0) k))))
     (= (mapping ?_p0) (mapping ?p0))
 ))
 ;java.util.NavigableMap.lowerEntry(Ljava/lang/Object;)Ljava/util/Map$Entry;

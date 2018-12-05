@@ -2,13 +2,10 @@ package edu.nju.seg.symbc;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import gov.nasa.jpf.ListenerAdapter;
 import gov.nasa.jpf.jvm.bytecode.CHECKCAST;
 import gov.nasa.jpf.jvm.bytecode.JVMInvokeInstruction;
-import gov.nasa.jpf.symbc.numeric.Expression;
-import gov.nasa.jpf.vm.ElementInfo;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.StackFrame;
 import gov.nasa.jpf.vm.ThreadInfo;
@@ -17,16 +14,20 @@ import gov.nasa.jpf.vm.VM;
 public class CollectionExpression extends LibraryExpression {
 	
 	private String elementTypeName;
+	
+	private String[] keyValueTypeNames;
 
 	public CollectionExpression(String name, String typeName, boolean isSYM) {
 		super(name, typeName, isSYM);
 		this.elementTypeName = null;
+		this.keyValueTypeNames = new String[2];
 	}
 
 	public CollectionExpression clone() {
 		CollectionExpression copy = new CollectionExpression(name, typeName, isSYM);
 		copy.setCopyFrom(this);
 		copy.setElementTypeName(this.elementTypeName);
+		copy.setKeyValueTypeNames(this.keyValueTypeNames[0], this.keyValueTypeNames[1]);
 		return copy;
 	}
 
@@ -34,14 +35,30 @@ public class CollectionExpression extends LibraryExpression {
 		return elementTypeName;
 	}
 	
-	public String getElementSort() {
-		switch (elementTypeName) {
+	public String[] getKeyValueTypeNames() {
+		return keyValueTypeNames;
+	}
+	
+	private String getSort(String typeName) {
+		switch (typeName) {
 		case "java.lang.Integer":
 		case "java.lang.Byte":
 			return "Int";
 		default:
-			return elementTypeName;
+			return typeName;
 		}
+	}
+	
+	public String getElementSort() {
+		return getSort(elementTypeName);
+	}
+	
+	public String getKeySort() {
+		return getSort(keyValueTypeNames[0]);
+	}
+	
+	public String getValueSort() {
+		return getSort(keyValueTypeNames[1]);
 	}
 	
 	public CollectionExpression getCopyFrom() {
@@ -52,31 +69,54 @@ public class CollectionExpression extends LibraryExpression {
 		this.copyFrom = copyFrom;
 	}
 
-	public void setElementTypeName(String elementTypeName) {
-		this.elementTypeName = elementTypeName;
+	public void setElementTypeName(String elementType) {
+		this.elementTypeName = elementType;
 		CollectionExpression pre = getCopyFrom();
 		while(pre != null && pre.getElementTypeName() == null) {
-			pre.setElementTypeName(elementTypeName);
+			pre.setElementTypeName(elementType);
 			pre = pre.getCopyFrom();
 		}
 	}
 	
-	public void setElementTypeName(LibraryOperation opt, JVMInvokeInstruction invInst, ThreadInfo th) {
+	public void setKeyTypeName(String keyType) {
+		this.keyValueTypeNames[0] = keyType;
+		CollectionExpression pre = getCopyFrom();
+		while(pre != null && pre.getElementTypeName() == null) {
+			pre.setKeyTypeName(keyType);
+			pre = pre.getCopyFrom();
+		}
+	}
+	
+	public void setValueTypeName(String valueType) {
+		this.keyValueTypeNames[1] = valueType;
+		CollectionExpression pre = getCopyFrom();
+		while(pre != null && pre.getElementTypeName() == null) {
+			pre.setValueTypeName(valueType);
+			pre = pre.getCopyFrom();
+		}
+	}
+	
+	public void setKeyValueTypeNames(String keyType, String valueType) {
+		this.keyValueTypeNames[0] = keyType;
+		this.keyValueTypeNames[1] = valueType;
+		CollectionExpression pre = getCopyFrom();
+		while(pre != null && pre.getElementTypeName() == null) {
+			pre.setKeyValueTypeNames(keyType, valueType);
+			pre = pre.getCopyFrom();
+		}
+	}
+	
+	public void setElementOrKeyValueTypes(LibraryOperation opt, JVMInvokeInstruction invInst, ThreadInfo th) {
 		StackFrame sf = th.getTopFrame();
 		if(getElementTypeName() == null) {
-			if(opt == LibraryOperation.LIST_ADD ||
-					opt == LibraryOperation.ARRAYLIST_ADD ||
-					opt == LibraryOperation.LINKEDLIST_ADD ||
-					opt == LibraryOperation.LIST_ADD2 ||
-					opt == LibraryOperation.ARRAYLIST_ADD2 ||
-					opt == LibraryOperation.LINKEDLIST_ADD2
+			String optSig = opt.getSignature();
+			if(optSig.contains("contains(Ljava/lang/Object;)") ||
+					optSig.contains("add(Ljava/lang/Object;)") ||
+					optSig.contains("add(ILjava/lang/Object;)") 
 			) {
-				String typeName = th.getModifiableElementInfo(sf.peek(0)).getClassInfo().getName();
+				String typeName = th.getElementInfo(sf.peek(0)).getClassInfo().getName();
 				setElementTypeName(typeName);
-			} else if(opt == LibraryOperation.LIST_GET ||
-					opt == LibraryOperation.ARRAYLIST_GET ||
-					opt == LibraryOperation.LINKEDLIST_GET
-			) {
+			} else if(optSig.contains("get(I)Ljava/lang/Object;")) {
 				Instruction nextInst = invInst.getNext(th);
 				if(nextInst instanceof CHECKCAST) {
 					CHECKCAST checkCast = (CHECKCAST) nextInst;
@@ -85,32 +125,54 @@ public class CollectionExpression extends LibraryExpression {
 				}
 			}
 		}
+		if(getKeyValueTypeNames()[0] == null || getKeyValueTypeNames()[1] == null) {
+			String optSig = opt.getSignature();
+			if(optSig.contains("put(Ljava/lang/Object;Ljava/lang/Object;)")) {
+				String valueType = th.getElementInfo(sf.peek(0)).getClassInfo().getName();
+				String keyType = th.getElementInfo(sf.peek(1)).getClassInfo().getName();
+				setKeyValueTypeNames(keyType, valueType);
+			} else if(optSig.contains("get(Ljava/lang/Object;)Ljava/lang/Object;")) {
+				String keyType = th.getElementInfo(sf.peek(0)).getClassInfo().getName();
+				setKeyTypeName(keyType);
+				Instruction nextInst = invInst.getNext(th);
+				if(nextInst instanceof CHECKCAST) {
+					CHECKCAST checkCast = (CHECKCAST) nextInst;
+					String valueType = checkCast.getTypeName();
+					setValueTypeName(valueType);
+				}
+			} else if(optSig.contains("containsKey")) {
+				String keyType = th.getElementInfo(sf.peek(0)).getClassInfo().getName();
+				setKeyTypeName(keyType);
+			} else if(optSig.contains("containsValue")) {
+				String valueType = th.getElementInfo(sf.peek(0)).getClassInfo().getName();
+				setValueTypeName(valueType);
+			}
+		}
 	}
 	
-	public static Map<Integer, String> objRef2elemType = new HashMap<>();
+	public static Map<Integer, String> objRef2ElemType = new HashMap<>();
+	public static Map<Integer, String[]> objRef2KVTypes = new HashMap<>();
 	
-	public static void ensureElementType(LibraryOperation opt, JVMInvokeInstruction invInst, ThreadInfo th) {
+	public static void ensureElementOrKeyValueTypes(LibraryOperation opt, JVMInvokeInstruction invInst, ThreadInfo th) {
 		StackFrame sf = th.getTopFrame();
-		if(opt == LibraryOperation.LIST_ADD ||
-				opt == LibraryOperation.ARRAYLIST_ADD ||
-				opt == LibraryOperation.LINKEDLIST_ADD
+		String optSig = opt.getSignature();
+		if(optSig.contains("add(Ljava/lang/Object;)") ||
+				optSig.contains("add(ILjava/lang/Object;)")
 		) {
 			String typeName = th.getModifiableElementInfo(sf.peek(0)).getClassInfo().getName();
 			int objRef = sf.peek(1);
-			objRef2elemType.put(objRef, typeName);
-		} else if(opt == LibraryOperation.COLLECTION_ITERATOR ||
-				opt == LibraryOperation.LIST_ITERATOR ||
-				opt == LibraryOperation.ARRAYLIST_ITERATOR ||
-				opt == LibraryOperation.SET_ITERATOR ||
-				opt == LibraryOperation.HASHSET_ITERATOR ||
-				opt == LibraryOperation.TREESET_ITERATOR ||
-				opt == LibraryOperation.LIST_LISTITERATOR ||
-				opt == LibraryOperation.ARRAYLIST_LISTITERATOR ||
-				opt == LibraryOperation.LINKEDLIST_LISTITERATOR
+			objRef2ElemType.put(objRef, typeName);
+		} else if(optSig.contains("put(Ljava/lang/Object;Ljava/lang/Object;)")) {
+			String valueType = th.getModifiableElementInfo(sf.peek(0)).getClassInfo().getName();
+			String keyType = th.getModifiableElementInfo(sf.peek(1)).getClassInfo().getName();
+			int objRef = sf.peek(2);
+			objRef2KVTypes.put(objRef, new String[] {keyType, valueType});
+		} else if(optSig.contains("iterator()") ||
+				optSig.contains("listIterator()") 
 		) {
 			int objRef = sf.peek();
-			if(objRef2elemType.containsKey(objRef)) {
-				String typeName = objRef2elemType.get(objRef);
+			if(objRef2ElemType.containsKey(objRef)) {
+				String typeName = objRef2ElemType.get(objRef);
 				Instruction inst = invInst.getInvokedMethod().getLastInsn();
 				th.getVM().addListener(new ListenerAdapter() {
 					@Override
@@ -119,18 +181,16 @@ public class CollectionExpression extends LibraryExpression {
 						if (executedInstruction.equals(inst)) {
 							StackFrame frame = th.getModifiableTopFrame();
 							int retRef = frame.peek();
-							objRef2elemType.put(retRef, typeName);
+							objRef2ElemType.put(retRef, typeName);
 							vm.removeListener(this);
 						}
 					}
 				});
 			}
-		} else if(opt == LibraryOperation.LIST_LISTITERATOR2 ||
-				opt == LibraryOperation.ARRAYLIST_LISTITERATOR2 
-		) {
+		} else if(optSig.contains("listIterator(I)")) {
 			int objRef = sf.peek(1);
-			if(objRef2elemType.containsKey(objRef)) {
-				String typeName = objRef2elemType.get(objRef);
+			if(objRef2ElemType.containsKey(objRef)) {
+				String typeName = objRef2ElemType.get(objRef);
 				Instruction inst = invInst.getInvokedMethod().getLastInsn();
 				th.getVM().addListener(new ListenerAdapter() {
 					@Override
@@ -139,7 +199,7 @@ public class CollectionExpression extends LibraryExpression {
 						if (executedInstruction.equals(inst)) {
 							StackFrame frame = th.getModifiableTopFrame();
 							int retRef = frame.peek();
-							objRef2elemType.put(retRef, typeName);
+							objRef2ElemType.put(retRef, typeName);
 							vm.removeListener(this);
 						}
 					}

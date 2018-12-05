@@ -1,8 +1,12 @@
 package gov.nasa.jpf.symbc.bytecode;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,78 +48,88 @@ public class SymbolicLibraryHandler {
 			sig2opt.put(opt.getSignature(), opt);
 		}
 	}
-	
-    public static boolean isSymbolicMethod = false;
 
 	public boolean isMethodListSymbolic(JVMInvokeInstruction invInst, ThreadInfo th) {
-		String fullName = invInst.getInvokedMethod().getFullName();
-		LibraryOperation opt = sig2opt.get(fullName);
+//		String fullName = invInst.getInvokedMethod().getFullName();
+//		LibraryOperation opt = sig2opt.get(fullName);
+//		if (opt == null) {
+//			// java.util.ArrayList$ListItr.nextIndex()I is too detail
+//			String upperName = invInst.getInvokedMethodClassName()+"."+invInst.getInvokedMethodName();
+//			opt = sig2opt.get(upperName);
+//		}
+		// java.util.Collection.size()I cannot be regard as java.util.ArrayList.size()I
+		String mname = invInst.getInvokedMethodClassName() + "." + invInst.getInvokedMethodName();
+		LibraryOperation opt = sig2opt.get(mname);
 		if (opt == null) {
-			// java.util.ArrayList$ListItr.nextIndex()I is too detail
-			String upperName = invInst.getInvokedMethodClassName()+"."+invInst.getInvokedMethodName();
-			opt = sig2opt.get(upperName);
-		}
-		if(opt == null) {
-			return false;
-		} else if(!isSymbolicMethod) {
-			CollectionExpression.ensureElementType(opt, invInst, th);
 			return false;
 		} else {
-			String smtFormat = PCParser.smtFormats.get(opt);
-			if (smtFormat == null) {
-				String className = fullName.substring(0, fullName.lastIndexOf("."));
-				if (className.startsWith("java.lang")) {
-					smtFormat = "java.lang does not need smtFormat";
-				} else {
-					throw new RuntimeException("error in get LibraryConstraint: " + opt);
-				}
-			}
-			if (smtFormat.contains("?_")) {
-				// have side-effect
-				StackFrame sf = th.getModifiableTopFrame();
-				int numStackSlots = invInst.getArgSize();
-				for (int i = 0; i < numStackSlots; i++) {
-					if (sf.isOperandRef(i)) {
-						ElementInfo ei = th.getModifiableElementInfo(sf.peek(i));
-						Expression sym_v1 = (Expression) sf.getOperandAttr(i);
-						if (sym_v1 != null) {
-							// copy the attr from stack to heap for object
-							ei.setObjectAttr(sym_v1);
-						}
+			boolean inSymMet = BytecodeUtils.isMethodSymbolic(th.getVM().getConfig(), 
+					invInst.getMethodInfo().getFullName(),
+					invInst.getMethodInfo().getArgumentsSize(), null);
+			if (!inSymMet) {
+				CollectionExpression.ensureElementOrKeyValueTypes(opt, invInst, th);
+				return false;
+			} else {
+				String smtFormat = PCParser.smtFormats.get(opt);
+				if (smtFormat == null) {
+//				String className = fullName.substring(0, fullName.lastIndexOf("."));
+					String className = invInst.getInvokedMethodClassName();
+					if (className.startsWith("java.lang")) {
+						smtFormat = "java.lang does not need smtFormat";
+					} else {
+						throw new RuntimeException("error in get LibraryConstraint: " + opt);
 					}
 				}
-				return true;
-			} else {
-				StackFrame sf = th.getModifiableTopFrame();
-				int numParams = invInst.getArgSize();
-				for (int i = 0; i < numParams; i++) {
-					if (sf.isOperandRef(i)) {
-						ElementInfo ei = th.getModifiableElementInfo(sf.peek(i));
-						Expression sym_pi = (Expression) sf.getOperandAttr(i);
-						if (sym_pi != null) {
-							// copy the attr from stack to heap for object
-							ei.setObjectAttr(sym_pi);
-						} else {
-							sym_pi = (Expression) ei.getObjectAttr();
-							if (sym_pi == null) {
-								continue;
+				if (smtFormat.contains("?_")) {
+					// have side-effect
+					StackFrame sf = th.getModifiableTopFrame();
+					int numStackSlots = invInst.getArgSize();
+					for (int i = 0; i < numStackSlots; i++) {
+						if (sf.isOperandRef(i)) {
+							ElementInfo ei = th.getModifiableElementInfo(sf.peek(i));
+							Expression sym_v1 = (Expression) sf.getOperandAttr(i);
+							if (sym_v1 != null) {
+								// copy the attr from stack to heap for object
+								ei.setObjectAttr(sym_v1);
 							}
 						}
-						if (sym_pi instanceof LibraryExpression) {
-							if (((LibraryExpression) sym_pi).isSYM()) {
+					}
+					return true;
+				} else {
+					StackFrame sf = th.getModifiableTopFrame();
+					int numParams = invInst.getArgSize();
+					for (int i = 0; i < numParams; i++) {
+						if (sf.isOperandRef(i)) {
+							ElementInfo ei = th.getModifiableElementInfo(sf.peek(i));
+							Expression sym_pi = (Expression) sf.getOperandAttr(i);
+							if (sym_pi != null) {
+								// copy the attr from stack to heap for object
+								ei.setObjectAttr(sym_pi);
+							} else {
+								sym_pi = (Expression) ei.getObjectAttr();
+								if (sym_pi == null) {
+									continue;
+								}
+							}
+							if (sym_pi instanceof LibraryExpression) {
+								if (((LibraryExpression) sym_pi).isSYM()) {
+									return true;
+								} else if(sym_pi instanceof CollectionExpression) {
+									// assert !bag.containsValue(0);
+									((CollectionExpression) sym_pi).setElementOrKeyValueTypes(opt, invInst, th);
+								}
+							} else {
 								return true;
 							}
 						} else {
-							return true;
-						}
-					} else {
-						Expression sym_v1 = (Expression) sf.getOperandAttr(i);
-						if (sym_v1 != null) {
-							return true;
+							Expression sym_v1 = (Expression) sf.getOperandAttr(i);
+							if (sym_v1 != null) {
+								return true;
+							}
 						}
 					}
+					return false;
 				}
-				return false;
 			}
 		}
 	}
@@ -124,12 +138,12 @@ public class SymbolicLibraryHandler {
 		boolean needToHandle = isMethodListSymbolic(invInst, th);
 		if (needToHandle) {
 			// java.util.Collection.size()I cannot be regard as java.util.ArrayList.size()I
-			String mname = invInst.getInvokedMethodClassName()+"."+invInst.getInvokedMethodName();
+			String mname = invInst.getInvokedMethodClassName() + "." + invInst.getInvokedMethodName();
 			LibraryOperation opt = sig2opt.get(mname);
 //			String mname = invInst.getInvokedMethod().getFullName();
 //			LibraryOperation opt = sig2opt.get(mname);
 //			if (opt == null) {
-				// java.util.ArrayList$ListItr.nextIndex()I is too detail
+			// java.util.ArrayList$ListItr.nextIndex()I is too detail
 //				String upperName = invInst.getInvokedMethodClassName()+"."+invInst.getInvokedMethodName();
 //				opt = sig2opt.get(upperName);
 //			}
@@ -138,12 +152,17 @@ public class SymbolicLibraryHandler {
 		return null;
 	}
 
-	public Instruction handleLibraryOperationFromat(LibraryOperation opt, JVMInvokeInstruction invInst,
-			ThreadInfo th) {
-		String fullName = invInst.getInvokedMethod().getFullName();
-		int offset = fullName.lastIndexOf(".");
-		String className = fullName.substring(0, offset);
-		String methodDesc = fullName.substring(offset + 1);
+	public Instruction handleLibraryOperationFromat(LibraryOperation opt, JVMInvokeInstruction invInst, ThreadInfo th) {
+//		String fullName = invInst.getInvokedMethod().getFullName();
+//		int offset = fullName.lastIndexOf(".");
+//		String className = fullName.substring(0, offset);
+//		String methodDesc = fullName.substring(offset + 1);
+		String className = invInst.getInvokedMethodClassName();
+		String methodDesc = invInst.getInvokedMethodName();
+		String fullName = className + "." + methodDesc;
+		if(fullName.equals("java.util.HashMap.put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;")){
+		System.out.println(fullName);
+		}
 		if (className.startsWith("java.util") || className.startsWith("java.io")) {
 			ChoiceGenerator<?> cg;
 			if (!th.isFirstStepInsn()) {
@@ -170,7 +189,7 @@ public class SymbolicLibraryHandler {
 						}
 						// determine the element type of collection
 						if (sym_pi instanceof CollectionExpression) {
-							((CollectionExpression) sym_pi).setElementTypeName(opt, invInst, th);
+							((CollectionExpression) sym_pi).setElementOrKeyValueTypes(opt, invInst, th);
 						}
 						paramExps.push(sym_pi);
 						if (sym_pi instanceof LibraryExpression && smtFormat.contains("?_p" + (numParams - i - 1))) {
@@ -186,7 +205,8 @@ public class SymbolicLibraryHandler {
 						pi.removeObjectAttr(sym_pi);
 					} else {
 						int pi = sf.peek(i);
-						IntegerExpression sym_pi = sf.hasOperandAttr(i) ? (IntegerExpression) sf.getOperandAttr(i) : null;
+						IntegerExpression sym_pi = sf.hasOperandAttr(i) ? (IntegerExpression) sf.getOperandAttr(i)
+								: null;
 						if (sym_pi == null) {
 							sym_pi = new IntegerConstant(pi);
 							System.out.println("create symbolic expression for concrete int " + sym_pi);
@@ -276,7 +296,7 @@ public class SymbolicLibraryHandler {
 		assert pc != null;
 		// if currentPC has constraints, append them to pc
 		LibraryConstraint currentLPC = ((PCChoiceGenerator) cg).getCurrentPC().lpc.header;
-		while(currentLPC != null) {
+		while (currentLPC != null) {
 			pc.lpc._addOpt(currentLPC);
 			currentLPC = currentLPC.and;
 		}
@@ -294,11 +314,15 @@ public class SymbolicLibraryHandler {
 			if (retExp != null) {
 				if (frame.isOperandRef()) {
 					int retRef = frame.peek();
-					ElementInfo retEI = th.getModifiableElementInfo(retRef);
-					System.out.println("RET " + retRef);
-					System.out.println("RET (before set attr)" + retEI.getObjectAttr());
-					retEI.setObjectAttr(retExp);
-					System.out.println("RET " + retEI.getObjectAttr());
+					if(retRef != 0) {
+						ElementInfo retEI = th.getModifiableElementInfo(retRef);
+						System.out.println("RET " + retRef);
+						System.out.println("RET (before set attr)" + retEI.getObjectAttr());
+						retEI.setObjectAttr(retExp);
+						System.out.println("RET " + retEI.getObjectAttr());
+					} else {
+						System.out.println("RET null");
+					}
 				} else {
 					frame.setOperandAttr(retExp);
 					System.out.println("RET " + frame.getOperandAttr());
@@ -325,10 +349,19 @@ public class SymbolicLibraryHandler {
 			sym_ei = new IntegerConstant(ei.asInteger());
 			System.out.println("create symbolic expression for concrete Integer " + sym_ei);
 		} else if (typeName.equals("java.util.ArrayList")) {
-			sym_ei = new CollectionExpression(BytecodeUtils.varName("AL@" + ei.getObjectRef(), VarType.OBJECT),
+			sym_ei = new CollectionExpression(BytecodeUtils.varName("List@" + ei.getObjectRef(), VarType.OBJECT),
 					typeName, false);
 			System.out.println("create symbolic expression for empty ArrayList " + sym_ei);
-		} else if (typeName.equals("java.io.FileInputStream")) {
+		} else if (typeName.equals("java.util.HashSet")) {
+			sym_ei = new CollectionExpression(BytecodeUtils.varName("Set@" + ei.getObjectRef(), VarType.OBJECT),
+					typeName, false);
+			System.out.println("create symbolic expression for empty HashSet " + sym_ei);
+		} else if (typeName.equals("java.util.HashMap")) {
+			sym_ei = new CollectionExpression(BytecodeUtils.varName("Map@" + ei.getObjectRef(), VarType.OBJECT),
+					typeName, false);
+			System.out.println("create symbolic expression for empty HashMap " + sym_ei);
+		}
+		else if (typeName.equals("java.io.FileInputStream")) {
 			sym_ei = new FileExpression(BytecodeUtils.varName("FI@" + ei.getObjectRef(), VarType.OBJECT), typeName,
 					false);
 			System.out.println("create symbolic expression for empty FileInputStream " + sym_ei);
@@ -351,7 +384,8 @@ public class SymbolicLibraryHandler {
 		return sym_ei;
 	}
 
-	Expression createReturnExpression(Type retType, JVMInvokeInstruction invInst, ThreadInfo th, Map<ElementInfo, Object> intent) {
+	Expression createReturnExpression(Type retType, JVMInvokeInstruction invInst, ThreadInfo th,
+			Map<ElementInfo, Object> intent) {
 		Expression retExp;
 		if (retType == Type.VOID) {
 			retExp = null;
@@ -363,26 +397,22 @@ public class SymbolicLibraryHandler {
 			CollectionExpression sym_b = null;
 			StackFrame sf = th.getModifiableTopFrame();
 			int objRef = invInst.getArgSize() - 1;
-			if(sf.isOperandRef(objRef)) {
+			if (sf.isOperandRef(objRef)) {
 				ElementInfo base = th.getElementInfo(sf.peek(objRef));
-				if(intent.get(base) instanceof CollectionExpression) {
+				if (intent.get(base) instanceof CollectionExpression) {
 					sym_b = (CollectionExpression) intent.get(base);
 				}
 			}
 			String typeName = retType.toString();
-			if(typeName.equals("java.util.Iterator") ||
-				typeName.equals("java.util.List")
-			){
-				String suffix = typeName.substring(typeName.lastIndexOf(".")+1);
-				retExp = new CollectionExpression(BytecodeUtils.varName("ret@"+suffix, VarType.OBJECT), 
-						typeName, false);
-				if(sym_b != null) {
-					((CollectionExpression) retExp)
-						.setElementTypeName(sym_b.getElementTypeName());
+			if (typeName.equals("java.util.Iterator") || typeName.equals("java.util.List")) {
+				String suffix = typeName.substring(typeName.lastIndexOf(".") + 1);
+				retExp = new CollectionExpression(BytecodeUtils.varName("ret@" + suffix, VarType.OBJECT), typeName,
+						false);
+				if (sym_b != null) {
+					((CollectionExpression) retExp).setElementTypeName(sym_b.getElementTypeName());
 					((CollectionExpression) retExp).setSYM(sym_b.isSYM());
 				}
-			}
-			else {
+			} else {
 				if (typeName.equals("java.lang.Object")) {
 					Instruction nextInst = invInst.getNext(th);
 					if (nextInst instanceof CHECKCAST) {
@@ -391,13 +421,16 @@ public class SymbolicLibraryHandler {
 					}
 				}
 				if (typeName.equals("java.lang.Object") && sym_b != null) {
-					if(sym_b.getElementTypeName() != null) {
+					if (sym_b.getElementTypeName() != null) {
 						typeName = sym_b.getElementTypeName();
+					} else if(sym_b.getKeyValueTypeNames()[1] != null) {
+						typeName = sym_b.getKeyValueTypeNames()[1];
 					}
 				}
 				if (typeName.equals("java.lang.Integer")) {
 					retExp = new SymbolicInteger(BytecodeUtils.varName("ret", VarType.INT));
 				} else {
+					System.out.println(sym_b.getKeyValueTypeNames()[0]);
 					throw new JPFException("object is of type " + retType);
 				}
 			}

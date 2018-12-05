@@ -241,8 +241,7 @@ public class BytecodeUtils {
         boolean symClass = BytecodeUtils.isClassSymbolic(conf, cname, mi, mname);
         boolean found = (BytecodeUtils.isMethodSymbolic(conf, longName, argSize, args) || symClass);
         if (found) {
-        	// add by rhjiang
-        	SymbolicLibraryHandler.isSymbolicMethod = true;
+        	
             // method is symbolic
 
             // create a choice generator to associate the precondition with it
@@ -364,9 +363,14 @@ public class BytecodeUtils {
                     	expressionMap.put(name, sym_v);
                     	assert sf.isOperandRef(stackIdx);
                         int objRef = sf.peek(stackIdx);
-                        if(CollectionExpression.objRef2elemType.containsKey(objRef)) {
+                        if(CollectionExpression.objRef2ElemType.containsKey(objRef)) {
                         	// ensure the element type
-                        	sym_v.setElementTypeName(CollectionExpression.objRef2elemType.get(objRef));
+                        	sym_v.setElementTypeName(CollectionExpression.objRef2ElemType.get(objRef));
+                        }
+                        if(CollectionExpression.objRef2KVTypes.containsKey(objRef)) {
+                        	// ensure the key-value types
+                        	String[] kvTypes = CollectionExpression.objRef2KVTypes.get(objRef);
+                        	sym_v.setKeyValueTypeNames(kvTypes[0], kvTypes[1]);
                         }
                         ElementInfo ei = th.getModifiableElementInfo(objRef);
                         ei.setObjectAttr(sym_v);

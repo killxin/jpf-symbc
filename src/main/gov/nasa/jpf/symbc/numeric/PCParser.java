@@ -74,6 +74,7 @@ import edu.nju.seg.symbc.CollectionExpression;
 import edu.nju.seg.symbc.LibraryConstraint;
 import edu.nju.seg.symbc.LibraryExpression;
 import edu.nju.seg.symbc.LibraryOperation;
+import edu.nju.seg.symbc.UnknownElementTypeException;
 
 
 // parses PCs
@@ -1160,7 +1161,7 @@ getExpression(stoex.value)), newae));
 	}
   
   	public static Map<LibraryExpression,Object> symLibraryVar;
-	static Object getExpression(LibraryExpression eRef) {
+	static Object getExpression(LibraryExpression eRef) throws UnknownElementTypeException {
 		ProblemZ3 pbz3 = (ProblemZ3)pb;
 	 assert eRef != null;
 	 Object dp_var = symLibraryVar.get(eRef);
@@ -1175,19 +1176,44 @@ getExpression(stoex.value)), newae));
 		ProblemZ3 pbz3 = (ProblemZ3)pb;
 		if(smtFormats.containsKey(cRef.getOpt())) {
 			String smt = smtFormats.get(cRef.getOpt());
-			for(int i=0;i<cRef.getParams().length;i++) {
-				Expression pi = cRef.getParams()[i];
-				Expression _pi = cRef._getParams()[i];
-				smt = smt.replaceAll("\\?p"+i, exp2str(pi));
-				smt = smt.replaceAll("\\?_p"+i, exp2str(_pi));
-			}
-			smt = smt.replaceAll("\\?r", exp2str(cRef.getrEturn()));
-			if(smt.contains("?T")) {
-				CollectionExpression base = (CollectionExpression) cRef.getParams()[0];
-				if(base == null) {
-					base = (CollectionExpression) cRef._getParams()[0];
+			try {
+				for(int i=0;i<cRef.getParams().length;i++) {
+					Expression pi = cRef.getParams()[i];
+					Expression _pi = cRef._getParams()[i];
+					smt = smt.replaceAll("\\?p"+i, exp2str(pi));
+					smt = smt.replaceAll("\\?_p"+i, exp2str(_pi));
 				}
-				smt = smt.replaceAll("\\?T", base.getElementSort());
+				smt = smt.replaceAll("\\?r", exp2str(cRef.getrEturn()));
+				if(smt.contains("?T")) {
+					CollectionExpression base = (CollectionExpression) cRef.getParams()[0];
+					if(base == null) {
+						base = (CollectionExpression) cRef._getParams()[0];
+					}
+					if(base.getElementSort() == null) {
+						// base symbol should be lazy instantiated until its elementType is ensured
+						smt = "";
+						System.out.println("rhWarning: base symbol should be lazy instantiated until its elementType is ensured " + base);
+					} else {
+						smt = smt.replaceAll("\\?T", base.getElementSort());
+					}
+				}
+				if(smt.contains("?K") || smt.contains("?V")) {
+					CollectionExpression base = (CollectionExpression) cRef.getParams()[0];
+					if(base == null) {
+						base = (CollectionExpression) cRef._getParams()[0];
+					}
+					if(base.getKeyValueTypeNames()[0] == null || base.getKeyValueTypeNames()[1] == null) {
+						// base symbol should be lazy instantiated until its keyValueTypes are ensured
+						smt = "";
+						System.out.println("rhWarning: base symbol should be lazy instantiated until its keyValueTypes are ensured " + base);
+					} else {
+						smt = smt.replaceAll("\\?K", base.getKeySort());
+						smt = smt.replaceAll("\\?V", base.getValueSort());
+					}
+				}
+			} catch (UnknownElementTypeException e) {
+				System.err.println(e.getMessage());
+				return true;
 			}
 			Arrays.stream(pbz3.parseSMTLIB2String(smt)).forEach(x->pbz3.post(x));
 		} else {
@@ -1236,7 +1262,7 @@ getExpression(stoex.value)), newae));
         }
 	}
 	
-	public static String exp2str(Expression exp) {
+	public static String exp2str(Expression exp) throws UnknownElementTypeException {
 		if(exp == null) {
 			return "";
 		} else if(exp instanceof LibraryExpression) {

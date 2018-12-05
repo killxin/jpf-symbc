@@ -48,6 +48,7 @@ import com.microsoft.z3.*;
 
 import edu.nju.seg.symbc.CollectionExpression;
 import edu.nju.seg.symbc.LibraryExpression;
+import edu.nju.seg.symbc.UnknownElementTypeException;
 import gov.nasa.jpf.JPFException;
 import gov.nasa.jpf.symbc.SymbolicInstructionFactory;
 import gov.nasa.jpf.symbc.numeric.PCParser;
@@ -78,6 +79,8 @@ public class ProblemZ3 extends ProblemGeneral {
 		private Z3Wrapper() {
 			HashMap<String, String> cfg = new HashMap<String, String>();
 			cfg.put("model", "true");
+			// add by rhjiang
+//			cfg.put("timeout", "5000");
 			ctx = new Context(cfg);
 			solver = ctx.mkSolver();
 		}
@@ -681,10 +684,6 @@ public class ProblemZ3 extends ProblemGeneral {
 		try {
 //	        System.out.println("rh: "+Arrays.toString(Arrays.copyOfRange(solver.getAssertions(),2,10)));
 			System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
-	        Params p = ctx.mkParams();
-			p.add("timeout", 10000);
-//	        p.add("unsat_core", true);
-			solver.setParameters(p);
 			Status status = solver.check();
 			if (Status.SATISFIABLE == status) {
 				System.out.println("********rh: SAT********");
@@ -1268,7 +1267,7 @@ public class ProblemZ3 extends ProblemGeneral {
 		}
 	}
 
-	public Object makeLibraryVar(LibraryExpression cRef) {
+	public Object makeLibraryVar(LibraryExpression cRef) throws UnknownElementTypeException {
 		try {
 			Sort sort = cRef.getSort();
 			if (sort == null) {
@@ -1279,20 +1278,42 @@ public class ProblemZ3 extends ProblemGeneral {
 				case "java.util.HashSet":
 				case "java.util.TreeSet":
 					ce = (CollectionExpression) cRef;
+					if(ce.getElementTypeName() == null) {
+						throw new UnknownElementTypeException("symbol should be lazy instantiated until its elementType is ensured", ce);
+					}
 					sort = mkSetSort(mkSortFromTypeName(ce.getElementTypeName()));
 					break;
 				case "java.util.List":
 				case "java.util.ArrayList":
 				case "java.util.LinkedList":
 					ce = (CollectionExpression) cRef;
+					if(ce.getElementTypeName() == null) {
+						throw new UnknownElementTypeException("symbol should be lazy instantiated until its elementType is ensured", ce);
+					}
 					sort = mkListSort(mkSortFromTypeName(ce.getElementTypeName()));
+					break;
+				case "java.util.Map":
+				case "java.util.HashMap":
+				case "java.util.TreeMap":
+					ce = (CollectionExpression) cRef;
+					String[] kvTypes = ce.getKeyValueTypeNames();
+					if(kvTypes[0] == null || kvTypes[1] == null) {
+						throw new UnknownElementTypeException("symbol should be lazy instantiated until its keyValueTypes are ensured", ce);
+					}
+					sort = mkMapSort(mkSortFromTypeName(kvTypes[0]), mkSortFromTypeName(kvTypes[1]));
 					break;
 				case "java.util.Iterator":
 					ce = (CollectionExpression) cRef;
+					if(ce.getElementTypeName() == null) {
+						throw new UnknownElementTypeException("symbol should be lazy instantiated until its elementType is ensured", ce);
+					}
 					sort = mkIteratorSort(mkSortFromTypeName(ce.getElementTypeName()));
 					break;
 				case "java.util.ListIterator":
 					ce = (CollectionExpression) cRef;
+					if(ce.getElementTypeName() == null) {
+						throw new UnknownElementTypeException("symbol should be lazy instantiated until its elementType is ensured", ce);
+					}
 					sort = mkListIteratorSort(mkSortFromTypeName(ce.getElementTypeName()));
 					break;
 				case "java.io.FileInputStream":
@@ -1304,6 +1325,8 @@ public class ProblemZ3 extends ProblemGeneral {
 				cRef.setSort(sort);
 			}
 			return ctx.mkConst(cRef.getName(), sort);
+		} catch (UnknownElementTypeException e) {
+			throw e;
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
@@ -1353,6 +1376,30 @@ public class ProblemZ3 extends ProblemGeneral {
 		} else {
 			String[] size_element = new String[] { "mapping", "element" };
 			Sort[] sorts = new Sort[] { ctx.mkArraySort(element_sort, ctx.mkBoolSort()), ctx.mkSeqSort(element_sort) };
+			int[] sort_refs = null;
+			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
+			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
+			dataTypeSortMap.put(sort_name, sort);
+			System.out.println("Datatype Summary:");
+			FuncDecl[][] acc = sort.getAccessors();
+			System.out.println(sort.getConstructors()[0]);
+			for (int i = 0; i < acc.length; i++) {
+				for (int j = 0; j < acc[i].length; j++) {
+					System.out.println(sort.getAccessors()[i][j]);
+				}
+			}
+			System.out.println("=====");
+			return sort;
+		}
+	}
+	
+	private Sort mkMapSort(Sort key_sort, Sort value_sort) {
+		String sort_name = "Map_" + key_sort + "_" + value_sort;
+		if (dataTypeSortMap.containsKey(sort_name)) {
+			return dataTypeSortMap.get(sort_name);
+		} else {
+			String[] size_element = new String[] { "key", "mapping" };
+			Sort[] sorts = new Sort[] { ctx.mkArraySort(key_sort, ctx.mkBoolSort()), ctx.mkArraySort(key_sort, value_sort) };
 			int[] sort_refs = null;
 			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
 			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
