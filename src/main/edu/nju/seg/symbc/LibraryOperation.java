@@ -384,6 +384,8 @@ public enum LibraryOperation {
 	INTEGER_VALUEOF("java.lang.Integer.valueOf(I)Ljava/lang/Integer;"),
 	INTEGER_INTVALUE("java.lang.Integer.intValue()I"),
 	// java.io
+	INPUTSTREAM_READ2("java.io.InputStream.read([B)I"),
+	INPUTSTREAM_CLOSE("java.io.InputStream.close()V"),
 	FILEINPUTSTREAM_INIT("java.io.FileInputStream.<init>(Ljava/lang/String;)V"),
 	FILEINPUTSTREAM_READ2("java.io.FileInputStream.read([B)I"),
 	FILEINPUTSTREAM_CLOSE("java.io.FileInputStream.close()V");

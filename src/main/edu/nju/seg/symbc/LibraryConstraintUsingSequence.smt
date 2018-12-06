@@ -1092,6 +1092,7 @@
     (= (readPosition ?_p0) 0)
     (= (isOpen ?_p0) true)
 ))
+;java.io.InputStream.read([B)I
 ;java.io.FileInputStream.read([B)I
 (assert (= true (isOpen ?p0)))
 (assert (and
@@ -1112,6 +1113,7 @@
         (= (readPosition ?_p0) (+ (readPosition ?p0) ?r))
     )
 ))
+;java.io.InputStream.close()V
 ;java.io.FileInputStream.close()V
 (assert (= (isOpen ?p0) true))
 (assert (= (isOpen ?_p0) false))
