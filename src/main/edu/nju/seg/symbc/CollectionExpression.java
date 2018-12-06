@@ -8,9 +8,11 @@ import gov.nasa.jpf.jvm.bytecode.CHECKCAST;
 import gov.nasa.jpf.jvm.bytecode.JVMInvokeInstruction;
 import gov.nasa.jpf.vm.ElementInfo;
 import gov.nasa.jpf.vm.Instruction;
+import gov.nasa.jpf.vm.MethodInfo;
 import gov.nasa.jpf.vm.StackFrame;
 import gov.nasa.jpf.vm.ThreadInfo;
 import gov.nasa.jpf.vm.VM;
+import gov.nasa.jpf.vm.bytecode.ReturnInstruction;
 
 public class CollectionExpression extends LibraryExpression {
 	
@@ -176,12 +178,12 @@ public class CollectionExpression extends LibraryExpression {
 		if(optSig.contains("add(Ljava/lang/Object;)") ||
 				optSig.contains("add(ILjava/lang/Object;)")
 		) {
-			String typeName = th.getModifiableElementInfo(sf.peek(0)).getClassInfo().getName();
+			String typeName = th.getElementInfo(sf.peek(0)).getClassInfo().getName();
 			int objRef = sf.peek(1);
 			objRef2ElemType.put(objRef, typeName);
 		} else if(optSig.contains("put(Ljava/lang/Object;Ljava/lang/Object;)")) {
-			String valueType = th.getModifiableElementInfo(sf.peek(0)).getClassInfo().getName();
-			String keyType = th.getModifiableElementInfo(sf.peek(1)).getClassInfo().getName();
+			String valueType = th.getElementInfo(sf.peek(0)).getClassInfo().getName();
+			String keyType = th.getElementInfo(sf.peek(1)).getClassInfo().getName();
 			int objRef = sf.peek(2);
 			objRef2KVTypes.put(objRef, new String[] {keyType, valueType});
 		} else if(optSig.contains("iterator()") ||
@@ -190,13 +192,14 @@ public class CollectionExpression extends LibraryExpression {
 			int objRef = sf.peek();
 			if(objRef2ElemType.containsKey(objRef)) {
 				String typeName = objRef2ElemType.get(objRef);
-				Instruction inst = invInst.getInvokedMethod().getLastInsn();
+				MethodInfo mi = invInst.getInvokedMethod();
 				th.getVM().addListener(new ListenerAdapter() {
 					@Override
 					public void instructionExecuted(VM vm, ThreadInfo currentThread, Instruction nextInstruction,
 							Instruction executedInstruction) {
-						if (executedInstruction.equals(inst)) {
-							StackFrame frame = th.getModifiableTopFrame();
+						if(executedInstruction instanceof ReturnInstruction && 
+								executedInstruction.getMethodInfo().equals(mi)) {
+							StackFrame frame = th.getTopFrame();
 							int retRef = frame.peek();
 							objRef2ElemType.put(retRef, typeName);
 							vm.removeListener(this);
@@ -208,13 +211,14 @@ public class CollectionExpression extends LibraryExpression {
 			int objRef = sf.peek(1);
 			if(objRef2ElemType.containsKey(objRef)) {
 				String typeName = objRef2ElemType.get(objRef);
-				Instruction inst = invInst.getInvokedMethod().getLastInsn();
+				MethodInfo mi = invInst.getInvokedMethod();
 				th.getVM().addListener(new ListenerAdapter() {
 					@Override
 					public void instructionExecuted(VM vm, ThreadInfo currentThread, Instruction nextInstruction,
 							Instruction executedInstruction) {
-						if (executedInstruction.equals(inst)) {
-							StackFrame frame = th.getModifiableTopFrame();
+						if(executedInstruction instanceof ReturnInstruction && 
+								executedInstruction.getMethodInfo().equals(mi)) {
+							StackFrame frame = th.getTopFrame();
 							int retRef = frame.peek();
 							objRef2ElemType.put(retRef, typeName);
 							vm.removeListener(this);

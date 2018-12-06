@@ -76,7 +76,7 @@
 ;java.util.Set.containsAll(Ljava/util/Collection;)Z
 ;java.util.List.containsAll(Ljava/util/Collection;)Z
 (assert (= ?r 
-    (ite (forall ((x T))
+    (ite (forall ((x ?T))
         (=> 
             (= true (select (mapping ?p1) x))
             (= true (select (mapping ?p0) x))
@@ -654,7 +654,7 @@
 ;java.util.TreeMap.descendingKeySet()Ljava/util/NavigableSet;
 ;java.util.NavigableMap.navigableKeySet()Ljava/util/NavigableSet;
 ;java.util.TreeMap.navigableKeySet()Ljava/util/NavigableSet;
-(assert (= ?r (key ?p0)))
+(assert (= (mapping ?r) (key ?p0)))
 ;java.util.Map.values()Ljava/util/Collection;
 ;java.util.HashMap.values()Ljava/util/Collection;
 ;java.util.SortedMap.values()Ljava/util/Collection;
@@ -972,22 +972,14 @@
     (= true (select (mapping ?p0) ?r))
     (= false (select (previous ?p0) ?r))
     (= (mapping ?_p0) (mapping ?p0))
-    (forall ((x ?T))
-        (ite (= x ?r)
-            (= (select (previous ?_p0) x) true)
-            (= (select (previous ?_p0) x) (select (previous ?p0) x))
-        )
-    )
+    (= (select (previous ?_p0) ?r) true)
+    (forall ((x ?T)) (or (= x ?r) (= (select (previous ?_p0) x) (select (previous ?p0) x))))
 ))
 ;java.util.Iterator.remove()V
 (assert (and 
     (= (previous ?_p0) (previous ?p0))
-    (forall ((x ?T))
-        (ite (= x ?r)
-            (= (select (mapping ?_p0) x) false)
-            (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
-        )
-    )
+    (= (select (mapping ?_p0) ?r) false)
+    (forall ((x ?T)) (or (= x ?r) (= (select (mapping ?_p0) x) (select (mapping ?p0) x))))
 ))
 ;java.util.ListIterator.hasNext()Z
 (assert (and 

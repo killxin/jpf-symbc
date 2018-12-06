@@ -26,6 +26,7 @@ import gov.nasa.jpf.JPFException;
 import gov.nasa.jpf.ListenerAdapter;
 import gov.nasa.jpf.jvm.bytecode.CHECKCAST;
 import gov.nasa.jpf.jvm.bytecode.JVMInvokeInstruction;
+import gov.nasa.jpf.jvm.bytecode.RETURN;
 import gov.nasa.jpf.symbc.bytecode.BytecodeUtils.VarType;
 import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.IntegerConstant;
@@ -37,9 +38,11 @@ import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.vm.ChoiceGenerator;
 import gov.nasa.jpf.vm.ElementInfo;
 import gov.nasa.jpf.vm.Instruction;
+import gov.nasa.jpf.vm.MethodInfo;
 import gov.nasa.jpf.vm.StackFrame;
 import gov.nasa.jpf.vm.ThreadInfo;
 import gov.nasa.jpf.vm.VM;
+import gov.nasa.jpf.vm.bytecode.ReturnInstruction;
 
 public class SymbolicLibraryHandler {
 
@@ -263,12 +266,13 @@ public class SymbolicLibraryHandler {
 	// insert listener to bing retExp to return value and turn on symbolic execution
 	// when return
 	public void addListenerOnReturnInstruction(JVMInvokeInstruction invInst, ThreadInfo th) {
-		Instruction inst = invInst.getInvokedMethod().getLastInsn();
+		MethodInfo mi = invInst.getInvokedMethod();
 		th.getVM().addListener(new ListenerAdapter() {
 			@Override
 			public void instructionExecuted(VM vm, ThreadInfo currentThread, Instruction nextInstruction,
 					Instruction executedInstruction) {
-				if (executedInstruction.equals(inst)) {
+				if(executedInstruction instanceof ReturnInstruction && 
+						executedInstruction.getMethodInfo().equals(mi)) {
 					if (recoverFromSymbolicMethod(currentThread)) {
 						vm.removeListener(this);
 					}
@@ -413,7 +417,21 @@ public class SymbolicLibraryHandler {
 					((CollectionExpression) retExp).setElementTypeName(sym_b.getElementTypeName());
 					((CollectionExpression) retExp).setSYM(sym_b.isSYM());
 				}
-			} else {
+			} else if(typeName.equals("java.util.Set")) {
+				retExp = new CollectionExpression(BytecodeUtils.varName("ret@Set", VarType.OBJECT), typeName,
+						false);
+				if (sym_b != null) {
+					if(invInst.getInvokedMethod().getName().contains("keySet")) {
+						((CollectionExpression) retExp).setElementTypeName(sym_b.getKeyValueTypeNames()[0]);
+					} else if(invInst.getInvokedMethod().getName().contains("values")) {
+						((CollectionExpression) retExp).setElementTypeName(sym_b.getKeyValueTypeNames()[1]);
+					} else {
+						((CollectionExpression) retExp).setElementTypeName(sym_b.getElementTypeName());
+					}
+					((CollectionExpression) retExp).setSYM(sym_b.isSYM());
+				}
+			}
+			else {
 				if (typeName.equals("java.lang.Object")) {
 					Instruction nextInst = invInst.getNext(th);
 					if (nextInst instanceof CHECKCAST) {
