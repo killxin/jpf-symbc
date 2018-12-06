@@ -1215,7 +1215,8 @@ getExpression(stoex.value)), newae));
 				System.err.println(e.getMessage());
 				return true;
 			}
-			Arrays.stream(pbz3.parseSMTLIB2String(smt)).forEach(x->pbz3.post(x));
+//			Arrays.stream(pbz3.parseSMTLIB2String(smt)).forEach(x->pbz3.post(x));
+			pbz3.post(pbz3.parseSMTLIB2String(smt));
 		} else {
 			throw new RuntimeException("error in createLibraryConstraint: "+ cRef.getOpt());
 		}
