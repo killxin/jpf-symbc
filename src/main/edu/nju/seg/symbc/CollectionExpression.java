@@ -6,6 +6,7 @@ import java.util.Map;
 import gov.nasa.jpf.ListenerAdapter;
 import gov.nasa.jpf.jvm.bytecode.CHECKCAST;
 import gov.nasa.jpf.jvm.bytecode.JVMInvokeInstruction;
+import gov.nasa.jpf.vm.ElementInfo;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.StackFrame;
 import gov.nasa.jpf.vm.ThreadInfo;
@@ -106,7 +107,7 @@ public class CollectionExpression extends LibraryExpression {
 		}
 	}
 	
-	public void setElementOrKeyValueTypes(LibraryOperation opt, JVMInvokeInstruction invInst, ThreadInfo th) {
+	public void setElementOrKeyValueTypes(LibraryOperation opt, JVMInvokeInstruction invInst, ThreadInfo th, Map<ElementInfo, Object> intent) {
 		StackFrame sf = th.getTopFrame();
 		if(getElementTypeName() == null) {
 			String optSig = opt.getSignature();
@@ -122,6 +123,22 @@ public class CollectionExpression extends LibraryExpression {
 					CHECKCAST checkCast = (CHECKCAST) nextInst;
 					String typeName = checkCast.getTypeName();
 					setElementTypeName(typeName);
+				}
+			} else if(optSig.contains("addAll(Ljava/util/Collection;)") ||
+					optSig.contains("addAll(ILjava/util/Collection;)")
+			) {
+				int objRef = sf.peek();
+				ElementInfo ei = th.getElementInfo(objRef);
+				if(intent.containsKey(ei) && intent.get(ei) instanceof CollectionExpression) {
+					CollectionExpression ce = (CollectionExpression) intent.get(ei);
+					if(ce.getElementTypeName() != null) {
+						setElementTypeName(ce.getElementTypeName());
+					} 
+				} else if(ei.getObjectAttr() instanceof CollectionExpression) {
+					CollectionExpression ce = (CollectionExpression) ei.getObjectAttr();
+					if(ce.getElementTypeName() != null) {
+						setElementTypeName(ce.getElementTypeName());
+					}
 				}
 			}
 		}

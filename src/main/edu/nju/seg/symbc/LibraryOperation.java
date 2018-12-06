@@ -388,7 +388,9 @@ public enum LibraryOperation {
 	INPUTSTREAM_CLOSE("java.io.InputStream.close()V"),
 	FILEINPUTSTREAM_INIT("java.io.FileInputStream.<init>(Ljava/lang/String;)V"),
 	FILEINPUTSTREAM_READ2("java.io.FileInputStream.read([B)I"),
-	FILEINPUTSTREAM_CLOSE("java.io.FileInputStream.close()V");
+	FILEINPUTSTREAM_CLOSE("java.io.FileInputStream.close()V"),
+	// array
+	ARRAY_INIT2("Array.<init>(I)V");
 	
 	private final String str;
 

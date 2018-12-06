@@ -1,6 +1,7 @@
 package gov.nasa.jpf.symbc.bytecode;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -116,7 +117,7 @@ public class SymbolicLibraryHandler {
 									return true;
 								} else if(sym_pi instanceof CollectionExpression) {
 									// assert !bag.containsValue(0);
-									((CollectionExpression) sym_pi).setElementOrKeyValueTypes(opt, invInst, th);
+									((CollectionExpression) sym_pi).setElementOrKeyValueTypes(opt, invInst, th, Collections.emptyMap());
 								}
 							} else {
 								return true;
@@ -189,7 +190,7 @@ public class SymbolicLibraryHandler {
 						}
 						// determine the element type of collection
 						if (sym_pi instanceof CollectionExpression) {
-							((CollectionExpression) sym_pi).setElementOrKeyValueTypes(opt, invInst, th);
+							((CollectionExpression) sym_pi).setElementOrKeyValueTypes(opt, invInst, th, intent);
 						}
 						paramExps.push(sym_pi);
 						if (sym_pi instanceof LibraryExpression && smtFormat.contains("?_p" + (numParams - i - 1))) {
@@ -369,7 +370,7 @@ public class SymbolicLibraryHandler {
 			sym_ei = new CollectionExpression(BytecodeUtils.varName("AB@" + ei.getObjectRef(), VarType.OBJECT),
 					"java.util.ArrayList", false);
 			((CollectionExpression) sym_ei).setElementTypeName("java.lang.Byte");
-			LibraryConstraint cc = new LibraryConstraint(LibraryOperation.ARRAYLIST_INIT,
+			LibraryConstraint cc = new LibraryConstraint(LibraryOperation.ARRAY_INIT2,
 					new Expression[] { null, new IntegerConstant(ei.arrayLength()) }, null,
 					new Expression[] { sym_ei, null });
 			// add this constraint to current PC

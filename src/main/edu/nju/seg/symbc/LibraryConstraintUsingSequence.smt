@@ -53,13 +53,10 @@
 (assert (ite 
     (= true (select (mapping ?p0) ?p1))
     (and (= ?r 0) (= (mapping ?_p0) (mapping ?p0)))
-    (and (= ?r 1)
-        (forall ((x ?T))
-            (ite (= x ?p1)
-                (= (select (mapping ?_p0) x) true)
-                (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
-            )
-        )
+    (and 
+        (= ?r 1)
+        (= (select (mapping ?_p0) ?p1) true)
+        (forall ((x ?T)) (or (= x ?p1) (= (select (mapping ?_p0) x) (select (mapping ?p0) x))))
     )
 ))
 ;java.util.Collection.remove(Ljava/lang/Object;)Z
@@ -68,13 +65,10 @@
 ;java.util.TreeSet.remove(Ljava/lang/Object;)Z
 (assert (ite 
     (= true (select (mapping ?p0) ?p1))
-    (and (= ?r 1)
-        (forall ((x ?T))
-            (ite (= x ?p1)
-                (= (select (mapping ?_p0) x) false)
-                (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
-            )
-        )
+    (and 
+        (= ?r 1)
+        (= (select (mapping ?_p0) ?p1) false)
+        (forall ((x ?T)) (or (= x ?p1) (= (select (mapping ?_p0) x) (select (mapping ?p0) x))))
     )
     (and (= ?r 0) (= (mapping ?_p0) (mapping ?p0)))
 ))
@@ -259,8 +253,8 @@
 ;java.util.LinkedList.size()I
 (assert (and
     (= ?r (seq.len (element ?p0)))
-    (let ((clause (forall ((x ?T)) (= (select (mapping ?_p0) x) false))))
-        (ite (= ?r 0) clause (not clause))
+    (let ((isEmpty (forall ((x ?T)) (= (select (mapping ?p0) x) false))))
+        (ite (= ?r 0) isEmpty (not isEmpty))
     )
 ))
 ;java.util.List.isEmpty()Z
@@ -306,11 +300,9 @@
 ;java.util.LinkedList.offerLast(Ljava/lang/Object;)Z
 (assert (= ?r 1))
 (assert (= (element ?_p0) (seq.++ (element ?p0) (seq.unit ?p1))))
-(assert (forall ((x ?T))
-    (ite (= x ?p1)
-        (= (select (mapping ?_p0) x) true)
-        (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
-    )
+(assert (and
+    (= (select (mapping ?_p0) ?p1) true)
+    (forall ((x ?T)) (or (= x ?p1) (= (select (mapping ?_p0) x) (select (mapping ?p0) x))))
 ))
 ;java.util.List.remove(Ljava/lang/Object;)Z
 ;java.util.ArrayList.remove(Ljava/lang/Object;)Z
@@ -346,7 +338,7 @@
 ;java.util.List.addAll(Ljava/util/Collection;)Z
 ;java.util.ArrayList.addAll(Ljava/util/Collection;)Z
 ;java.util.LinkedList.addAll(Ljava/util/Collection;)Z
-(assert (= (element ?_p0) (seq.++ (element ?p0) ?p1)))
+(assert (= (element ?_p0) (seq.++ (element ?p0) (element ?p1))))
 (assert (= (mapping ?_p0) ((_ map or) (mapping ?p0) (mapping ?p1))))
 ;java.util.List.addAll(ILjava/util/Collection;)Z
 ;java.util.ArrayList.addAll(ILjava/util/Collection;)Z
@@ -362,13 +354,14 @@
 ;java.util.List.clear()V
 ;java.util.ArrayList.clear()V
 ;java.util.LinkedList.clear()V
+;java.util.ArrayList.<init>(I)V
 ;java.util.ArrayList.<init>()V
 ;java.util.LinkedList.<init>()V
 (assert (and
-    (= (seq.len ?_p0) 0)
+    (= (seq.len (element ?_p0)) 0)
     (forall ((x ?T)) (= (select (mapping ?_p0) x) false))
 ))
-;java.util.ArrayList.<init>(I)V
+;Array.<init>(I)V
 (assert (and
     (= (seq.len (element ?_p0)) ?p1)
     (forall ((x ?T)) (= (select (mapping ?_p0) x) false))
@@ -427,11 +420,9 @@
         )
     )
 ))
-(assert (forall ((x ?T))
-    (ite (= x ?p2)
-        (= (select (mapping ?_p0) x) true)
-        (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
-    )
+(assert (and
+    (= (select (mapping ?_p0) ?p2) true)
+    (forall ((x ?T)) (or (= x ?p2) (= (select (mapping ?_p0) x) (select (mapping ?p0) x))))
 ))
 ;java.util.List.remove(I)Ljava/lang/Object;
 ;java.util.ArrayList.remove(I)Ljava/lang/Object;
@@ -530,28 +521,22 @@
 ;java.util.LinkedList.addFirst(Ljava/lang/Object;)V
 ;java.util.LinkedList.push(Ljava/lang/Object;)V
 (assert (= (element ?_p0) (seq.++ (seq.unit ?p1) (element ?p0))))
-(assert (forall ((x ?T))
-    (ite (= x ?p1)
-        (= (select (mapping ?_p0) x) true)
-        (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
-    )
+(assert (and
+    (= (select (mapping ?_p0) ?p1) true)
+    (forall ((x ?T)) (or (= x ?p1) (= (select (mapping ?_p0) x) (select (mapping ?p0) x))))
 ))
 ;java.util.LinkedList.addLast(Ljava/lang/Object;)V
 (assert (= (element ?_p0) (seq.++ (element ?p0) (seq.unit ?p1))))
-(assert (forall ((x ?T))
-    (ite (= x ?p1)
-        (= (select (mapping ?_p0) x) true)
-        (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
-    )
+(assert (and
+    (= (select (mapping ?_p0) ?p1) true)
+    (forall ((x ?T)) (or (= x ?p1) (= (select (mapping ?_p0) x) (select (mapping ?p0) x))))
 ))
 ;java.util.LinkedList.offerFirst(Ljava/lang/Object;)Z
 (assert (= ?r 1))
 (assert (= (element ?_p0) (seq.++ (seq.unit ?p1) (element ?p0))))
-(assert (forall ((x ?T))
-    (ite (= x ?p1)
-        (= (select (mapping ?_p0) x) true)
-        (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
-    )
+(assert (and
+    (= (select (mapping ?_p0) ?p1) true)
+    (forall ((x ?T)) (or (= x ?p1) (= (select (mapping ?_p0) x) (select (mapping ?p0) x))))
 ))
 ;java.util.LinkedList.removeLastOccurrence(Ljava/lang/Object;)Z
 (assert (ite
