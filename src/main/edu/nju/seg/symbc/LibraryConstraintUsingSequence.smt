@@ -18,7 +18,7 @@
 ;java.util.HashSet.size()I
 ;java.util.TreeSet.size()I
 (assert (ite 
-    (= (mapping ?p0) ((as const (Array ?T Bool)) false)) 
+    (forall ((x ?T)) (= (select (mapping ?p0) x) false))
     (= ?r 0)
     (> ?r 0)
 ))
@@ -27,7 +27,7 @@
 ;java.util.HashSet.isEmpty()Z
 ;java.util.TreeSet.isEmpty()Z
 (assert (= ?r 
-    (ite (= (mapping ?p0) ((as const (Array ?T Bool)) false)) 1 0)
+    (ite (forall ((x ?T)) (= (select (mapping ?p0) x) false)) 1 0)
 ))
 ;java.util.Collection.contains(Ljava/lang/Object;)Z
 ;java.util.Set.contains(Ljava/lang/Object;)Z
@@ -44,7 +44,7 @@
 ;java.util.TreeSet.iterator()Ljava/util/Iterator;
 (assert (and
     (= (mapping ?r) (mapping ?p0))
-    (= (previous ?r) ((as const (Array ?T Bool)) false))
+    (forall ((x ?T)) (= (select (previous ?r) x) false))
 ))
 ;java.util.Collection.add(Ljava/lang/Object;)Z
 ;java.util.Set.add(Ljava/lang/Object;)Z
@@ -107,12 +107,11 @@
 ;java.util.Set.clear()V
 ;java.util.HashSet.clear()V
 ;java.util.TreeSet.clear()V
-(assert (= (mapping ?_p0) ((as const (Array ?T Bool)) false)))
 ;java.util.HashSet.<init>()V
 ;java.util.HashSet.<init>(IF)V
 ;java.util.HashSet.<init>(I)V
 ;java.util.TreeSet.<init>()V
-(assert (= (mapping ?_p0) ((as const (Array ?T Bool)) false)))
+(assert (forall ((x ?T)) (= (select (mapping ?_p0) x) false)))
 ;java.util.HashSet.<init>(Ljava/util/Collection;)V
 ;java.util.TreeSet.<init>(Ljava/util/Collection;)V
 ;java.util.TreeSet.<init>(Ljava/util/SortedSet;)V
@@ -260,7 +259,7 @@
 ;java.util.LinkedList.size()I
 (assert (and
     (= ?r (seq.len (element ?p0)))
-    (let ((clause (= (mapping ?p0) ((as const (Array ?T Bool)) false))))
+    (let ((clause (forall ((x ?T)) (= (select (mapping ?_p0) x) false))))
         (ite (= ?r 0) clause (not clause))
     )
 ))
@@ -366,13 +365,13 @@
 ;java.util.ArrayList.<init>()V
 ;java.util.LinkedList.<init>()V
 (assert (and
-    (= (element ?_p0) (as seq.empty (Seq ?T)))
-    (= (mapping ?_p0) ((as const (Array ?T Bool)) false))
+    (= (seq.len ?_p0) 0)
+    (forall ((x ?T)) (= (select (mapping ?_p0) x) false))
 ))
 ;java.util.ArrayList.<init>(I)V
 (assert (and
     (= (seq.len (element ?_p0)) ?p1)
-    (= (mapping ?_p0) ((as const (Array ?T Bool)) false))
+    (forall ((x ?T)) (= (select (mapping ?_p0) x) false))
 ))
 ;java.util.List.get(I)Ljava/lang/Object;
 ;java.util.ArrayList.get(I)Ljava/lang/Object;
@@ -661,7 +660,7 @@
 ;java.util.HashMap.<init>(I)V
 ;java.util.HashMap.<init>()V
 ;java.util.TreeMap.<init>()V
-(assert (forall ((k ?K)) (= (select (key ?p0) k) false)))
+(assert (forall ((k ?K)) (= (select (key ?_p0) k) false)))
 ;java.util.Map.keySet()Ljava/util/Set;
 ;java.util.HashMap.keySet()Ljava/util/Set;
 ;java.util.SortedMap.keySet()Ljava/util/Set;
