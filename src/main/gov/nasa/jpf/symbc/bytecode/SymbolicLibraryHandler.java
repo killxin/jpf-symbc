@@ -82,56 +82,19 @@ public class SymbolicLibraryHandler {
 						throw new RuntimeException("error in get LibraryConstraint: " + opt);
 					}
 				}
-				if (smtFormat.contains("?_")) {
-					// have side-effect
-					StackFrame sf = th.getModifiableTopFrame();
-					int numStackSlots = invInst.getArgSize();
-					for (int i = 0; i < numStackSlots; i++) {
-						if (sf.isOperandRef(i)) {
-							ElementInfo ei = th.getModifiableElementInfo(sf.peek(i));
-							Expression sym_v1 = (Expression) sf.getOperandAttr(i);
-							if (sym_v1 != null) {
-								// copy the attr from stack to heap for object
-								ei.setObjectAttr(sym_v1);
-							}
+				StackFrame sf = th.getModifiableTopFrame();
+				int numStackSlots = invInst.getArgSize();
+				for (int i = 0; i < numStackSlots; i++) {
+					if (sf.isOperandRef(i)) {
+						ElementInfo ei = th.getModifiableElementInfo(sf.peek(i));
+						Expression sym_v1 = (Expression) sf.getOperandAttr(i);
+						if (sym_v1 != null) {
+							// copy the attr from stack to heap for object
+							ei.setObjectAttr(sym_v1);
 						}
 					}
-					return true;
-				} else {
-					StackFrame sf = th.getModifiableTopFrame();
-					int numParams = invInst.getArgSize();
-					for (int i = 0; i < numParams; i++) {
-						if (sf.isOperandRef(i)) {
-							ElementInfo ei = th.getModifiableElementInfo(sf.peek(i));
-							Expression sym_pi = (Expression) sf.getOperandAttr(i);
-							if (sym_pi != null) {
-								// copy the attr from stack to heap for object
-								ei.setObjectAttr(sym_pi);
-							} else {
-								sym_pi = (Expression) ei.getObjectAttr();
-								if (sym_pi == null) {
-									continue;
-								}
-							}
-							if (sym_pi instanceof LibraryExpression) {
-								if (((LibraryExpression) sym_pi).isSYM()) {
-									return true;
-								} else if(sym_pi instanceof CollectionExpression) {
-									// assert !bag.containsValue(0);
-									((CollectionExpression) sym_pi).setElementOrKeyValueTypes(opt, invInst, th, Collections.emptyMap());
-								}
-							} else {
-								return true;
-							}
-						} else {
-							Expression sym_v1 = (Expression) sf.getOperandAttr(i);
-							if (sym_v1 != null) {
-								return true;
-							}
-						}
-					}
-					return false;
 				}
+				return true;
 			}
 		}
 	}
@@ -376,24 +339,23 @@ public class SymbolicLibraryHandler {
 			System.out.println("create symbolic expression for concrete Integer " + sym_ei);
 		} else if (typeName.equals("java.util.ArrayList")) {
 			sym_ei = new CollectionExpression(BytecodeUtils.varName("List@" + ei.getObjectRef(), VarType.OBJECT),
-					typeName, false);
+					typeName);
 			System.out.println("create symbolic expression for empty ArrayList " + sym_ei);
 		} else if (typeName.equals("java.util.HashSet")) {
 			sym_ei = new CollectionExpression(BytecodeUtils.varName("Set@" + ei.getObjectRef(), VarType.OBJECT),
-					typeName, false);
+					typeName);
 			System.out.println("create symbolic expression for empty HashSet " + sym_ei);
 		} else if (typeName.equals("java.util.HashMap")) {
 			sym_ei = new CollectionExpression(BytecodeUtils.varName("Map@" + ei.getObjectRef(), VarType.OBJECT),
-					typeName, false);
+					typeName);
 			System.out.println("create symbolic expression for empty HashMap " + sym_ei);
 		}
 		else if (typeName.equals("java.io.FileInputStream")) {
-			sym_ei = new FileExpression(BytecodeUtils.varName("FI@" + ei.getObjectRef(), VarType.OBJECT), typeName,
-					false);
+			sym_ei = new FileExpression(BytecodeUtils.varName("FI@" + ei.getObjectRef(), VarType.OBJECT), typeName);
 			System.out.println("create symbolic expression for empty FileInputStream " + sym_ei);
 		} else if (typeName.equals("[B")) {
 			sym_ei = new CollectionExpression(BytecodeUtils.varName("AB@" + ei.getObjectRef(), VarType.OBJECT),
-					"java.util.ArrayList", false);
+					"java.util.ArrayList");
 			((CollectionExpression) sym_ei).setElementTypeName("java.lang.Byte");
 			LibraryConstraint cc = new LibraryConstraint(LibraryOperation.ARRAY_INIT2,
 					new Expression[] { null, new IntegerConstant(ei.arrayLength()) }, null,
@@ -434,15 +396,12 @@ public class SymbolicLibraryHandler {
 					typeName.equals("java.util.List") ||
 					typeName.equals("java.util.ListIterator")) {
 				String suffix = typeName.substring(typeName.lastIndexOf(".") + 1);
-				retExp = new CollectionExpression(BytecodeUtils.varName("ret@" + suffix, VarType.OBJECT), typeName,
-						false);
+				retExp = new CollectionExpression(BytecodeUtils.varName("ret@" + suffix, VarType.OBJECT), typeName);
 				if (sym_b != null) {
 					((CollectionExpression) retExp).setElementTypeName(sym_b.getElementTypeName());
-					((CollectionExpression) retExp).setSYM(sym_b.isSYM());
 				}
 			} else if(typeName.equals("java.util.Set")) {
-				retExp = new CollectionExpression(BytecodeUtils.varName("ret@Set", VarType.OBJECT), typeName,
-						false);
+				retExp = new CollectionExpression(BytecodeUtils.varName("ret@Set", VarType.OBJECT), typeName);
 				if (sym_b != null) {
 					if(invInst.getInvokedMethod().getName().contains("keySet")) {
 						((CollectionExpression) retExp).setElementTypeName(sym_b.getKeyValueTypeNames()[0]);
@@ -451,7 +410,6 @@ public class SymbolicLibraryHandler {
 					} else {
 						((CollectionExpression) retExp).setElementTypeName(sym_b.getElementTypeName());
 					}
-					((CollectionExpression) retExp).setSYM(sym_b.isSYM());
 				}
 			}
 			else {

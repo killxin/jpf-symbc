@@ -20,14 +20,14 @@ public class CollectionExpression extends LibraryExpression {
 	
 	private String[] keyValueTypeNames;
 
-	public CollectionExpression(String name, String typeName, boolean isSYM) {
-		super(name, typeName, isSYM);
+	public CollectionExpression(String name, String typeName) {
+		super(name, typeName);
 		this.elementTypeName = null;
 		this.keyValueTypeNames = new String[2];
 	}
 
 	public CollectionExpression clone() {
-		CollectionExpression copy = new CollectionExpression(name, typeName, isSYM);
+		CollectionExpression copy = new CollectionExpression(name, typeName);
 		copy.setCopyFrom(this);
 		copy.setElementTypeName(this.elementTypeName);
 		copy.setKeyValueTypeNames(this.keyValueTypeNames[0], this.keyValueTypeNames[1]);

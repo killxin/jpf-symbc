@@ -359,7 +359,7 @@ public class BytecodeUtils {
                     } 
                     // add by rhjiang
                     else if (symlibraries_flag && argTypes[j].matches("java\\.util\\..+")) {
-                    	CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.OBJECT), argTypes[j], true);
+                    	CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.OBJECT), argTypes[j]);
                     	expressionMap.put(name, sym_v);
                     	assert sf.isOperandRef(stackIdx);
                         int objRef = sf.peek(stackIdx);

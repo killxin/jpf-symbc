@@ -8,21 +8,19 @@ import gov.nasa.jpf.symbc.numeric.Expression;
 public class LibraryExpression extends Expression {
 	
 	protected String name;
-	protected boolean isSYM;
 	protected String typeName;
 	protected com.microsoft.z3.Sort sort;
 	protected LibraryExpression copyFrom;
 
-	public LibraryExpression(String name, String typeName, boolean isSYM) {
+	public LibraryExpression(String name, String typeName) {
 		this.name = name;
 		this.typeName = typeName;
-		this.isSYM = isSYM;
 		this.sort = null;
 		this.copyFrom = null;
 	}
 
 	public LibraryExpression clone() {
-		LibraryExpression copy = new LibraryExpression(name, typeName, isSYM);
+		LibraryExpression copy = new LibraryExpression(name, typeName);
 		copy.setCopyFrom(this);
 		return copy;
 	}
@@ -33,14 +31,6 @@ public class LibraryExpression extends Expression {
 	
 	public void setName(String name) {
 		this.name = name;
-	}
-	
-	public boolean isSYM() {
-		return isSYM;
-	}
-	
-	public void setSYM(boolean isSYM) {
-		this.isSYM = isSYM;
 	}
 	
 	public String toString() {

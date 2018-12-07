@@ -243,6 +243,7 @@
 (assert (and
     (= ?r (seq.len (element ?p0)))
     (>= ?r (s!ze (mapping ?p0) 10))
+    (=> (> ?r 0) (> (s!ze (mapping ?p0) 10) 0))
     ;(let ((isEmpty (forall ((x ?T)) (= (select (mapping ?p0) x) false))))
     ;    (ite (= ?r 0) isEmpty (not isEmpty))
     ;)
@@ -570,7 +571,7 @@
             (= ?p1 (select (mapping ?p0) k))
         ) 
     ) 1 0)
-)))
+))
 ;java.util.Map.get(Ljava/lang/Object;)Ljava/lang/Object;
 ;java.util.HashMap.get(Ljava/lang/Object;)Ljava/lang/Object;
 ;java.util.TreeMap.get(Ljava/lang/Object;)Ljava/lang/Object;
