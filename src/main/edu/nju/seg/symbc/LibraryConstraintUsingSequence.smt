@@ -251,13 +251,19 @@
 ;java.util.List.isEmpty()Z
 ;java.util.ArrayList.isEmpty()Z
 (assert (= ?r 
-    (ite (= (seq.len (element ?p0)) 0) 1 0)
+    (ite (and
+        (= (seq.len (element ?p0)) 0)
+        (forall ((x ?T)) (= (select (mapping ?p0) x) false))
+    ) 1 0)
 ))
 ;java.util.List.contains(Ljava/lang/Object;)Z
 ;java.util.ArrayList.contains(Ljava/lang/Object;)Z
 ;java.util.LinkedList.contains(Ljava/lang/Object;)Z
 (assert (= ?r 
-    (ite (seq.contains (element ?p0) (seq.unit ?p1)) 1 0)
+    (ite (and
+        (seq.contains (element ?p0) (seq.unit ?p1))
+        (select (mapping ?p0) ?p1)
+    ) 1 0)
 ))
 ;java.util.List.listIterator()Ljava/util/ListIterator;
 ;java.util.ArrayList.listIterator()Ljava/util/ListIterator;
