@@ -1215,7 +1215,7 @@ public class ProblemZ3 extends ProblemGeneral {
 		}
 	}
 
-	public /*new version: BoolExpr[]*/BoolExpr parseSMTLIB2String(String smt/* , Symbol[] symb1, Sort[] sort, Symbol[] symb2, FuncDecl[] func */) {
+	public BoolExpr[] parseSMTLIB2String(String smt/* , Symbol[] symb1, Sort[] sort, Symbol[] symb2, FuncDecl[] func */) {
 		try {
 			Set<Sort> sortSet = new LinkedHashSet<>();
 			Set<FuncDecl> funcSet = new LinkedHashSet<>();
