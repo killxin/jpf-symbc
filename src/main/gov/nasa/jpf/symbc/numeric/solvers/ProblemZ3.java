@@ -697,6 +697,8 @@ public class ProblemZ3 extends ProblemGeneral {
 				return false;
 			} else {
 				System.out.println("********rh: UNKNOWN********");
+				// should not rise UNKNOWN
+				System.exit(-1);
 				return false;
 			}
 		} catch (Exception e) {

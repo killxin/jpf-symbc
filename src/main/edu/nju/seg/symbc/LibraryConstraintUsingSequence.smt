@@ -17,11 +17,11 @@
 ;java.util.Set.size()I
 ;java.util.HashSet.size()I
 ;java.util.TreeSet.size()I
-(assert (ite 
-    (forall ((x ?T)) (= (select (mapping ?p0) x) false))
-    (= ?r 0)
-    (> ?r 0)
-))
+(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 -10) 0 (ite (= true (select a!1 x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))
+(assert 
+    (= ?r (s!ze (mapping ?p0) 10))
+    ;(ite (forall ((x ?T)) (= (select (mapping ?p0) x) false)) (= ?r 0) (> ?r 0))
+)
 ;java.util.Collection.isEmpty()Z
 ;java.util.Set.isEmpty()Z
 ;java.util.HashSet.isEmpty()Z
@@ -239,11 +239,13 @@
 ;java.util.List.size()I
 ;java.util.ArrayList.size()I
 ;java.util.LinkedList.size()I
+(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 -10) 0 (ite (= true (select a!1 x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))
 (assert (and
     (= ?r (seq.len (element ?p0)))
-    (let ((isEmpty (forall ((x ?T)) (= (select (mapping ?p0) x) false))))
-        (ite (= ?r 0) isEmpty (not isEmpty))
-    )
+    (>= ?r (s!ze (mapping ?p0) 10))
+    ;(let ((isEmpty (forall ((x ?T)) (= (select (mapping ?p0) x) false))))
+    ;    (ite (= ?r 0) isEmpty (not isEmpty))
+    ;)
 ))
 ;java.util.List.isEmpty()Z
 ;java.util.ArrayList.isEmpty()Z
@@ -542,11 +544,11 @@
 ;java.util.Map.size()I
 ;java.util.HashMap.size()I
 ;java.util.TreeMap.size()I
-(assert (ite 
-    (forall ((k ?K)) (= (select (key ?p0) k) false))
-    (= ?r 0) 
-    (> ?r 0)
-))
+(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 -10) 0 (ite (= true (select a!1 x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))
+(assert 
+    (= ?r (s!ze (key ?p0) 10))
+    ;(ite (forall ((k ?K)) (= (select (key ?p0) k) false)) (= ?r 0) (> ?r 0))
+)
 ;java.util.Map.isEmpty()Z
 ;java.util.HashMap.isEmpty()Z
 (assert (= ?r 
@@ -948,7 +950,7 @@
 ))
 ;java.util.ListIterator.hasNext()Z
 (assert (and 
-    (>= (position ?p0) 0)
+    (>= (position ?p0) -1)
     (< (position ?p0) (seq.len (element ?p0)))
     (= ?r 
         (ite (< (+ (position ?p0) 1) (seq.len (element ?p0))) 1 0)
@@ -956,7 +958,7 @@
 ))
 ;java.util.ListIterator.next()Ljava/lang/Object;
 (assert (and
-    (>= (position ?p0) 0)
+    (>= (position ?p0) -1)
     (< (position ?p0) (seq.len (element ?p0)))
     (= (seq.unit ?r) (seq.at (element ?p0) (+ (position ?p0) 1)))
     (= (position ?_p0) (+ (position ?p0) 1))
@@ -964,7 +966,7 @@
 ))
 ;java.util.ListIterator.hasPrevious()Z
 (assert (and
-    (>= (position ?p0) 0)
+    (>= (position ?p0) -1)
     (< (position ?p0) (seq.len (element ?p0)))
     (= ?r 
         (ite (>= (- (position ?p0) 1) 0) 1 0)
@@ -972,7 +974,7 @@
 ))
 ;java.util.ListIterator.previous()Ljava/lang/Object;
 (assert (and
-    (>= (position ?p0) 0)
+    (>= (position ?p0) -1)
     (< (position ?p0) (seq.len (element ?p0)))
     (= (seq.unit ?r) (seq.at (element ?p0) (- (position ?p0) 1)))
     (= (position ?_p0) (- (position ?p0) 1))
@@ -980,19 +982,19 @@
 ))
 ;java.util.ListIterator.nextIndex()I
 (assert (and 
-    (>= (position ?p0) 0)
+    (>= (position ?p0) -1)
     (< (position ?p0) (seq.len (element ?p0)))
     (= ?r (+ (position ?p0) 1))
 ))
 ;java.util.ListIterator.previousIndex()I
 (assert (and
-    (>= (position ?p0) 0)
+    (>= (position ?p0) -1)
     (< (position ?p0) (seq.len (element ?p0)))
     (= ?r (- (position ?p0) 1))
 ))
 ;java.util.ListIterator.remove()V
 (assert (and
-    (>= (position ?p0) 0)
+    (>= (position ?p0) -1)
     (< (position ?p0) (seq.len (element ?p0)))
     (let ((size (seq.len (element ?p0)) (pos (position ?p0))))
         (= (element ?_p0) (seq.++ 
@@ -1004,7 +1006,7 @@
 ))
 ;java.util.ListIterator.set(Ljava/lang/Object;)V
 (assert (and 
-    (>= (position ?p0) 0)
+    (>= (position ?p0) -1)
     (< (position ?p0) (seq.len (element ?p0)))
     (let ((size (seq.len (element ?p0)) (pos (position ?p0))))
         (= (element ?_p0) (seq.++ 
@@ -1017,7 +1019,7 @@
 ))
 ;java.util.ListIterator.add(Ljava/lang/Object;)V
 (assert (and 
-    (>= (position ?p0) 0)
+    (>= (position ?p0) -1)
     (< (position ?p0) (seq.len (element ?p0)))
     (let ((size (seq.len (element ?p0)) (pos (position ?p0))))
         (= (element ?_p0) (seq.++ 

@@ -22,6 +22,7 @@ import edu.nju.seg.symbc.FrameAttribute;
 import edu.nju.seg.symbc.LibraryConstraint;
 import edu.nju.seg.symbc.LibraryExpression;
 import edu.nju.seg.symbc.LibraryOperation;
+import gov.nasa.jpf.Config;
 import gov.nasa.jpf.JPFException;
 import gov.nasa.jpf.ListenerAdapter;
 import gov.nasa.jpf.jvm.bytecode.CHECKCAST;
@@ -52,7 +53,7 @@ public class SymbolicLibraryHandler {
 			sig2opt.put(opt.getSignature(), opt);
 		}
 	}
-
+	
 	public boolean isMethodListSymbolic(JVMInvokeInstruction invInst, ThreadInfo th) {
 //		String fullName = invInst.getInvokedMethod().getFullName();
 //		LibraryOperation opt = sig2opt.get(fullName);
@@ -67,10 +68,7 @@ public class SymbolicLibraryHandler {
 		if (opt == null) {
 			return false;
 		} else {
-			boolean inSymMet = BytecodeUtils.isMethodSymbolic(th.getVM().getConfig(), 
-					invInst.getMethodInfo().getFullName(),
-					invInst.getMethodInfo().getArgumentsSize(), null);
-			if (!inSymMet) {
+			if (!inSymScale(invInst,th)) {
 				CollectionExpression.ensureElementOrKeyValueTypes(opt, invInst, th);
 				return false;
 			} else {
@@ -138,6 +136,29 @@ public class SymbolicLibraryHandler {
 		}
 	}
 
+	private boolean inSymScale(JVMInvokeInstruction invInst, ThreadInfo th) {
+		// System.out.println("method name "+methodName);
+		Config conf = th.getVM().getConfig();
+		String[] scales = conf.getStringArray("symbolic.libraries.scale");
+		if(scales == null) {
+			return BytecodeUtils.isMethodSymbolic(th.getVM().getConfig(), 
+					invInst.getMethodInfo().getFullName(),
+					invInst.getMethodInfo().getArgumentsSize(), null);
+		} else {
+			String methodName = invInst.getMethodInfo().getBaseName();
+			if(methodName.contains("main")||methodName.contains("setUp")) {
+				return false;
+			}
+			String className = invInst.getMethodInfo().getClassName();
+			for(String scale : scales) {
+				if(scale.equals(className)) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+
 	public Instruction handleSymbolicLists(JVMInvokeInstruction invInst, ThreadInfo th) {
 		boolean needToHandle = isMethodListSymbolic(invInst, th);
 		if (needToHandle) {
@@ -164,7 +185,7 @@ public class SymbolicLibraryHandler {
 		String className = invInst.getInvokedMethodClassName();
 		String methodDesc = invInst.getInvokedMethodName();
 		String fullName = className + "." + methodDesc;
-		if(fullName.equals("java.util.HashMap.put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;")){
+		if(fullName.equals("java.util.List.listIterator()Ljava/util/ListIterator;")){
 		System.out.println(fullName);
 		}
 		if (className.startsWith("java.util") || className.startsWith("java.io")) {
@@ -409,7 +430,9 @@ public class SymbolicLibraryHandler {
 				}
 			}
 			String typeName = retType.toString();
-			if (typeName.equals("java.util.Iterator") || typeName.equals("java.util.List")) {
+			if (typeName.equals("java.util.Iterator") || 
+					typeName.equals("java.util.List") ||
+					typeName.equals("java.util.ListIterator")) {
 				String suffix = typeName.substring(typeName.lastIndexOf(".") + 1);
 				retExp = new CollectionExpression(BytecodeUtils.varName("ret@" + suffix, VarType.OBJECT), typeName,
 						false);

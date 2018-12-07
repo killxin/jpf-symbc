@@ -1212,7 +1212,7 @@ getExpression(stoex.value)), newae));
 					}
 				}
 			} catch (UnknownElementTypeException e) {
-				System.err.println(e.getMessage());
+				System.err.println(e);
 				return true;
 			}
 			Arrays.stream(pbz3.parseSMTLIB2String(smt)).forEach(x->pbz3.post(x));
