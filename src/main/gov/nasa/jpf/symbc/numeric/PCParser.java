@@ -1226,7 +1226,9 @@ getExpression(stoex.value)), newae));
 	static {
 		smtFormats = new EnumMap<LibraryOperation, String>(LibraryOperation.class);
 		try {
-            BufferedReader in = new BufferedReader(new FileReader("../jpf-symbc/src/main/edu/nju/seg/symbc/LibraryConstraintUsingSequence.smt"));
+			String spfPath = new gov.nasa.jpf.Config(new String[] {}).getProperty("jpf-symbc");
+			String path = spfPath + "/src/main/edu/nju/seg/symbc/LibraryConstraintUsingSequence.smt";
+            BufferedReader in = new BufferedReader(new FileReader(path));
             String line = in.readLine();
             for(;!line.equals(";START");line=in.readLine());
             line = in.readLine();
