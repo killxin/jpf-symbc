@@ -232,7 +232,7 @@ public class BytecodeUtils {
         SymbolicLibraryHandler slh = new SymbolicLibraryHandler();
         if(symlibraries_flag) {
 	        // Start library handling
-	        Instruction handled = slh.handleSymbolicLists(invInst, th);
+	        Instruction handled = slh.handleSymbolicLibraries(invInst, th);
 	        if (handled != null) {
 	            return new InstructionOrSuper(false, handled);
 	        }

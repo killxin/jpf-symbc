@@ -1096,6 +1096,11 @@ getExpression(stoex.value)), newae));
       }
       //add by rhjiang
       LibraryConstraint lc = pc.lpc.header;
+      if(checkPrecondition) {
+    	  // "not" the precondition of head constraint
+    	  addCheckerConstraint(lc);
+    	  lc = lc.and;
+      }
       while (lc != null) {
           if(addConstraint(lc) == false) {
             return null;
@@ -1107,7 +1112,8 @@ getExpression(stoex.value)), newae));
     return pb;
   }
 
-  private static boolean addConstraint(Constraint cRef) {
+
+private static boolean addConstraint(Constraint cRef) {
     boolean constraintResult = true;
 
     if (cRef instanceof RealConstraint)
@@ -1160,6 +1166,25 @@ getExpression(stoex.value)), newae));
 
 	}
   
+  private static boolean addCheckerConstraint(final LibraryConstraint cRef) {
+	  ProblemZ3 pbz3 = (ProblemZ3)pb;
+		if(smtFormats.containsKey(cRef.getOpt())) {
+			String smt = smtFormats.get(cRef.getOpt());
+			smt = smt.replace(";pre", "(not ");
+			smt = smt.replace(";post", ")");
+			try {
+				smt = smtFormatRendering(smt,cRef);
+			} catch (UnknownElementTypeException e) {
+				System.err.println(e);
+				return true;
+			}
+			Arrays.stream(pbz3.parseSMTLIB2String(smt)).forEach(x->pbz3.post(x));
+		} else {
+			throw new RuntimeException("error in createLibraryConstraint: "+ cRef.getOpt());
+		}
+		return true;
+	}
+  
   	public static Map<LibraryExpression,Object> symLibraryVar;
 	static Object getExpression(LibraryExpression eRef) throws UnknownElementTypeException {
 		ProblemZ3 pbz3 = (ProblemZ3)pb;
@@ -1172,45 +1197,14 @@ getExpression(stoex.value)), newae));
 	   return dp_var;
 	 }
 
+	public static boolean checkPrecondition = false;
+	
 	public static boolean createLibraryConstraint(final LibraryConstraint cRef) {
 		ProblemZ3 pbz3 = (ProblemZ3)pb;
 		if(smtFormats.containsKey(cRef.getOpt())) {
 			String smt = smtFormats.get(cRef.getOpt());
 			try {
-				for(int i=0;i<cRef.getParams().length;i++) {
-					Expression pi = cRef.getParams()[i];
-					Expression _pi = cRef._getParams()[i];
-					smt = smt.replaceAll("\\?p"+i, exp2str(pi));
-					smt = smt.replaceAll("\\?_p"+i, exp2str(_pi));
-				}
-				smt = smt.replaceAll("\\?r", exp2str(cRef.getrEturn()));
-				if(smt.contains("?T")) {
-					CollectionExpression base = (CollectionExpression) cRef.getParams()[0];
-					if(base == null) {
-						base = (CollectionExpression) cRef._getParams()[0];
-					}
-					if(base.getElementSort() == null) {
-						// base symbol should be lazy instantiated until its elementType is ensured
-						smt = "";
-						System.out.println("rhWarning: base symbol should be lazy instantiated until its elementType is ensured " + base);
-					} else {
-						smt = smt.replaceAll("\\?T", base.getElementSort());
-					}
-				}
-				if(smt.contains("?K") || smt.contains("?V")) {
-					CollectionExpression base = (CollectionExpression) cRef.getParams()[0];
-					if(base == null) {
-						base = (CollectionExpression) cRef._getParams()[0];
-					}
-					if(base.getKeyValueTypeNames()[0] == null || base.getKeyValueTypeNames()[1] == null) {
-						// base symbol should be lazy instantiated until its keyValueTypes are ensured
-						smt = "";
-						System.out.println("rhWarning: base symbol should be lazy instantiated until its keyValueTypes are ensured " + base);
-					} else {
-						smt = smt.replaceAll("\\?K", base.getKeySort());
-						smt = smt.replaceAll("\\?V", base.getValueSort());
-					}
-				}
+				smt = smtFormatRendering(smt,cRef);
 			} catch (UnknownElementTypeException e) {
 				System.err.println(e);
 				return true;
@@ -1220,6 +1214,44 @@ getExpression(stoex.value)), newae));
 			throw new RuntimeException("error in createLibraryConstraint: "+ cRef.getOpt());
 		}
 		return true;
+	}
+	
+	private static String smtFormatRendering(String smt, final LibraryConstraint cRef) throws UnknownElementTypeException {
+		for(int i=0;i<cRef.getParams().length;i++) {
+			Expression pi = cRef.getParams()[i];
+			Expression _pi = cRef._getParams()[i];
+			smt = smt.replaceAll("\\?p"+i, exp2str(pi));
+			smt = smt.replaceAll("\\?_p"+i, exp2str(_pi));
+		}
+		smt = smt.replaceAll("\\?r", exp2str(cRef.getrEturn()));
+		if(smt.contains("?T")) {
+			CollectionExpression base = (CollectionExpression) cRef.getParams()[0];
+			if(base == null) {
+				base = (CollectionExpression) cRef._getParams()[0];
+			}
+			if(base.getElementSort() == null) {
+				// base symbol should be lazy instantiated until its elementType is ensured
+				smt = "";
+				System.out.println("rhWarning: base symbol should be lazy instantiated until its elementType is ensured " + base);
+			} else {
+				smt = smt.replaceAll("\\?T", base.getElementSort());
+			}
+		}
+		if(smt.contains("?K") || smt.contains("?V")) {
+			CollectionExpression base = (CollectionExpression) cRef.getParams()[0];
+			if(base == null) {
+				base = (CollectionExpression) cRef._getParams()[0];
+			}
+			if(base.getKeyValueTypeNames()[0] == null || base.getKeyValueTypeNames()[1] == null) {
+				// base symbol should be lazy instantiated until its keyValueTypes are ensured
+				smt = "";
+				System.out.println("rhWarning: base symbol should be lazy instantiated until its keyValueTypes are ensured " + base);
+			} else {
+				smt = smt.replaceAll("\\?K", base.getKeySort());
+				smt = smt.replaceAll("\\?V", base.getValueSort());
+			}
+		}
+		return smt;
 	}
 	
 	public static EnumMap<LibraryOperation,String> smtFormats;

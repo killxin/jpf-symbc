@@ -1068,4 +1068,14 @@
 ;java.io.FileInputStream.close()V
 (assert (= (isOpen ?p0) true))
 (assert (= (isOpen ?_p0) false))
+;java.security.MessageDigest.update([BII)V
+(assert ;pre
+    (and 
+        (>= ?p2 0)
+        (< ?p2 (seq.len (element ?p1)))
+        (> ?p3 0)
+        (<= (+ ?p2 ?p3) (seq.len (element ?p1)))
+    )
+);post
+(assert true)
 ;END

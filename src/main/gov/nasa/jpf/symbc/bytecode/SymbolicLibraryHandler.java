@@ -54,7 +54,7 @@ public class SymbolicLibraryHandler {
 		}
 	}
 	
-	public boolean isMethodListSymbolic(JVMInvokeInstruction invInst, ThreadInfo th) {
+	public boolean isMethodSymbolic(JVMInvokeInstruction invInst, ThreadInfo th) {
 //		String fullName = invInst.getInvokedMethod().getFullName();
 //		LibraryOperation opt = sig2opt.get(fullName);
 //		if (opt == null) {
@@ -122,8 +122,8 @@ public class SymbolicLibraryHandler {
 		}
 	}
 
-	public Instruction handleSymbolicLists(JVMInvokeInstruction invInst, ThreadInfo th) {
-		boolean needToHandle = isMethodListSymbolic(invInst, th);
+	public Instruction handleSymbolicLibraries(JVMInvokeInstruction invInst, ThreadInfo th) {
+		boolean needToHandle = isMethodSymbolic(invInst, th);
 		if (needToHandle) {
 			// java.util.Collection.size()I cannot be regard as java.util.ArrayList.size()I
 			String mname = invInst.getInvokedMethodClassName() + "." + invInst.getInvokedMethodName();
@@ -151,7 +151,7 @@ public class SymbolicLibraryHandler {
 		if(fullName.equals("java.util.List.listIterator()Ljava/util/ListIterator;")){
 		System.out.println(fullName);
 		}
-		if (className.startsWith("java.util") || className.startsWith("java.io")) {
+		if (className.startsWith("java.util") || className.startsWith("java.io") || className.startsWith("java.security")) {
 			ChoiceGenerator<?> cg;
 			if (!th.isFirstStepInsn()) {
 				cg = new PCChoiceGenerator(1);
@@ -367,7 +367,13 @@ public class SymbolicLibraryHandler {
 			((PCChoiceGenerator) cg).setCurrentPC(pc);
 			System.out.println("create symbolic expression for byte[] " + sym_ei);
 		} else {
-			throw new JPFException("object is of type " + ei.getClassInfo().getName());
+			if(typeName.equals("java.security.MessageDigest")) {
+				// define data type if necessary
+				sym_ei = new IntegerConstant(24);
+				System.out.println("create concrete Integer 24 to represent java.security.MessageDigest (unused) " + sym_ei);
+			} else {
+				throw new JPFException("object is of type " + ei.getClassInfo().getName());
+			}
 		}
 		return sym_ei;
 	}

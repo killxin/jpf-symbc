@@ -390,7 +390,9 @@ public enum LibraryOperation {
 	FILEINPUTSTREAM_READ2("java.io.FileInputStream.read([B)I"),
 	FILEINPUTSTREAM_CLOSE("java.io.FileInputStream.close()V"),
 	// array
-	ARRAY_INIT2("Array.<init>(I)V");
+	ARRAY_INIT2("Array.<init>(I)V"),
+	// java.security
+	MESSAGEDIGEST_UPDATE2("java.security.MessageDigest.update([BII)V");
 	
 	private final String str;
 
