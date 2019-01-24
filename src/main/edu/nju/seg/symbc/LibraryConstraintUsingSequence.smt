@@ -12,6 +12,7 @@
 (declare-datatypes () (
     (FileInputStream (mk-pair (length Int) (readPosition Int) (isOpen Bool)))
 ))
+(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 -10) 0 (ite (= true (select a!1 x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))
 ;START
 ;java.util.Collection.size()I
 ;java.util.Set.size()I
@@ -236,6 +237,7 @@
     )
     (= (mapping ?_p0) (store (mapping ?p0) ?r false))
 ))
+;Array.arraylength()I
 ;java.util.List.size()I
 ;java.util.ArrayList.size()I
 ;java.util.LinkedList.size()I
@@ -360,6 +362,7 @@
     (= (seq.len (element ?_p0)) ?p1)
     (forall ((x ?T)) (= (select (mapping ?_p0) x) false))
 ))
+;Array.get(I)Ljava/lang/Object;
 ;java.util.List.get(I)Ljava/lang/Object;
 ;java.util.ArrayList.get(I)Ljava/lang/Object;
 ;java.util.LinkedList.get(I)Ljava/lang/Object;
@@ -367,6 +370,7 @@
     (>= ?p1 0) (< ?p1 (seq.len (element ?p0)))
     (= (seq.unit ?r) (seq.at (element ?p0) ?p1))
 ))
+;Array.set(ILjava/lang/Object;)Ljava/lang/Object;
 ;java.util.List.set(ILjava/lang/Object;)Ljava/lang/Object;
 ;java.util.ArrayList.set(ILjava/lang/Object;)Ljava/lang/Object;
 ;java.util.LinkedList.set(ILjava/lang/Object;)Ljava/lang/Object;

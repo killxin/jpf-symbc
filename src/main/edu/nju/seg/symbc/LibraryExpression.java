@@ -60,6 +60,11 @@ public class LibraryExpression extends Expression {
 	public void setCopyFrom(LibraryExpression copyFrom) {
 		this.copyFrom = copyFrom;
 	}
+	
+	@Override
+	public String prefix_notation() {
+		return stringPC();
+	}
 
 	@Override
 	public void accept(ConstraintExpressionVisitor visitor) {

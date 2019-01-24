@@ -8,7 +8,7 @@ public class UnknownElementTypeException extends Exception {
 		super(message);
 		this.ce = ce;
 	}
-	
+
 	public String toString() {
 		return super.toString() + ": " + ce;
 	}

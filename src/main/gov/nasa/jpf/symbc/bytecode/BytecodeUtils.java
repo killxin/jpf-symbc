@@ -301,7 +301,7 @@ public class BytecodeUtils {
             // }
             // }
             // }
-
+            
             for (int j = 0; j < argSize; j++) { // j ranges over actual arguments
                 if (symClass || args.get(j).equalsIgnoreCase("SYM")) {
                     String name = argsInfo[localVarsIdx].getName();
@@ -376,24 +376,40 @@ public class BytecodeUtils {
                         ei.setObjectAttr(sym_v);
                         outputString = outputString.concat(" " + sym_v + ",");
                     }
-                    else if (argTypes[j].equalsIgnoreCase("int[]") || argTypes[j].equalsIgnoreCase("long[]")
+                   // adjust by czz
+                   else if (argTypes[j].equalsIgnoreCase("int[]") || argTypes[j].equalsIgnoreCase("long[]")
                             || argTypes[j].equalsIgnoreCase("byte[]")) {
                         if (symarray) {
-                            ArrayExpression sym_v = new ArrayExpression(th.getElementInfo(sf.peek()).toString());
-                            expressionMap.put(name, sym_v);
-                            sf.setOperandAttr(stackIdx, sym_v);
-                            outputString = outputString.concat(" " + sym_v + ",");
-
-                            PCChoiceGenerator prev_cg = cg.getPreviousChoiceGeneratorOfType(PCChoiceGenerator.class);
-                            PathCondition pc;
-                            if (prev_cg == null)
-                                pc = new PathCondition();
-                            else
-                                pc = ((PCChoiceGenerator) prev_cg).getCurrentPC();
-
-                            pc._addDet(Comparator.GE, sym_v.length, new IntegerConstant(0));
-                            ((PCChoiceGenerator) cg).setCurrentPC(pc);
+                        	if (symlibraries_flag) {
+                        		CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.ARRAY), "java.util.ArrayList");//argTypes[j]);
+                        		expressionMap.put(name, sym_v);
+                        		sf.setOperandAttr(stackIdx, sym_v);
+                        		sym_v.setElementTypeName("java.lang.Integer");
+                        		assert sf.isOperandRef(stackIdx);
+                        		ElementInfo ei = th.getModifiableElementInfo(sf.peek(stackIdx));
+                        		ei.setObjectAttr(sym_v);
+                        		outputString = outputString.concat(" " + sym_v + ",");
+                        	} else {
+	                            ArrayExpression sym_v = new ArrayExpression(th.getElementInfo(sf.peek()).toString());
+	                            expressionMap.put(name, sym_v);
+	                            sf.setOperandAttr(stackIdx, sym_v);
+	                            assert sf.isOperandRef(stackIdx);
+	                            ElementInfo ei = th.getModifiableElementInfo(sf.peek(stackIdx));
+	                            ei.setObjectAttr(sym_v);
+	                            outputString = outputString.concat(" " + sym_v + ",");
+	
+	                            PCChoiceGenerator prev_cg = cg.getPreviousChoiceGeneratorOfType(PCChoiceGenerator.class);
+	                            PathCondition pc;
+	                            if (prev_cg == null)
+	                                pc = new PathCondition();
+	                            else
+	                                pc = ((PCChoiceGenerator) prev_cg).getCurrentPC();
+	
+	                            pc._addDet(Comparator.GE, sym_v.length, new IntegerConstant(0));
+	                            ((PCChoiceGenerator) cg).setCurrentPC(pc);
+                            }
                         } else {
+//                        	throw new RuntimeException("not handled! not symarray");
                             Object[] argValues = invInst.getArgumentValues(th);
                             ElementInfo eiArray = (ElementInfo) argValues[j];
 
@@ -412,6 +428,9 @@ public class BytecodeUtils {
                             ArrayExpression sym_v = new ArrayExpression(th.getElementInfo(sf.peek()).toString());
                             expressionMap.put(name, sym_v);
                             sf.setOperandAttr(stackIdx, sym_v);
+                            assert sf.isOperandRef(stackIdx);
+                            ElementInfo ei = th.getModifiableElementInfo(sf.peek(stackIdx));
+                            ei.setObjectAttr(sym_v);
                             outputString = outputString.concat(" " + sym_v + ",");
 
                             PCChoiceGenerator prev_cg = cg.getPreviousChoiceGeneratorOfType(PCChoiceGenerator.class);
@@ -424,6 +443,7 @@ public class BytecodeUtils {
                             pc._addDet(Comparator.GE, sym_v.length, new IntegerConstant(0));
                             ((PCChoiceGenerator) cg).setCurrentPC(pc);
                         } else {
+//                        	throw new RuntimeException("not handled! not symarray");
                             Object[] argValues = invInst.getArgumentValues(th);
                             ElementInfo eiArray = (ElementInfo) argValues[j];
 
@@ -442,6 +462,9 @@ public class BytecodeUtils {
                             ArrayExpression sym_v = new ArrayExpression(th.getElementInfo(sf.peek()).toString());
                             expressionMap.put(name, sym_v);
                             sf.setOperandAttr(stackIdx, sym_v);
+                            assert sf.isOperandRef(stackIdx);
+                            ElementInfo ei = th.getModifiableElementInfo(sf.peek(stackIdx));
+                            ei.setObjectAttr(sym_v);
                             outputString = outputString.concat(" " + sym_v + ",");
 
                             PCChoiceGenerator prev_cg = cg.getPreviousChoiceGeneratorOfType(PCChoiceGenerator.class);
@@ -454,6 +477,7 @@ public class BytecodeUtils {
                             pc._addDet(Comparator.GE, sym_v.length, new IntegerConstant(0));
                             ((PCChoiceGenerator) cg).setCurrentPC(pc);
                         } else {
+//                        	throw new RuntimeException("not handled! not symarray");
                             Object[] argValues = invInst.getArgumentValues(th);
                             ElementInfo eiArray = (ElementInfo) argValues[j];
 
@@ -488,6 +512,7 @@ public class BytecodeUtils {
 
                             pc._addDet(Comparator.GE, sym_v.length, new IntegerConstant(0));
                             ((PCChoiceGenerator) cg).setCurrentPC(pc);
+                        	throw new RuntimeException("not handled! unknown type array");
                         }
 
                     } else {
@@ -671,7 +696,7 @@ public class BytecodeUtils {
     }
 
     public enum VarType {
-        INT, REAL, REF, STRING, OBJECT
+        INT, REAL, REF, STRING, OBJECT, ARRAY
     };
 
     public static String varName(String name, VarType type) {
@@ -691,6 +716,9 @@ public class BytecodeUtils {
             break;
         case OBJECT:
         	suffix = "_SYMOBJECT";
+        	break;
+        case ARRAY:
+        	suffix = "_SYMARRAY";
         	break;
         default:
             throw new RuntimeException("Unhandled SymVarType: " + type);

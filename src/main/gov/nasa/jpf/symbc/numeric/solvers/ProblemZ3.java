@@ -41,6 +41,8 @@ import java.io.PrintWriter;
 import java.util.*;
 import java.util.Map.Entry;
 
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
+
 //TODO: problem: we do not distinguish between ints and reals?
 // still needs a lot of work: do not use!
 
@@ -51,6 +53,7 @@ import edu.nju.seg.symbc.LibraryExpression;
 import edu.nju.seg.symbc.UnknownElementTypeException;
 import gov.nasa.jpf.JPFException;
 import gov.nasa.jpf.symbc.SymbolicInstructionFactory;
+import gov.nasa.jpf.symbc.arrays.ArrayExpression;
 import gov.nasa.jpf.symbc.numeric.PCParser;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.symbc.numeric.SymbolicReal;
@@ -683,16 +686,18 @@ public class ProblemZ3 extends ProblemGeneral {
 	public Boolean solve() {
 		try {
 //	        System.out.println("rh: "+Arrays.toString(Arrays.copyOfRange(solver.getAssertions(),2,10)));
-			System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
+//			System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
 			Status status = solver.check();
 			if (Status.SATISFIABLE == status) {
 				System.out.println("********rh: SAT********");
 				modelPicture = solver.getModel().toString();
-//				System.out.println("rh: Model: " + solver.getModel());
+				generateConstraint(solver);
 				return true;
 			} 
 			else if(Status.UNSATISFIABLE == status) {
 				System.out.println("********rh: UNSAT********");
+				Arrays.stream(solver.getAssertions()).forEach(x -> System.out.println(x));
+				System.out.println("************************");
 //				System.out.println("rh: Core: "+ solver.getUnsatCore().length + Arrays.toString(solver.getUnsatCore()));
 				return false;
 			} else {
@@ -706,6 +711,77 @@ public class ProblemZ3 extends ProblemGeneral {
 			throw new RuntimeException("## Error Z3: " + e);
 		}
 	}
+	
+	// add by czz
+	/**
+	 * constraint that contains the return variable of the function
+	 */
+	public static String returnConstraint;
+	/**
+	 * get constraint that contains the return variable of the function
+	 */
+	public static String getReturnConstraint() {
+		return returnConstraint;
+	}
+	/**
+	 *  constraint without library type declaration
+	 */
+	public static String constraint = null;
+	/**
+	 *  get constraint without library type declaration
+	 */
+	public static String getCurrentConstraint() {
+		return constraint;
+	}
+	public void generateConstraint(Solver solver) {
+		StringBuffer result = new StringBuffer();
+//		for (String sort_name: dataTypeSortMap.keySet()) {
+//			System.out.println("Datatype sort name:" + sort_name);
+//		}
+		for(LibraryExpression le: PCParser.symLibraryVar.keySet()) {
+			Object tempExpr = PCParser.symLibraryVar.get(le);
+			assert tempExpr instanceof Expr;
+			Expr expr = (Expr) tempExpr;
+			String libExpr = expr.getFuncDecl().toString();
+			for (String sort_name: dataTypeSortMap.keySet()) {
+				// change to unique sort name
+				String mySortName = "(My" + sort_name.replace("_", " ") + ")";
+//				libExpr = replaceLast(libExpr, sort_name, mySortName);
+				libExpr = libExpr.replaceAll(sort_name + "\\)$", mySortName + ")");
+			}
+			result.append(libExpr).append("\n");
+		}
+		for(ArrayExpression ae: PCParser.symArrayVar.keySet()) {
+			Object tempExpr = PCParser.symArrayVar.get(ae);
+			assert tempExpr instanceof Expr;
+			Expr expr = (Expr) tempExpr;
+			String arrExpr = expr.getFuncDecl().toString();
+			for (String sort_name: dataTypeSortMap.keySet()) {
+				// change to unique sort name
+				String mySortName = "(My" + sort_name.replace("_", " ") + ")";
+//				arrExpr = replaceLast(arrExpr, sort_name, mySortName);
+				arrExpr = arrExpr.replaceAll(sort_name + "\\)$", mySortName + ")");
+			}
+			result.append(arrExpr).append("\n");
+		}
+		for(SymbolicInteger si: PCParser.symIntegerVar.keySet()) {
+			Object tempExpr = PCParser.symIntegerVar.get(si);
+			assert tempExpr instanceof Expr;
+			Expr expr = (Expr) tempExpr;
+			result.append(expr.getFuncDecl()).append("\n");
+		}
+		result.append("(assert (and \n");
+		Arrays.stream(solver.getAssertions()).forEach(x -> result.append(x).append("\n"));
+		result.append("))\n;");
+		constraint = result.toString();
+	}
+	
+//	public static String replaceLast(String str, String target, String other) {
+//		StringBuilder result = new StringBuilder(str);
+//		result.replace(result.lastIndexOf(target), result.lastIndexOf(target) + other.length(), other);
+//		return result.toString();
+//	}
+	// add by czz end
 
 	public void post(Object constraint) {
 		try {
@@ -1244,6 +1320,19 @@ public class ProblemZ3 extends ProblemGeneral {
 					}
 				}
 			}
+			for (Entry<ArrayExpression, Object> entry: PCParser.symArrayVar.entrySet()) {
+				Sort sort = dataTypeSortMap.get("List_" + mkSortFromTypeName(entry.getKey().getElemType()));
+				Symbol key = ctx.mkSymbol(entry.getKey().toString());
+				FuncDecl value = ctx.mkConstDecl(key, sort);
+				funcSet.add(value);
+				sortSet.add(sort);
+				FuncDecl[][] acc = ((DatatypeSort) sort).getAccessors();
+				for (int i = 0; i < acc.length; i++) {
+					for (int j = 0; j < acc[i].length; j++) {
+						funcSet.add(acc[i][j]);
+					}
+				}				
+			}
 			Symbol[] symbs1 = new Symbol[sortSet.size()];
 			Sort[] sorts = new Sort[sortSet.size()];
 			int i;
@@ -1269,6 +1358,34 @@ public class ProblemZ3 extends ProblemGeneral {
 		}
 	}
 
+	// add by czz
+	public Object makeArrayVar(ArrayExpression aRef) {
+		DatatypeSort sort;
+		Sort element_sort = mkSortFromTypeName(aRef.getElemType());
+		String sort_name = "List_" + element_sort;
+		if (dataTypeSortMap.containsKey(sort_name)) {
+			sort = dataTypeSortMap.get(sort_name);
+		} else {
+			String[] size_element = new String[] { "mapping", "element" };
+			Sort[] sorts = new Sort[] { ctx.mkArraySort(element_sort, ctx.mkBoolSort()), ctx.mkSeqSort(element_sort) };
+			int[] sort_refs = null;
+			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
+			sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
+			dataTypeSortMap.put(sort_name, sort);
+			System.out.println("Datatype Summary:");
+			FuncDecl[][] acc = sort.getAccessors();
+			System.out.println(sort.getConstructors()[0]);
+			for (int i = 0; i < acc.length; i++) {
+				for (int j = 0; j < acc[i].length; j++) {
+					System.out.println(sort.getAccessors()[i][j]);
+				}
+			}
+			System.out.println("=====");
+		}
+		return ctx.mkConst(aRef.getName(), sort);
+	}
+	// add by czz end
+	
 	public Object makeLibraryVar(LibraryExpression cRef) throws UnknownElementTypeException {
 		try {
 			Sort sort = cRef.getSort();
@@ -1345,7 +1462,7 @@ public class ProblemZ3 extends ProblemGeneral {
 		}
 	}
 
-	public Map<String, DatatypeSort> dataTypeSortMap = new TreeMap<>();
+	public static Map<String, DatatypeSort> dataTypeSortMap = new TreeMap<>();
 
 	private Sort mkSetSort(Sort element_sort) {
 		String sort_name = "Set_" + element_sort;

@@ -391,6 +391,9 @@ public enum LibraryOperation {
 	FILEINPUTSTREAM_CLOSE("java.io.FileInputStream.close()V"),
 	// array
 	ARRAY_INIT2("Array.<init>(I)V"),
+	ARRAY_LENGTH("Array.arraylength()I"),
+	ARRAY_GET("Array.get(I)Ljava/lang/Object;"),
+	ARRAY_SET("Array.set(ILjava/lang/Object;)Ljava/lang/Object;"),
 	// java.security
 	MESSAGEDIGEST_UPDATE2("java.security.MessageDigest.update([BII)V");
 	
