@@ -1041,6 +1041,75 @@
     )
     (= (position ?p_0) (position ?p0))
 ))
+;java.lang.String.<init>()V
+(assert (= "" ?_p0))
+;java.lang.String.<init>(Ljava/lang/String;)V
+;java.lang.String.<init>(Ljava/lang/StringBuffer;)V
+;java.lang.String.<init>(Ljava/lang/StringBuilder;)V
+(assert (= ?p1 ?_p0))
+;java.lang.String.equals(Ljava/lang/Object;)Z
+;java.lang.String.contentEquals(Ljava/lang/StringBuffer;)Z
+;java.lang.String.contentEquals(Ljava/lang/CharSequence;)Z
+(assert 
+	(= ?r (ite (= ?p0 ?p1) 1 0))
+)
+;java.lang.String.charAt(I)C
+(assert 
+	(= ?r (str.at ?p0 ?p1))
+)
+;java.lang.String.length()I
+(assert (= ?r (str.len ?p0)))
+;java.lang.String.isEmpty()Z
+(assert (= ?r (ite (= (str.len ?p0) 0) 1 0)))
+;java.lang.String.startsWith(Ljava/lang/String;)Z
+(assert (= ?r 
+	(ite (str.prefixof ?p1 ?p0) 1 0)
+))
+;java.lang.String.startsWith(Ljava/lang/String;I)Z
+(assert (= ?r 
+	(ite 
+		(str.prefixof ?p1
+			(str.substr ?p0 ?p2 (- (str.len ?p0) ?p2))
+		)
+		1 0)
+))
+;java.lang.String.endsWith(Ljava/lang/String;)Z
+(assert (= ?r 
+	(ite (str.suffixof ?p1 ?p0) 1 0)
+))
+;java.lang.String.indexOf(Ljava/lang/String;)I
+(assert (= ?r
+	(str.indexof ?p0 ?p1)
+))
+;java.lang.String.indexOf(Ljava/lang/String;I)I
+(assert (= ?r
+	(str.indexof ?p0 ?p1 ?p2)
+))
+;java.lang.String.substring(I)Ljava/lang/String;
+(assert (= ?r
+	(str.substr ?p0 ?p1 (- (str.len ?p0) ?p1))
+))
+;java.lang.String.substring(II)Ljava/lang/String;
+;java.lang.String.subSequence(II)Ljava/lang/CharSequence;
+(assert (= ?r
+	(str.substr ?p0 ?p1 (- ?p2 ?p1))
+))
+;java.lang.String.concat(Ljava/lang/String;)Ljava/lang/String;
+(assert (= ?r (str.++ ?p0 ?p1)))
+;java.lang.String.contains(Ljava/lang/CharSequence;)Z
+(assert (= ?r (str.contains ?p0 ?p1)))
+;java.lang.String.toString()Ljava/lang/String;
+(assert (= ?r ?p0))
+;java.lang.String.valueOf(Z)Ljava/lang/String;
+(assert (= ?r
+	(ite (= ?p0 1) "true" "false")
+))
+;java.lang.String.valueOf(C)Ljava/lang/String;
+(assert (= ?r ?p0))
+;java.lang.String.valueOf(I)Ljava/lang/String;
+(assert (= ?r (int.to.str ?p0)))
+;java.lang.String.valueOf(J)Ljava/lang/String;
+(assert (= ?r (int.to.str ?p0)))
 ;java.io.FileInputStream.<init>(Ljava/lang/String;)V
 (assert (and 
     (>= (length ?_p0) 0) (<= (length ?_p0) 2048)

@@ -588,3 +588,256 @@
 ;
 (declare-const retMain_163_SYMINT Int)
 (assert (= retMain_163_SYMINT ( +  ret_162_SYMINT ( +  ret_160_SYMINT ( +  ret_158_SYMINT ( +  ret_156_SYMINT ( +  ret_154_SYMINT ( +  ret_152_SYMINT ( +  ret_150_SYMINT ( +  ret_148_SYMINT ( +  ret_146_SYMINT ( +  ret_144_SYMINT ( +  ret_142_SYMINT ( +  ret_140_SYMINT ( +  ret_138_SYMINT ( +  ret_136_SYMINT ( +  ret_134_SYMINT ( +  ret_132_SYMINT ( +  ret_130_SYMINT ( +  ret_128_SYMINT ( +  ret_126_SYMINT ( +  ret_124_SYMINT ( +  ret_122_SYMINT ( +  ret_120_SYMINT ( +  ret_118_SYMINT ( +  ret_116_SYMINT ( +  ret_114_SYMINT ( +  ret_112_SYMINT ( +  ret_110_SYMINT ( +  ret_108_SYMINT ( +  ret_106_SYMINT ( +  ret_104_SYMINT ( +  ret_102_SYMINT ( +  ret_100_SYMINT ( +  ret_98_SYMINT ( +  ret_96_SYMINT ( +  ret_94_SYMINT ( +  ret_92_SYMINT ( +  ret_90_SYMINT ( +  ret_88_SYMINT ( +  ret_86_SYMINT ( +  ret_84_SYMINT ( +  ret_82_SYMINT ( +  ret_80_SYMINT ( +  ret_78_SYMINT ( +  ret_76_SYMINT ( +  ret_74_SYMINT ( +  ret_72_SYMINT ( +  ret_70_SYMINT ( +  ret_68_SYMINT ( +  ret_66_SYMINT ( +  ret_64_SYMINT ( +  ret_62_SYMINT ( +  ret_60_SYMINT ( +  ret_58_SYMINT ( +  ret_56_SYMINT ( +  ret_54_SYMINT ( +  ret_52_SYMINT ( +  ret_50_SYMINT ( +  ret_48_SYMINT ( +  ret_46_SYMINT ( +  ret_44_SYMINT ( +  ret_42_SYMINT ( +  ret_40_SYMINT ( +  ret_38_SYMINT ( +  ret_36_SYMINT ( +  ret_34_SYMINT ( +  ret_32_SYMINT ( +  ret_30_SYMINT ( +  ret_28_SYMINT ( +  ret_26_SYMINT ( +  ret_24_SYMINT ( +  ret_22_SYMINT ( +  ret_20_SYMINT ( +  ret_18_SYMINT ( +  ret_16_SYMINT ( +  ret_14_SYMINT ( +  ret_12_SYMINT ( +  ret_10_SYMINT ( +  ret_8_SYMINT ( +  ret_6_SYMINT ret_4_SYMINT)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+;(define-fun ret_18_SYMINT () Int
+;  (- 2147474530))
+;(define-fun ret_136_SYMINT () Int
+;  (- 2147482036))
+;(define-fun length_2_SYMINT () Int
+;  80)
+;(define-fun ret_162_SYMINT () Int
+;  (- 2147481071))
+;(define-fun ret_154_SYMINT () Int
+;  (- 2147481164))
+;(define-fun ret_150_SYMINT () Int
+;  (- 2147480964))
+;(define-fun ret_74_SYMINT () Int
+;  (- 2147476248))
+;(define-fun ret_58_SYMINT () Int
+;  (- 2147478731))
+;(define-fun numbers_1_SYMARRAY () List_Int
+;  (let ((a!1 (seq.++ (seq.unit (- 2147477940))
+;                   (seq.++ (seq.unit (- 2147483110))
+;                           (seq.++ (seq.unit (- 2147482438))
+;                                   (seq.unit (- 2147481071)))))))
+;(let ((a!2 (seq.++ (seq.unit (- 2147480964))
+;                   (seq.++ (seq.unit (- 2147483391))
+;                           (seq.++ (seq.unit (- 2147481164)) a!1)))))
+;(let ((a!3 (seq.++ (seq.unit (- 2147474672))
+;                   (seq.++ (seq.unit (- 2147480810))
+;                           (seq.++ (seq.unit (- 2147475199)) a!2)))))
+;(let ((a!4 (seq.++ (seq.unit (- 2147482480))
+;                   (seq.++ (seq.unit (- 2147480923))
+;                           (seq.++ (seq.unit (- 2147477452)) a!3)))))
+;(let ((a!5 (seq.++ (seq.unit (- 2147480067))
+;                   (seq.++ (seq.unit (- 2147481560))
+;                           (seq.++ (seq.unit (- 2147482036)) a!4)))))
+;(let ((a!6 (seq.++ (seq.unit (- 2147477834))
+;                   (seq.++ (seq.unit (- 2147475295))
+;                           (seq.++ (seq.unit (- 2147477068)) a!5)))))
+;(let ((a!7 (seq.++ (seq.unit (- 2147474837))
+;                   (seq.++ (seq.unit (- 2147480146))
+;                           (seq.++ (seq.unit (- 2147482965)) a!6)))))
+;(let ((a!8 (seq.++ (seq.unit (- 2147477078))
+;                   (seq.++ (seq.unit (- 2147479771))
+;                           (seq.++ (seq.unit (- 2147476167)) a!7)))))
+;(let ((a!9 (seq.++ (seq.unit (- 2147480136))
+;                   (seq.++ (seq.unit (- 2147483304))
+;                           (seq.++ (seq.unit (- 2147478973)) a!8)))))
+;(let ((a!10 (seq.++ (seq.unit (- 2147474844))
+;                    (seq.++ (seq.unit (- 2147475090))
+;                            (seq.++ (seq.unit (- 2147481419)) a!9)))))
+;(let ((a!11 (seq.++ (seq.unit (- 2147479925))
+;                    (seq.++ (seq.unit (- 2147481608))
+;                            (seq.++ (seq.unit (- 2147476263)) a!10)))))
+;(let ((a!12 (seq.++ (seq.unit (- 2147477835))
+;                    (seq.++ (seq.unit (- 2147475010))
+;                            (seq.++ (seq.unit (- 2147477385)) a!11)))))
+;(let ((a!13 (seq.++ (seq.unit (- 2147481435))
+;                    (seq.++ (seq.unit (- 2147479706))
+;                            (seq.++ (seq.unit (- 2147476585)) a!12)))))
+;(let ((a!14 (seq.++ (seq.unit (- 2147476314))
+;                    (seq.++ (seq.unit (- 2147478964))
+;                            (seq.++ (seq.unit (- 2147480696)) a!13)))))
+;(let ((a!15 (seq.++ (seq.unit (- 2147474575))
+;                    (seq.++ (seq.unit (- 2147476248))
+;                            (seq.++ (seq.unit (- 2147474966)) a!14)))))
+;(let ((a!16 (seq.++ (seq.unit (- 2147475296))
+;                    (seq.++ (seq.unit (- 2147482957))
+;                            (seq.++ (seq.unit (- 2147475033)) a!15)))))
+;(let ((a!17 (seq.++ (seq.unit (- 2147478744))
+;                    (seq.++ (seq.unit (- 2147477202))
+;                            (seq.++ (seq.unit (- 2147481564)) a!16)))))
+;(let ((a!18 (seq.++ (seq.unit (- 2147481384))
+;                    (seq.++ (seq.unit (- 2147483054))
+;                            (seq.++ (seq.unit (- 2147478731)) a!17)))))
+;(let ((a!19 (seq.++ (seq.unit (- 2147478404))
+;                    (seq.++ (seq.unit (- 2147476096))
+;                            (seq.++ (seq.unit (- 2147473673)) a!18)))))
+;(let ((a!20 (seq.++ (seq.unit (- 2147475419))
+;                    (seq.++ (seq.unit (- 2147476565))
+;                            (seq.++ (seq.unit (- 2147482961)) a!19)))))
+;(let ((a!21 (seq.++ (seq.unit (- 2147483085))
+;                    (seq.++ (seq.unit (- 2147477506))
+;                            (seq.++ (seq.unit (- 2147483055)) a!20)))))
+;(let ((a!22 (seq.++ (seq.unit (- 2147481214))
+;                    (seq.++ (seq.unit (- 2147476310))
+;                            (seq.++ (seq.unit (- 2147474202)) a!21)))))
+;(let ((a!23 (seq.++ (seq.unit (- 2147476212))
+;                    (seq.++ (seq.unit (- 2147475168))
+;                            (seq.++ (seq.unit (- 2147476788)) a!22)))))
+;(let ((a!24 (seq.++ (seq.unit (- 2147474530))
+;                    (seq.++ (seq.unit (- 2147474717))
+;                            (seq.++ (seq.unit (- 2147478369)) a!23)))))
+;(let ((a!25 (seq.++ (seq.unit (- 2147474010))
+;                    (seq.++ (seq.unit (- 2147479978))
+;                            (seq.++ (seq.unit (- 2147480610)) a!24)))))
+;(let ((a!26 (seq.++ (seq.unit (- 2147474012))
+;                    (seq.++ (seq.unit (- 2147480401))
+;                            (seq.++ (seq.unit (- 2147479554)) a!25)))))
+;  (List_Int (lambda ((x!1 Int))
+;              (or (= x!1 2)
+;                  (= x!1 0)
+;                  (= x!1 (- 9))
+;                  (= x!1 4)
+;                  (= x!1 9)
+;                  (= x!1 1)
+;                  (= x!1 10)
+;                  (= x!1 (- 1))
+;                  (= x!1 (- 5))))
+;            (seq.++ (seq.unit (- 2147474947)) a!26)))))))))))))))))))))))))))))
+;(define-fun ret_10_SYMINT () Int
+;  (- 2147479554))
+;(define-fun ret_114_SYMINT () Int
+;  (- 2147477078))
+;(define-fun ret_56_SYMINT () Int
+;  (- 2147483054))
+;(define-fun ret_32_SYMINT () Int
+;  (- 2147476310))
+;(define-fun ret_120_SYMINT () Int
+;  (- 2147474837))
+;(define-fun ret_118_SYMINT () Int
+;  (- 2147476167))
+;(define-fun ret_22_SYMINT () Int
+;  (- 2147478369))
+;(define-fun ret_4_SYMINT () Int
+;  (- 2147474947))
+;(define-fun ret_100_SYMINT () Int
+;  (- 2147476263))
+;(define-fun ret_110_SYMINT () Int
+;  (- 2147483304))
+;(define-fun ret_68_SYMINT () Int
+;  (- 2147482957))
+;(define-fun ret_160_SYMINT () Int
+;  (- 2147482438))
+;(define-fun ret_156_SYMINT () Int
+;  (- 2147477940))
+;(define-fun ret_148_SYMINT () Int
+;  (- 2147475199))
+;(define-fun ret_14_SYMINT () Int
+;  (- 2147479978))
+;(define-fun ret_96_SYMINT () Int
+;  (- 2147479925))
+;(define-fun ret_26_SYMINT () Int
+;  (- 2147475168))
+;(define-fun ret_108_SYMINT () Int
+;  (- 2147480136))
+;(define-fun ret_126_SYMINT () Int
+;  (- 2147477834))
+;(define-fun ret_62_SYMINT () Int
+;  (- 2147477202))
+;(define-fun ret_48_SYMINT () Int
+;  (- 2147478404))
+;(define-fun ret_46_SYMINT () Int
+;  (- 2147482961))
+;(define-fun ret_112_SYMINT () Int
+;  (- 2147478973))
+;(define-fun ret_86_SYMINT () Int
+;  (- 2147479706))
+;(define-fun ret_36_SYMINT () Int
+;  (- 2147483085))
+;(define-fun ret_140_SYMINT () Int
+;  (- 2147480923))
+;(define-fun ret_102_SYMINT () Int
+;  (- 2147474844))
+;(define-fun ret_34_SYMINT () Int
+;  (- 2147474202))
+;(define-fun ret_90_SYMINT () Int
+;  (- 2147477835))
+;(define-fun ret_54_SYMINT () Int
+;  (- 2147481384))
+;(define-fun ret_52_SYMINT () Int
+;  (- 2147473673))
+;(define-fun ret_88_SYMINT () Int
+;  (- 2147476585))
+;(define-fun ret_134_SYMINT () Int
+;  (- 2147481560))
+;(define-fun ret_122_SYMINT () Int
+;  (- 2147480146))
+;(define-fun ret_72_SYMINT () Int
+;  (- 2147474575))
+;(define-fun ret_30_SYMINT () Int
+;  (- 2147481214))
+;(define-fun ret_78_SYMINT () Int
+;  (- 2147476314))
+;(define-fun ret_158_SYMINT () Int
+;  (- 2147483110))
+;(define-fun ret_106_SYMINT () Int
+;  (- 2147481419))
+;(define-fun ret_124_SYMINT () Int
+;  (- 2147482965))
+;(define-fun ret_70_SYMINT () Int
+;  (- 2147475033))
+;(define-fun ret_66_SYMINT () Int
+;  (- 2147475296))
+;(define-fun ret_132_SYMINT () Int
+;  (- 2147480067))
+;(define-fun ret_138_SYMINT () Int
+;  (- 2147482480))
+;(define-fun ret_94_SYMINT () Int
+;  (- 2147477385))
+;(define-fun ret_152_SYMINT () Int
+;  (- 2147483391))
+;(define-fun ret_16_SYMINT () Int
+;  (- 2147480610))
+;(define-fun ret_98_SYMINT () Int
+;  (- 2147481608))
+;(define-fun ret_116_SYMINT () Int
+;  (- 2147479771))
+;(define-fun ret_44_SYMINT () Int
+;  (- 2147476565))
+;(define-fun ret_40_SYMINT () Int
+;  (- 2147483055))
+;(define-fun ret_130_SYMINT () Int
+;  (- 2147477068))
+;(define-fun ret_76_SYMINT () Int
+;  (- 2147474966))
+;(define-fun ret_60_SYMINT () Int
+;  (- 2147478744))
+;(define-fun ret_80_SYMINT () Int
+;  (- 2147478964))
+;(define-fun ret_50_SYMINT () Int
+;  (- 2147476096))
+;(define-fun ret_8_SYMINT () Int
+;  (- 2147480401))
+;(define-fun ret_104_SYMINT () Int
+;  (- 2147475090))
+;(define-fun ret_38_SYMINT () Int
+;  (- 2147477506))
+;(define-fun ret_24_SYMINT () Int
+;  (- 2147476212))
+;(define-fun ret_12_SYMINT () Int
+;  (- 2147474010))
+;(define-fun ret_42_SYMINT () Int
+;  (- 2147475419))
+;(define-fun ret_6_SYMINT () Int
+;  (- 2147474012))
+;(define-fun ret_82_SYMINT () Int
+;  (- 2147480696))
+;(define-fun ret_142_SYMINT () Int
+;  (- 2147477452))
+;(define-fun ret_92_SYMINT () Int
+;  (- 2147475010))
+;(define-fun ret_64_SYMINT () Int
+;  (- 2147481564))
+;(define-fun ret_128_SYMINT () Int
+;  (- 2147475295))
+;(define-fun ret_146_SYMINT () Int
+;  (- 2147480810))
+;(define-fun ret_20_SYMINT () Int
+;  (- 2147474717))
+;(define-fun ret_84_SYMINT () Int
+;  (- 2147481435))
+;(define-fun ret_144_SYMINT () Int
+;  (- 2147474672))
+;(define-fun ret_28_SYMINT () Int
+;  (- 2147476788))

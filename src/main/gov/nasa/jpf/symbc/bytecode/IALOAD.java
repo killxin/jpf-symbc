@@ -83,7 +83,10 @@ public class IALOAD extends gov.nasa.jpf.jvm.bytecode.IALOAD {
 //					arrayExpr.setElemType("java.lang.Integer");
 //				}
 				CollectionExpression arrayExpr = (CollectionExpression) peekArrayAttr(ti);
-//				ElementInfo eiArray = ti.getElementInfo(sf.peek(1));
+				if (arrayExpr == null) {
+					ElementInfo eiArray = ti.getElementInfo(sf.peek(1));
+					arrayExpr = (CollectionExpression) eiArray.getObjectAttr();
+				}
 				assert !sf.isOperandRef();
 				Expression indexExpr;
 				if (sf.hasOperandAttr()) {

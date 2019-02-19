@@ -721,7 +721,11 @@ public class ProblemZ3 extends ProblemGeneral {
 	 * get constraint that contains the return variable of the function
 	 */
 	public static String getReturnConstraint() {
-		return returnConstraint;
+		if (returnConstraint == null) {
+			return "";
+		} else {
+			return returnConstraint;
+		}
 	}
 	/**
 	 *  constraint without library type declaration

@@ -19,6 +19,7 @@
 package gov.nasa.jpf.symbc.bytecode;
 
 import gov.nasa.jpf.Config;
+import gov.nasa.jpf.JPFException;
 import gov.nasa.jpf.ListenerAdapter;
 import gov.nasa.jpf.jvm.bytecode.JVMInvokeInstruction;
 import gov.nasa.jpf.symbc.arrays.ArrayExpression;
@@ -272,6 +273,9 @@ public class BytecodeUtils {
             } else {
                 throw new RuntimeException("ERROR: you need to turn debug option on");
             }
+            if (argsInfo.length == 1 && argsInfo[0] == null) {
+            	throw new JPFException("code can't compile");
+            }
             Map<String, Expression> expressionMap = new HashMap<String, Expression>();
 
             // take care of the method arguments
@@ -382,9 +386,9 @@ public class BytecodeUtils {
                         if (symarray) {
                         	if (symlibraries_flag) {
                         		CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.ARRAY), "java.util.ArrayList");//argTypes[j]);
+                        		sym_v.setElementTypeName("java.lang.Integer");
                         		expressionMap.put(name, sym_v);
                         		sf.setOperandAttr(stackIdx, sym_v);
-                        		sym_v.setElementTypeName("java.lang.Integer");
                         		assert sf.isOperandRef(stackIdx);
                         		ElementInfo ei = th.getModifiableElementInfo(sf.peek(stackIdx));
                         		ei.setObjectAttr(sym_v);

@@ -68,6 +68,10 @@ public class IASTORE extends gov.nasa.jpf.jvm.bytecode.IASTORE {
 			} else {
 				StackFrame sf = ti.getModifiableTopFrame();
 				CollectionExpression arrayExpr = (CollectionExpression) sf.getOperandAttr(2);
+				if (arrayExpr == null) {
+					ElementInfo eiArray = ti.getElementInfo(sf.peek(2));
+					arrayExpr = (CollectionExpression) eiArray.getObjectAttr();
+				}
 				IntegerExpression indexExpr, valueExpr;
 				if (sf.hasOperandAttr(1)) {
 					indexExpr = (IntegerExpression)sf.getOperandAttr(1);
