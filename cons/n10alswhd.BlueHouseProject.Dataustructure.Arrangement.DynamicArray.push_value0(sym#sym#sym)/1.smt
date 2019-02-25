@@ -12,8 +12,8 @@
 (declare-datatypes () (
     (FileInputStream (mk-pair (length Int) (readPosition Int) (isOpen Bool)))
 ))
-(declare-fun arr_1_SYMARRAY () (MyList Int))
 (declare-fun arr_5_SYMARRAY () (MyList Int))
+(declare-fun arr_1_SYMARRAY () (MyList Int))
 (declare-fun index_2_SYMINT () Int)
 (declare-fun val_3_SYMINT () Int)
 (declare-fun ret_4_SYMINT () Int)
@@ -49,3 +49,10 @@
 ;  (- 2147483610))
 ;(define-fun ret_4_SYMINT () Int
 ;  (- 2147483610))
+;;Param:arr_1_SYMARRAY
+;Param:val_3_SYMINT
+;Param:index_2_SYMINT
+;Locals:arr_5_SYMARRAY
+;Locals:val_3_SYMINT
+;Locals:index_2_SYMINT
+;Return:retMain_6_SYMOBJECT

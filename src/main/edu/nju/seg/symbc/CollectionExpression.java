@@ -46,7 +46,13 @@ public class CollectionExpression extends LibraryExpression {
 		switch (typeName) {
 		case "java.lang.Integer":
 		case "java.lang.Byte":
+		case "int":
 			return "Int";
+		case "java.lang.Float":
+		case "java.lang.Double":
+		case "float":
+		case "double":
+			return "Real";
 		default:
 			return typeName;
 		}

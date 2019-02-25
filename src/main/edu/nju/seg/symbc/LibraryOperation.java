@@ -380,6 +380,7 @@ public enum LibraryOperation {
 	SORTEDMAP_KEYSET("java.util.SortedMap.keySet()Ljava/util/Set;"),
 	SORTEDMAP_VALUES("java.util.SortedMap.values()Ljava/util/Collection;"),
 	SORTEDMAP_ENTRYSET("java.util.SortedMap.entrySet()Ljava/util/Set;"),
+	ARRAYS_COPYOF("java.util.Arrays.copyOf([II)[I"),
 	// java.lang
 	STRING_INIT("java.lang.String.<init>()V"),
 	STRING_INIT2("java.lang.String.<init>(Ljava/lang/String;)V"),
@@ -474,6 +475,11 @@ public enum LibraryOperation {
 	STRING_CLINIT("java.lang.String.<clinit>()V"),
 	INTEGER_VALUEOF("java.lang.Integer.valueOf(I)Ljava/lang/Integer;"),
 	INTEGER_INTVALUE("java.lang.Integer.intValue()I"),
+	INTEGER_SUM("java.lang.Integer.sum(II)I"),
+	INTEGER_MAX("java.lang.Integer.max(II)I"),
+	INTEGER_MIN("java.lang.Integer.min(II)I"),
+	INTEGER_COMPARETO("java.lang.Integer.compareTo(Ljava/lang/Integer;)I"),
+	INTEGER_TOSTRING("java.lang.Integer.toString()Ljava/lang/String;"),
 	// java.io
 	INPUTSTREAM_READ2("java.io.InputStream.read([B)I"),
 	INPUTSTREAM_CLOSE("java.io.InputStream.close()V"),

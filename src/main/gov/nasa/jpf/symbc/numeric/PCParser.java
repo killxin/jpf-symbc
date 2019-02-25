@@ -1063,6 +1063,7 @@ public class PCParser {
 		symLibraryVar = new HashMap<LibraryExpression, Object>();
 		// add by czz
 		symArrayVar = new HashMap<ArrayExpression, Object>();
+		symStringVar = new HashMap<StringExpression, Object>();
 		// result = null;
 		tempVars = 0;
 
@@ -1265,7 +1266,8 @@ public class PCParser {
 	static {
 		smtFormats = new EnumMap<LibraryOperation, String>(LibraryOperation.class);
 		try {
-			String spfPath = new gov.nasa.jpf.Config(new String[] {}).getProperty("jpf-symbc");
+//			String spfPath = new gov.nasa.jpf.Config(new String[] {}).getProperty("jpf-symbc");
+			String spfPath = "/home/fox/git/jpf-symbc";
 			String path = spfPath + "/src/main/edu/nju/seg/symbc/LibraryConstraintUsingSequence.smt";
 			BufferedReader in = new BufferedReader(new FileReader(path));
 			String line = in.readLine();
@@ -1306,6 +1308,7 @@ public class PCParser {
 
 	// add by czz
 	public static Map<ArrayExpression, Object> symArrayVar;
+	public static Map<StringExpression, Object> symStringVar;
 
 	static Object getExpression(ArrayExpression eRef) {
 		ProblemZ3 pbz3 = (ProblemZ3) pb;
@@ -1317,6 +1320,17 @@ public class PCParser {
 		}
 		return dp_var;
 
+	}
+	
+	static Object getExpression(StringExpression sRef) {
+		ProblemZ3 pbz3 = (ProblemZ3) pb;
+		assert sRef != null;
+		Object dp_var = symStringVar.get(sRef);
+		if (dp_var == null) {
+			dp_var = pbz3.makeStringVar(sRef);
+			symStringVar.put(sRef, dp_var);
+		}
+		return dp_var;		
 	}
 	// add by czz end
 
@@ -1333,13 +1347,19 @@ public class PCParser {
 			} else {
 				return getExpression(ie).toString();
 			}
+		} else if (exp instanceof RealExpression) {
+			RealExpression re = (RealExpression) exp;
+			if (re instanceof RealConstant) {
+				return String.valueOf(((RealConstant) re).value);
+			} else {
+				return getExpression(re).toString();
+			}
 		} else if (exp instanceof StringExpression) {
 			StringExpression se = (StringExpression) exp;
 			if (se instanceof StringConstant) {
 				return ((StringConstant) se).value();
 			} else {
-				// TODO: don't deal with StringExpression yet
-				return null;
+				return getExpression(se).toString();
 			}
 		} else if (exp instanceof ArrayExpression) {
 			ArrayExpression ae = (ArrayExpression) exp;

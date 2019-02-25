@@ -128,8 +128,10 @@ public class NEWARRAY extends gov.nasa.jpf.jvm.bytecode.NEWARRAY {
 				LibraryConstraint cc = new LibraryConstraint(LibraryOperation.ARRAY_INIT2,
 						new Expression[] { null, lengthExpr }, null, new Expression[] { arrayExpr, null });
 				typeName = getTypeName();
-				if (typeName.equals("int") || typeName.equals("byte") || typeName.equals("long")) {
+				if (typeName.equals("int") || typeName.equals("byte") || typeName.equals("short") || typeName.equals("long")) {
 					arrayExpr.setElementTypeName("java.lang.Integer");
+				} else if (typeName.equalsIgnoreCase("float") || typeName.equalsIgnoreCase("double")) {
+					arrayExpr.setElementTypeName("float");
 				} else {
 					throw new RuntimeException("unhandled array type");
 				}

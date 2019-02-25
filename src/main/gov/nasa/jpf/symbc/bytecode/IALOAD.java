@@ -95,7 +95,6 @@ public class IALOAD extends gov.nasa.jpf.jvm.bytecode.IALOAD {
 					indexExpr = new IntegerConstant(p);
 					System.out.println("create symbolic expression for concrete int " + indexExpr);
 				}
-				// need to be corrected, since this only deals with an int array
 				IntegerExpression retExpr = new SymbolicInteger(BytecodeUtils.varName("ret", VarType.INT));
 				LibraryConstraint cc = new LibraryConstraint(LibraryOperation.ARRAY_GET,
 						new Expression[] { arrayExpr, indexExpr }, retExpr, new Expression[2]);

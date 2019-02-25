@@ -37,6 +37,8 @@ import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
 import gov.nasa.jpf.symbc.numeric.PCParser;
 import gov.nasa.jpf.symbc.numeric.PathCondition;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
+import gov.nasa.jpf.symbc.string.StringExpression;
+import gov.nasa.jpf.symbc.string.StringSymbolic;
 import gov.nasa.jpf.vm.ChoiceGenerator;
 import gov.nasa.jpf.vm.ElementInfo;
 import gov.nasa.jpf.vm.Instruction;
@@ -153,7 +155,8 @@ public class SymbolicLibraryHandler {
 		if(fullName.equals("java.util.List.listIterator()Ljava/util/ListIterator;")){
 		System.out.println(fullName);
 		}
-		if (className.startsWith("java.util") || className.startsWith("java.io") || className.startsWith("java.security")) {
+		if (className.startsWith("java.util") || className.startsWith("java.io") || className.startsWith("java.security")
+				|| className.startsWith("java.lang.String") || className.startsWith("java.lang.Integer")) {
 			ChoiceGenerator<?> cg;
 			if (!th.isFirstStepInsn()) {
 				cg = new PCChoiceGenerator(1);
@@ -186,6 +189,10 @@ public class SymbolicLibraryHandler {
 							LibraryExpression new_sym_pi = updateVersion((LibraryExpression) sym_pi);
 							_paramExps.push(new_sym_pi);
 							// update the object symbol
+							intent.put(pi, new_sym_pi);
+						} else if (sym_pi instanceof StringSymbolic && smtFormat.contains("?_p" + (numParams - i - 1))) {
+							StringSymbolic new_sym_pi = updateVersion((StringSymbolic) sym_pi);
+							_paramExps.push(new_sym_pi);
 							intent.put(pi, new_sym_pi);
 						} else {
 							_paramExps.push(null);
@@ -339,6 +346,9 @@ public class SymbolicLibraryHandler {
 		if (typeName.equals("java.lang.Integer")) {
 			sym_ei = new IntegerConstant(ei.asInteger());
 			System.out.println("create symbolic expression for concrete Integer " + sym_ei);
+		} else if (typeName.equals("java.lang.String")) {
+			sym_ei = new StringSymbolic(BytecodeUtils.varName("String@" + ei.getObjectRef(), VarType.STRING));
+			System.out.println("create symbolic expression for String " + sym_ei);
 		} else if (typeName.equals("java.util.ArrayList")) {
 			sym_ei = new CollectionExpression(BytecodeUtils.varName("List@" + ei.getObjectRef(), VarType.OBJECT),
 					typeName);
@@ -416,8 +426,10 @@ public class SymbolicLibraryHandler {
 			retExp = null;
 		} else if (retType == Type.BOOLEAN) {
 			retExp = new SymbolicInteger(BytecodeUtils.varName("ret", VarType.INT), 0, 1);
-		} else if (retType == Type.INT) {
+		} else if (retType == Type.CHAR || retType == Type.INT) {
 			retExp = new SymbolicInteger(BytecodeUtils.varName("ret", VarType.INT));
+		} else if (retType == Type.STRING) {
+			retExp = new StringSymbolic(BytecodeUtils.varName("ret", VarType.STRING));
 		} else if (retType.getType() == Type.OBJECT.getType() || retType instanceof ArrayType) {
 			CollectionExpression sym_b = null;
 			StackFrame sf = th.getModifiableTopFrame();
@@ -486,6 +498,8 @@ public class SymbolicLibraryHandler {
 				}
 				if (typeName.equals("java.lang.Integer")) {
 					retExp = new SymbolicInteger(BytecodeUtils.varName("ret", VarType.INT));
+				} else if (typeName.equals("java.lang.String")) {
+					retExp = new StringSymbolic(BytecodeUtils.varName("ret", VarType.STRING));
 				} else {
 					System.out.println(sym_b.getKeyValueTypeNames()[0]);
 					throw new JPFException("object is of type " + retType);
@@ -503,6 +517,13 @@ public class SymbolicLibraryHandler {
 		mat.find();
 		LibraryExpression copy_sym = sym.clone();
 		copy_sym.setName(BytecodeUtils.varName(mat.group(1), VarType.OBJECT));
+		return copy_sym;
+	}
+	StringSymbolic updateVersion(StringSymbolic sym) {
+		Pattern pat = Pattern.compile("^(.*)_\\d+_[^_]+$");
+		Matcher mat = pat.matcher(sym.getName());
+		mat.find();
+		StringSymbolic copy_sym = new StringSymbolic(BytecodeUtils.varName(mat.group(1), VarType.STRING));
 		return copy_sym;
 	}
 

@@ -274,7 +274,9 @@ public class BytecodeUtils {
                 throw new RuntimeException("ERROR: you need to turn debug option on");
             }
             if (argsInfo.length == 1 && argsInfo[0] == null) {
-            	throw new JPFException("code can't compile");
+            	throw new JPFException("unacceptable: code can't compile");
+//            } else {
+//            	throw new JPFException("ok");
             }
             Map<String, Expression> expressionMap = new HashMap<String, Expression>();
 
@@ -306,12 +308,14 @@ public class BytecodeUtils {
             // }
             // }
             
+            argsTypeMap.clear();
             for (int j = 0; j < argSize; j++) { // j ranges over actual arguments
                 if (symClass || args.get(j).equalsIgnoreCase("SYM")) {
                     String name = argsInfo[localVarsIdx].getName();
-                    if (argTypes[j].equalsIgnoreCase("int")) {
+                    if (argTypes[j].equalsIgnoreCase("int") || argTypes[j].equals("java.lang.Integer")) {
                         IntegerExpression sym_v = new SymbolicInteger(varName(name, VarType.INT));
                         expressionMap.put(name, sym_v);
+                        argsTypeMap.put(name, "int");
                         sf.setOperandAttr(stackIdx, sym_v);
                         outputString = outputString.concat(" " + sym_v + ",");
                     } else if (argTypes[j].equalsIgnoreCase("long")) {
@@ -319,6 +323,7 @@ public class BytecodeUtils {
                         IntegerExpression sym_v = new SymbolicInteger(varname, MinMax.getVarMinLong(varname),
                                 MinMax.getVarMaxLong(varname));
                         expressionMap.put(name, sym_v);
+                        argsTypeMap.put(name, "int");
                         sf.setOperandAttr(stackIdx, sym_v);
                         outputString = outputString.concat(" " + sym_v + ",");
                     } else if (argTypes[j].equalsIgnoreCase("short")) {
@@ -326,6 +331,7 @@ public class BytecodeUtils {
                         IntegerExpression sym_v = new SymbolicInteger(varname, MinMax.getVarMinShort(varname),
                                 MinMax.getVarMaxShort(varname));
                         expressionMap.put(name, sym_v);
+                        argsTypeMap.put(name, "int");
                         sf.setOperandAttr(stackIdx, sym_v);
                         outputString = outputString.concat(" " + sym_v + ",");
                     } else if (argTypes[j].equalsIgnoreCase("byte")) {
@@ -333,6 +339,7 @@ public class BytecodeUtils {
                         IntegerExpression sym_v = new SymbolicInteger(varname, MinMax.getVarMinByte(varname),
                                 MinMax.getVarMaxByte(varname));
                         expressionMap.put(name, sym_v);
+                        argsTypeMap.put(name, "int");
                         sf.setOperandAttr(stackIdx, sym_v);
                         outputString = outputString.concat(" " + sym_v + ",");
                     } else if (argTypes[j].equalsIgnoreCase("char")) {
@@ -340,6 +347,7 @@ public class BytecodeUtils {
                         IntegerExpression sym_v = new SymbolicInteger(varname, MinMax.getVarMinChar(varname),
                                 MinMax.getVarMaxChar(varname));
                         expressionMap.put(name, sym_v);
+                        argsTypeMap.put(name, "int");
                         sf.setOperandAttr(stackIdx, sym_v);
                         outputString = outputString.concat(" " + sym_v + ",");
                     } else if (argTypes[j].equalsIgnoreCase("float") || argTypes[j].equalsIgnoreCase("double")) {
@@ -347,17 +355,20 @@ public class BytecodeUtils {
                         RealExpression sym_v = new SymbolicReal(varname, MinMax.getVarMinDouble(varname),
                                 MinMax.getVarMaxDouble(varname));
                         expressionMap.put(name, sym_v);
+                        argsTypeMap.put(name, "float");
                         sf.setOperandAttr(stackIdx, sym_v);
                         outputString = outputString.concat(" " + sym_v + ",");
                     } else if (argTypes[j].equalsIgnoreCase("boolean")) {
                         IntegerExpression sym_v = new SymbolicInteger(varName(name, VarType.INT), 0, 1);
                         // treat boolean as an integer with range [0,1]
                         expressionMap.put(name, sym_v);
+                        argsTypeMap.put(name, "boolean");
                         sf.setOperandAttr(stackIdx, sym_v);
                         outputString = outputString.concat(" " + sym_v + ",");
                     } else if (argTypes[j].equalsIgnoreCase("java.lang.String")) {
                         StringExpression sym_v = new StringSymbolic(varName(name, VarType.STRING));
                         expressionMap.put(name, sym_v);
+                        argsTypeMap.put(name, "string");
                         sf.setOperandAttr(stackIdx, sym_v);
                         outputString = outputString.concat(" " + sym_v + ",");
                     } 
@@ -365,6 +376,15 @@ public class BytecodeUtils {
                     else if (symlibraries_flag && argTypes[j].matches("java\\.util\\..+")) {
                     	CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.OBJECT), argTypes[j]);
                     	expressionMap.put(name, sym_v);
+                    	if (argTypes[j].matches("java\\.util\\..*List")) {
+                            argsTypeMap.put(name, "list");
+                    	} else if (argTypes[j].matches("java\\.util\\..*Set")) {
+                            argsTypeMap.put(name, "set");
+                    	} else if (argTypes[j].matches("java\\.util\\..*Map")) {
+                            argsTypeMap.put(name, "map");
+                    	} else {
+                    		argsTypeMap.put(name, "unknown collection type");
+                    	}
                     	assert sf.isOperandRef(stackIdx);
                         int objRef = sf.peek(stackIdx);
                         if(CollectionExpression.objRef2ElemType.containsKey(objRef)) {
@@ -381,13 +401,14 @@ public class BytecodeUtils {
                         outputString = outputString.concat(" " + sym_v + ",");
                     }
                    // adjust by czz
-                   else if (argTypes[j].equalsIgnoreCase("int[]") || argTypes[j].equalsIgnoreCase("long[]")
-                            || argTypes[j].equalsIgnoreCase("byte[]")) {
+                    else if (argTypes[j].equalsIgnoreCase("int[]") || argTypes[j].equalsIgnoreCase("long[]")
+                            || argTypes[j].equalsIgnoreCase("byte[]") || argTypes[j].equalsIgnoreCase("java.lang.Integer[]")) {
                         if (symarray) {
                         	if (symlibraries_flag) {
                         		CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.ARRAY), "java.util.ArrayList");//argTypes[j]);
                         		sym_v.setElementTypeName("java.lang.Integer");
                         		expressionMap.put(name, sym_v);
+                                argsTypeMap.put(name, "list");
                         		sf.setOperandAttr(stackIdx, sym_v);
                         		assert sf.isOperandRef(stackIdx);
                         		ElementInfo ei = th.getModifiableElementInfo(sf.peek(stackIdx));
@@ -396,6 +417,7 @@ public class BytecodeUtils {
                         	} else {
 	                            ArrayExpression sym_v = new ArrayExpression(th.getElementInfo(sf.peek()).toString());
 	                            expressionMap.put(name, sym_v);
+                                argsTypeMap.put(name, "list");
 	                            sf.setOperandAttr(stackIdx, sym_v);
 	                            assert sf.isOperandRef(stackIdx);
 	                            ElementInfo ei = th.getModifiableElementInfo(sf.peek(stackIdx));
@@ -429,23 +451,38 @@ public class BytecodeUtils {
                         }
                     } else if (argTypes[j].equalsIgnoreCase("float[]") || argTypes[j].equalsIgnoreCase("double[]")) {
                         if (symarray) {
-                            ArrayExpression sym_v = new ArrayExpression(th.getElementInfo(sf.peek()).toString());
-                            expressionMap.put(name, sym_v);
-                            sf.setOperandAttr(stackIdx, sym_v);
-                            assert sf.isOperandRef(stackIdx);
-                            ElementInfo ei = th.getModifiableElementInfo(sf.peek(stackIdx));
-                            ei.setObjectAttr(sym_v);
-                            outputString = outputString.concat(" " + sym_v + ",");
-
-                            PCChoiceGenerator prev_cg = cg.getPreviousChoiceGeneratorOfType(PCChoiceGenerator.class);
-                            PathCondition pc;
-                            if (prev_cg == null)
-                                pc = new PathCondition();
-                            else
-                                pc = ((PCChoiceGenerator) prev_cg).getCurrentPC();
-
-                            pc._addDet(Comparator.GE, sym_v.length, new IntegerConstant(0));
-                            ((PCChoiceGenerator) cg).setCurrentPC(pc);
+                        	if (symlibraries_flag) {
+                        		CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.ARRAY), "java.util.ArrayList");//argTypes[j]);
+                        		sym_v.setElementTypeName("float");
+                        		expressionMap.put(name, sym_v);
+                                argsTypeMap.put(name, "list");
+                        		sf.setOperandAttr(stackIdx, sym_v);
+                        		assert sf.isOperandRef(stackIdx);
+                        		ElementInfo ei = th.getModifiableElementInfo(sf.peek(stackIdx));
+                        		if (ei != null) {
+                        			ei.setObjectAttr(sym_v);
+                        		}
+                        		outputString = outputString.concat(" " + sym_v + ",");
+                        	} else {
+	                            ArrayExpression sym_v = new ArrayExpression(th.getElementInfo(sf.peek()).toString());
+	                            expressionMap.put(name, sym_v);
+	                            argsTypeMap.put(name, "list");
+	                            sf.setOperandAttr(stackIdx, sym_v);
+	                            assert sf.isOperandRef(stackIdx);
+	                            ElementInfo ei = th.getModifiableElementInfo(sf.peek(stackIdx));
+	                            ei.setObjectAttr(sym_v);
+	                            outputString = outputString.concat(" " + sym_v + ",");
+	
+	                            PCChoiceGenerator prev_cg = cg.getPreviousChoiceGeneratorOfType(PCChoiceGenerator.class);
+	                            PathCondition pc;
+	                            if (prev_cg == null)
+	                                pc = new PathCondition();
+	                            else
+	                                pc = ((PCChoiceGenerator) prev_cg).getCurrentPC();
+	
+	                            pc._addDet(Comparator.GE, sym_v.length, new IntegerConstant(0));
+	                            ((PCChoiceGenerator) cg).setCurrentPC(pc);
+                        	}
                         } else {
 //                        	throw new RuntimeException("not handled! not symarray");
                             Object[] argValues = invInst.getArgumentValues(th);
@@ -463,23 +500,36 @@ public class BytecodeUtils {
                         }
                     } else if (argTypes[j].equalsIgnoreCase("boolean[]")) {
                         if (symarray) {
-                            ArrayExpression sym_v = new ArrayExpression(th.getElementInfo(sf.peek()).toString());
-                            expressionMap.put(name, sym_v);
-                            sf.setOperandAttr(stackIdx, sym_v);
-                            assert sf.isOperandRef(stackIdx);
-                            ElementInfo ei = th.getModifiableElementInfo(sf.peek(stackIdx));
-                            ei.setObjectAttr(sym_v);
-                            outputString = outputString.concat(" " + sym_v + ",");
-
-                            PCChoiceGenerator prev_cg = cg.getPreviousChoiceGeneratorOfType(PCChoiceGenerator.class);
-                            PathCondition pc;
-                            if (prev_cg == null)
-                                pc = new PathCondition();
-                            else
-                                pc = ((PCChoiceGenerator) prev_cg).getCurrentPC();
-
-                            pc._addDet(Comparator.GE, sym_v.length, new IntegerConstant(0));
-                            ((PCChoiceGenerator) cg).setCurrentPC(pc);
+                        	if (symlibraries_flag) {
+                        		CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.ARRAY), "java.util.ArrayList");//argTypes[j]);
+                        		sym_v.setElementTypeName("java.lang.Integer");
+                        		expressionMap.put(name, sym_v);
+                                argsTypeMap.put(name, "list");
+                        		sf.setOperandAttr(stackIdx, sym_v);
+                        		assert sf.isOperandRef(stackIdx);
+                        		ElementInfo ei = th.getModifiableElementInfo(sf.peek(stackIdx));
+                        		ei.setObjectAttr(sym_v);
+                        		outputString = outputString.concat(" " + sym_v + ",");
+                        	} else {
+	                            ArrayExpression sym_v = new ArrayExpression(th.getElementInfo(sf.peek()).toString());
+	                            expressionMap.put(name, sym_v);
+                                argsTypeMap.put(name, "list");
+	                            sf.setOperandAttr(stackIdx, sym_v);
+	                            assert sf.isOperandRef(stackIdx);
+	                            ElementInfo ei = th.getModifiableElementInfo(sf.peek(stackIdx));
+	                            ei.setObjectAttr(sym_v);
+	                            outputString = outputString.concat(" " + sym_v + ",");
+	
+	                            PCChoiceGenerator prev_cg = cg.getPreviousChoiceGeneratorOfType(PCChoiceGenerator.class);
+	                            PathCondition pc;
+	                            if (prev_cg == null)
+	                                pc = new PathCondition();
+	                            else
+	                                pc = ((PCChoiceGenerator) prev_cg).getCurrentPC();
+	
+	                            pc._addDet(Comparator.GE, sym_v.length, new IntegerConstant(0));
+	                            ((PCChoiceGenerator) cg).setCurrentPC(pc);
+                            }
                         } else {
 //                        	throw new RuntimeException("not handled! not symarray");
                             Object[] argValues = invInst.getArgumentValues(th);
@@ -504,6 +554,7 @@ public class BytecodeUtils {
                                     argTypes[j].substring(0, argTypes[j].length() - 2));
                             // We remove the [] at the end of the type to keep only the type of the object
                             expressionMap.put(name, sym_v);
+                            argsTypeMap.put(name, "list");
                             sf.setOperandAttr(stackIdx, sym_v);
                             outputString = outputString.concat(" " + sym_v + ",");
 
@@ -545,6 +596,11 @@ public class BytecodeUtils {
             if (outputString.endsWith(","))
                 outputString = outputString.substring(0, outputString.length() - 1);
             outputString = outputString + " )  (";
+            
+            argsExpressionMap.clear();
+            for (String argName: expressionMap.keySet()) {
+            	argsExpressionMap.put(argName, expressionMap.get(argName));
+            }
 
             // now, take care of any globals that are indicated as symbolic
             // base on annotation or on symbolic.fields property
@@ -692,6 +748,17 @@ public class BytecodeUtils {
             return ((PCChoiceGenerator) cg).getCurrentPC();
         }
     }
+    
+    // added by czz
+    private static Map<String, Expression> argsExpressionMap = new HashMap<String, Expression>();
+    private static Map<String, String> argsTypeMap = new HashMap<String, String>();
+    public static Map<String, Expression> getArgsExpressionMap() {
+    	return argsExpressionMap;
+    }
+    public static Map<String, String> getArgsTypeMap() {
+    	return argsTypeMap;
+    }
+    // added by czz end
 
     private static int symVarCounter = 1;
 
