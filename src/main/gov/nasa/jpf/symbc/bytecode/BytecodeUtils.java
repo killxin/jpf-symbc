@@ -36,7 +36,6 @@ import gov.nasa.jpf.symbc.numeric.PreCondition;
 import gov.nasa.jpf.symbc.numeric.RealExpression;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.symbc.numeric.SymbolicReal;
-import gov.nasa.jpf.symbc.string.StringExpression;
 import gov.nasa.jpf.symbc.string.StringSymbolic;
 import gov.nasa.jpf.vm.AnnotationInfo;
 import gov.nasa.jpf.vm.ChoiceGenerator;
@@ -60,6 +59,7 @@ import java.util.StringTokenizer;
 import java.util.Vector;
 
 import edu.nju.seg.symbc.CollectionExpression;
+import edu.nju.seg.symbc.StringExpression;
 
 public class BytecodeUtils {
 
@@ -366,7 +366,7 @@ public class BytecodeUtils {
                         sf.setOperandAttr(stackIdx, sym_v);
                         outputString = outputString.concat(" " + sym_v + ",");
                     } else if (argTypes[j].equalsIgnoreCase("java.lang.String")) {
-                        StringExpression sym_v = new StringSymbolic(varName(name, VarType.STRING));
+                        StringExpression sym_v = new StringExpression(varName(name, VarType.STRING), "java.lang.String");
                         expressionMap.put(name, sym_v);
                         argsTypeMap.put(name, "string");
                         sf.setOperandAttr(stackIdx, sym_v);
@@ -498,7 +498,7 @@ public class BytecodeUtils {
                             else
                                 System.out.println("Warning: input array empty! " + name);
                         }
-                    } else if (argTypes[j].equalsIgnoreCase("boolean[]")) {
+                    } else if (argTypes[j].equalsIgnoreCase("boolean[]") || argTypes[j].equalsIgnoreCase("char[]")) {
                         if (symarray) {
                         	if (symlibraries_flag) {
                         		CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.ARRAY), "java.util.ArrayList");//argTypes[j]);

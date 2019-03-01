@@ -43,35 +43,36 @@
        a!1))
 ))
 ;
-
+(declare-const retMain_5_SYMOBJECT (MyList Int))
+(assert (= retMain_5_SYMOBJECT Array@1803_3_SYMOBJECT))
 ;(define-fun data_1_SYMARRAY () List_Int
 ;  (let ((a!1 (lambda ((x!1 Int))
 ;             (and (not (= x!1 6))
 ;                  (not (= x!1 7))
 ;                  (not (= x!1 (- 6)))
+;                  (not (= x!1 (- 8)))
+;                  (not (= x!1 8))
+;                  (not (= x!1 (- 4)))
 ;                  (not (= x!1 0))
-;                  (not (= x!1 (- 9)))
-;                  (not (= x!1 (- 3)))
-;                  (not (= x!1 4))
-;                  (not (= x!1 9))
-;                  (not (= x!1 (- 1)))
-;                  (not (= x!1 (- 7)))
+;                  (not (= x!1 (- 11)))
 ;                  (not (= x!1 5)))))
-;      (a!2 (seq.++ (seq.unit 47)
-;                   (seq.++ (seq.unit 49) (seq.++ (seq.unit 51) (seq.unit 53))))))
-;(let ((a!3 (seq.++ (seq.unit 41)
-;                   (seq.++ (seq.unit 43) (seq.++ (seq.unit 45) a!2)))))
-;(let ((a!4 (seq.++ (seq.unit 36)
-;                   (seq.++ (seq.unit 37) (seq.++ (seq.unit 39) a!3)))))
-;  (List_Int a!1 a!4)))))
+;      (a!2 (seq.++ (seq.unit 54)
+;                   (seq.++ (seq.unit 56) (seq.++ (seq.unit 58) (seq.unit 60))))))
+;(let ((a!3 (seq.++ (seq.unit 48)
+;                   (seq.++ (seq.unit 50) (seq.++ (seq.unit 52) a!2)))))
+;(let ((a!4 (seq.++ (seq.unit 42)
+;                   (seq.++ (seq.unit 44) (seq.++ (seq.unit 46) a!3)))))
+;(let ((a!5 (seq.++ (seq.unit 37)
+;                   (seq.++ (seq.unit 38) (seq.++ (seq.unit 40) a!4)))))
+;  (List_Int a!1 a!5))))))
 ;(define-fun length_5_SYMINT () Int
-;  10)
+;  13)
 ;(define-fun i_2_SYMINT () Int
-;  9)
+;  12)
 ;(define-fun length_4_SYMINT () Int
-;  10)
+;  13)
 ;(define-fun k_3_SYMINT () Int
-;  10)
+;  13)
 ;;Param:data_1_SYMARRAY
 ;Param:i_2_SYMINT
 ;Param:k_3_SYMINT

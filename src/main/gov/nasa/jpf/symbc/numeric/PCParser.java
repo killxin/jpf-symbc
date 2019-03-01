@@ -57,7 +57,6 @@ import gov.nasa.jpf.symbc.numeric.solvers.ProblemZ3BitVectorIncremental;
 import gov.nasa.jpf.symbc.numeric.solvers.ProblemZ3Incremental;
 import gov.nasa.jpf.symbc.numeric.solvers.ProblemZ3Optimize;
 import gov.nasa.jpf.symbc.string.StringConstant;
-import gov.nasa.jpf.symbc.string.StringExpression;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -71,6 +70,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import edu.nju.seg.symbc.CollectionExpression;
+import edu.nju.seg.symbc.StringExpression;
 import edu.nju.seg.symbc.LibraryConstraint;
 import edu.nju.seg.symbc.LibraryExpression;
 import edu.nju.seg.symbc.LibraryOperation;
@@ -1337,6 +1337,9 @@ public class PCParser {
 	public static String exp2str(Expression exp) throws UnknownElementTypeException {
 		if (exp == null) {
 			return "";
+		} else if (exp instanceof StringExpression) {
+			StringExpression se = (StringExpression) exp;
+			return getExpression(se).toString();
 		} else if (exp instanceof LibraryExpression) {
 			LibraryExpression ce = (LibraryExpression) exp;
 			return getExpression(ce).toString();
@@ -1353,13 +1356,6 @@ public class PCParser {
 				return String.valueOf(((RealConstant) re).value);
 			} else {
 				return getExpression(re).toString();
-			}
-		} else if (exp instanceof StringExpression) {
-			StringExpression se = (StringExpression) exp;
-			if (se instanceof StringConstant) {
-				return ((StringConstant) se).value();
-			} else {
-				return getExpression(se).toString();
 			}
 		} else if (exp instanceof ArrayExpression) {
 			ArrayExpression ae = (ArrayExpression) exp;

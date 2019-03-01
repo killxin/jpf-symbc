@@ -20,12 +20,24 @@
 
 package gov.nasa.jpf.symbc.bytecode;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import edu.nju.seg.symbc.CollectionExpression;
+import edu.nju.seg.symbc.LibraryConstraint;
+import edu.nju.seg.symbc.LibraryOperation;
+import gov.nasa.jpf.Config;
 import gov.nasa.jpf.symbc.SymbolicInstructionFactory;
+import gov.nasa.jpf.symbc.bytecode.BytecodeUtils.VarType;
 import gov.nasa.jpf.symbc.numeric.Comparator;
+import gov.nasa.jpf.symbc.numeric.Expression;
+import gov.nasa.jpf.symbc.numeric.IntegerConstant;
 import gov.nasa.jpf.symbc.numeric.IntegerExpression;
 import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
 import gov.nasa.jpf.symbc.numeric.PathCondition;
+import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.vm.ArrayIndexOutOfBoundsExecutiveException;
+import gov.nasa.jpf.vm.ChoiceGenerator;
 import gov.nasa.jpf.vm.ElementInfo;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MJIEnv;
@@ -43,7 +55,55 @@ public class BASTORE extends gov.nasa.jpf.jvm.bytecode.BASTORE {
 
     @Override
     public Instruction execute(ThreadInfo ti) {
-        if (peekIndexAttr(ti) == null || !(peekIndexAttr(ti) instanceof IntegerExpression))
+		// add by czz
+		Config conf = ti.getVM().getConfig();
+		boolean symlibraries_flag = conf.getBoolean("symbolic.libraries");
+		if (symlibraries_flag && SymbolicLibraryHandler.inSymScale(this, ti)) {
+			ChoiceGenerator<?> cg;
+			if (!ti.isFirstStepInsn()) {
+				cg = new PCChoiceGenerator(1);
+				ti.getVM().setNextChoiceGenerator(cg);
+				return this;
+			} else {
+				StackFrame sf = ti.getModifiableTopFrame();
+				CollectionExpression arrayExpr = (CollectionExpression) sf.getOperandAttr(2);
+				if (arrayExpr == null) {
+					ElementInfo eiArray = ti.getElementInfo(sf.peek(2));
+					arrayExpr = (CollectionExpression) eiArray.getObjectAttr();
+				}
+				IntegerExpression indexExpr, valueExpr;
+				if (sf.hasOperandAttr(1)) {
+					indexExpr = (IntegerExpression)sf.getOperandAttr(1);
+				} else {
+					indexExpr = new IntegerConstant(sf.peek(1));
+				}
+				if (sf.hasOperandAttr()) {
+					valueExpr = (IntegerExpression)sf.getOperandAttr();
+				} else {
+					valueExpr = new IntegerConstant(sf.peek());
+				}
+				SymbolicInteger retExpr = new SymbolicInteger(BytecodeUtils.varName("ret", VarType.INT));
+				CollectionExpression newArrayExpr = updateArrayVersion(arrayExpr);
+				LibraryConstraint cc = new LibraryConstraint(LibraryOperation.ARRAY_SET,
+						new Expression[] { arrayExpr, indexExpr, valueExpr }, retExpr, new Expression[] { newArrayExpr, null, null });
+				SymbolicLibraryHandler.pushCC2PC(ti, cc);
+				sf.pop(3);
+				for (int i = 0; i < sf.getLocalVariableCount(); ++i) {
+					Object attr = sf.getLocalAttr(i);
+					if (attr != null && attr.equals(arrayExpr)) {
+						sf.setLocalAttr(i, newArrayExpr);
+//						if (sf.isLocalVariableRef(i)) {
+//							sf.setlocaloperandattr;
+//						}
+						break;
+					}
+				}
+				return getNext(ti);				
+			}
+		}
+		// add by czz end
+
+		if (peekIndexAttr(ti) == null || !(peekIndexAttr(ti) instanceof IntegerExpression))
             return super.execute(ti);
         StackFrame frame = ti.getModifiableTopFrame();
         int arrayref = peekArrayRef(ti); // need to be polymorphic, could be LongArrayStore
@@ -171,5 +231,14 @@ public class BASTORE extends gov.nasa.jpf.jvm.bytecode.BASTORE {
             return getNext(ti);
         }
     }
+
+    CollectionExpression updateArrayVersion(CollectionExpression sym) {
+		Pattern pat = Pattern.compile("^(.*)_\\d+_[^_]+$");
+		Matcher mat = pat.matcher(sym.getName());
+		mat.find();
+		CollectionExpression copy_sym = sym.clone();
+		copy_sym.setName(BytecodeUtils.varName(mat.group(1), VarType.ARRAY));
+		return copy_sym;
+	}
 
 }

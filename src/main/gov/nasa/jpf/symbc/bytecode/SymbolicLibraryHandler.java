@@ -112,8 +112,8 @@ public class SymbolicLibraryHandler {
 					invInst.getMethodInfo().getFullName(),
 					invInst.getMethodInfo().getArgumentsSize(), null);
 		} else {
-			String methodName = invInst.getMethodInfo().getBaseName();
-			if(methodName.contains("main")||methodName.contains("setUp")) {
+			String methodName = invInst.getMethodInfo().getFullName();
+			if(methodName.contains("main([Ljava/lang/String;)")||methodName.contains("setUp()")) {
 				return false;
 			}
 			String className = invInst.getMethodInfo().getClassName();

@@ -130,6 +130,9 @@ public class NEWARRAY extends gov.nasa.jpf.jvm.bytecode.NEWARRAY {
 				typeName = getTypeName();
 				if (typeName.equals("int") || typeName.equals("byte") || typeName.equals("short") || typeName.equals("long")) {
 					arrayExpr.setElementTypeName("java.lang.Integer");
+				} else if (typeName.equalsIgnoreCase("boolean") || typeName.equalsIgnoreCase("java.lang.Boolean")
+						|| typeName.equalsIgnoreCase("char") || typeName.equalsIgnoreCase("java.lang.Character")) {
+					arrayExpr.setElementTypeName("int");
 				} else if (typeName.equalsIgnoreCase("float") || typeName.equalsIgnoreCase("double")) {
 					arrayExpr.setElementTypeName("float");
 				} else {

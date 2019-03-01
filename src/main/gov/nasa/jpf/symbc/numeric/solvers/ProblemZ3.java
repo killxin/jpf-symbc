@@ -51,6 +51,7 @@ import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 import com.microsoft.z3.*;
 
 import edu.nju.seg.symbc.CollectionExpression;
+import edu.nju.seg.symbc.StringExpression;
 import edu.nju.seg.symbc.LibraryExpression;
 import edu.nju.seg.symbc.UnknownElementTypeException;
 import gov.nasa.jpf.JPFException;
@@ -61,7 +62,6 @@ import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.PCParser;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.symbc.numeric.SymbolicReal;
-import gov.nasa.jpf.symbc.string.StringExpression;
 import symlib.Util;
 
 public class ProblemZ3 extends ProblemGeneral {
@@ -691,7 +691,7 @@ public class ProblemZ3 extends ProblemGeneral {
 	public Boolean solve() {
 		try {
 //	        System.out.println("rh: "+Arrays.toString(Arrays.copyOfRange(solver.getAssertions(),2,10)));
-//			System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
+			System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
 			Status status = solver.check();
 			if (Status.SATISFIABLE == status) {
 				System.out.println("********rh: SAT********");
@@ -746,6 +746,13 @@ public class ProblemZ3 extends ProblemGeneral {
 	public static Map<String, String> argsTypeMap = BytecodeUtils.getArgsTypeMap();
 	public static Map<String, Expression> argsExpressionMap = BytecodeUtils.getArgsExpressionMap();
 	public static Map<String, Expression> expressionMap = new HashMap<String, Expression>();
+	
+	public static void clearArgsExpressionMaps() {
+		argsTypeMap.clear();
+		argsExpressionMap.clear();
+		expressionMap.clear();
+	}
+	
 	private void updateExpressionMap(Map<String, Expression> expressionMap, Expression e) {
 		Pattern pat = Pattern.compile("^(.*)_(\\d+)_[^_]+$");
 		Matcher mat = pat.matcher(e.stringPC());
@@ -1387,7 +1394,7 @@ public class ProblemZ3 extends ProblemGeneral {
 				}				
 			}
 			for (Entry<StringExpression, Object> entry: PCParser.symStringVar.entrySet()) {
-				Symbol key = ctx.mkSymbol(entry.getKey().toString());
+				Symbol key = ctx.mkSymbol(entry.getKey().getName());
 				FuncDecl value = ctx.mkConstDecl(key, ctx.mkStringSort());
 				funcSet.add(value);
 			}
@@ -1408,7 +1415,7 @@ public class ProblemZ3 extends ProblemGeneral {
 				funcs[i] = func;
 				i++;
 			}
-//			System.out.println(smt);
+			System.out.println(smt);
 			return ctx.parseSMTLIB2String(smt, symbs1, sorts, symbs2, funcs);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -1516,6 +1523,8 @@ public class ProblemZ3 extends ProblemGeneral {
 
 	public Sort mkSortFromTypeName(String typeName) {
 		switch (typeName) {
+		case "int":
+		case "byte":
 		case "java.lang.Integer":
 		case "java.lang.Byte":
 			return ctx.mkIntSort();
