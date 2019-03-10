@@ -41,11 +41,14 @@ public class ARRAYLENGTH extends gov.nasa.jpf.jvm.bytecode.ARRAYLENGTH {
 
 				    LibraryExpression arrExpr = null;
 				    SymbolicInteger lengthExpr = new SymbolicInteger(BytecodeUtils.varName("length", VarType.INT));
-				    assert frame.isOperandRef();
+//				    assert frame.isOperandRef();
+				    arrExpr = (LibraryExpression) frame.getOperandAttr();
+				    if (arrExpr == null && frame.isOperandRef()) {
 					    ElementInfo ei = ti.getElementInfo(arrayRef);
 					    arrExpr = (LibraryExpression) ei.getObjectAttr();
 					    frame.pop();
 					    frame.push(ei.arrayLength());
+				    }
 				    
 				    frame.setOperandAttr(lengthExpr);				    
 					LibraryConstraint cc = new LibraryConstraint(LibraryOperation.ARRAY_LENGTH,

@@ -405,15 +405,15 @@ public class BytecodeUtils {
                             || argTypes[j].equalsIgnoreCase("byte[]") || argTypes[j].equalsIgnoreCase("java.lang.Integer[]")) {
                         if (symarray) {
                         	if (symlibraries_flag) {
-                        		CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.ARRAY), "java.util.ArrayList");//argTypes[j]);
-                        		sym_v.setElementTypeName("java.lang.Integer");
-                        		expressionMap.put(name, sym_v);
-                                argsTypeMap.put(name, "list");
-                        		sf.setOperandAttr(stackIdx, sym_v);
-                        		assert sf.isOperandRef(stackIdx);
                         		ElementInfo ei = th.getModifiableElementInfo(sf.peek(stackIdx));
-                        		ei.setObjectAttr(sym_v);
-                        		outputString = outputString.concat(" " + sym_v + ",");
+//                        		if (!(ei.getObjectAttr() instanceof CollectionExpression)) {
+	                        		CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.ARRAY), "java.util.ArrayList");//argTypes[j]);
+	                        		sym_v.setElementTypeName("java.lang.Integer");
+	                        		expressionMap.put(name, sym_v);
+	                                argsTypeMap.put(name, "list");
+	                        		ei.setObjectAttr(sym_v);
+//                        		}
+	                        	outputString = outputString.concat(" " + ei.getObjectAttr() + ",");
                         	} else {
 	                            ArrayExpression sym_v = new ArrayExpression(th.getElementInfo(sf.peek()).toString());
 	                            expressionMap.put(name, sym_v);
@@ -547,27 +547,39 @@ public class BytecodeUtils {
                         }
                     } else if (argTypes[j].contains("[]")) {
                         if (symarray) {
-                            Object[] argValues = invInst.getArgumentValues(th);
-                            ElementInfo eiArray = (ElementInfo) argValues[j];
-                            // If the type name contains [] but wasn't catched previously, it is an object array
-                            ArrayExpression sym_v = new ArrayExpression(th.getElementInfo(sf.peek()).toString(),
-                                    argTypes[j].substring(0, argTypes[j].length() - 2));
-                            // We remove the [] at the end of the type to keep only the type of the object
-                            expressionMap.put(name, sym_v);
-                            argsTypeMap.put(name, "list");
-                            sf.setOperandAttr(stackIdx, sym_v);
-                            outputString = outputString.concat(" " + sym_v + ",");
-
-                            PCChoiceGenerator prev_cg = cg.getPreviousChoiceGeneratorOfType(PCChoiceGenerator.class);
-                            PathCondition pc;
-                            if (prev_cg == null)
-                                pc = new PathCondition();
-                            else
-                                pc = ((PCChoiceGenerator) prev_cg).getCurrentPC();
-
-                            pc._addDet(Comparator.GE, sym_v.length, new IntegerConstant(0));
-                            ((PCChoiceGenerator) cg).setCurrentPC(pc);
-                        	throw new RuntimeException("not handled! unknown type array");
+                        	if (symlibraries_flag && argTypes[j].equalsIgnoreCase("java.lang.String[]")) {
+                        		CollectionExpression sym_v = new CollectionExpression(varName(name, VarType.ARRAY), "java.util.ArrayList");//argTypes[j]);
+                        		sym_v.setElementTypeName("java.lang.String");
+                        		expressionMap.put(name, sym_v);
+                                argsTypeMap.put(name, "list");
+                        		sf.setOperandAttr(stackIdx, sym_v);
+                        		assert sf.isOperandRef(stackIdx);
+                        		ElementInfo ei = th.getModifiableElementInfo(sf.peek(stackIdx));
+                        		ei.setObjectAttr(sym_v);
+                        		outputString = outputString.concat(" " + sym_v + ",");                        		
+                        	} else {
+	                            Object[] argValues = invInst.getArgumentValues(th);
+	                            ElementInfo eiArray = (ElementInfo) argValues[j];
+	                            // If the type name contains [] but wasn't catched previously, it is an object array
+	                            ArrayExpression sym_v = new ArrayExpression(th.getElementInfo(sf.peek()).toString(),
+	                                    argTypes[j].substring(0, argTypes[j].length() - 2));
+	                            // We remove the [] at the end of the type to keep only the type of the object
+	                            expressionMap.put(name, sym_v);
+	                            argsTypeMap.put(name, "list");
+	                            sf.setOperandAttr(stackIdx, sym_v);
+	                            outputString = outputString.concat(" " + sym_v + ",");
+	
+	                            PCChoiceGenerator prev_cg = cg.getPreviousChoiceGeneratorOfType(PCChoiceGenerator.class);
+	                            PathCondition pc;
+	                            if (prev_cg == null)
+	                                pc = new PathCondition();
+	                            else
+	                                pc = ((PCChoiceGenerator) prev_cg).getCurrentPC();
+	
+	                            pc._addDet(Comparator.GE, sym_v.length, new IntegerConstant(0));
+	                            ((PCChoiceGenerator) cg).setCurrentPC(pc);
+	                        	throw new RuntimeException("not handled! unknown type array");
+                        	}
                         }
 
                     } else {

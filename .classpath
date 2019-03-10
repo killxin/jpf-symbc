@@ -35,6 +35,6 @@
 	<classpathentry kind="lib" path="lib/yicesapijava.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/proteus.jar"/>
-	<classpathentry kind="lib" path="/home/fox/lib/z3-4.8/build/com.microsoft.z3.jar"/>
+	<classpathentry kind="lib" path="/home/quebiojss/z3/build/com.microsoft.z3.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>

@@ -140,6 +140,8 @@ public class NEWARRAY extends gov.nasa.jpf.jvm.bytecode.NEWARRAY {
 				}
 				SymbolicLibraryHandler.pushCC2PC(ti, cc);
 				sf.setOperandAttr(arrayExpr);
+				ElementInfo ei = ti.getModifiableElementInfo(sf.peek());
+				ei.setObjectAttr(arrayExpr);
 			}
 			return getNext(ti);
 		}

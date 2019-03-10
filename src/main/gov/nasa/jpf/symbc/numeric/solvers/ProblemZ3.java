@@ -691,7 +691,7 @@ public class ProblemZ3 extends ProblemGeneral {
 	public Boolean solve() {
 		try {
 //	        System.out.println("rh: "+Arrays.toString(Arrays.copyOfRange(solver.getAssertions(),2,10)));
-			System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
+//			System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
 			Status status = solver.check();
 			if (Status.SATISFIABLE == status) {
 				System.out.println("********rh: SAT********");
@@ -702,7 +702,7 @@ public class ProblemZ3 extends ProblemGeneral {
 			else if(Status.UNSATISFIABLE == status) {
 				System.out.println("********rh: UNSAT********");
 //				Arrays.stream(solver.getAssertions()).forEach(x -> System.out.println(x));
-				System.out.println("************************");
+//				System.out.println("************************");
 //				System.out.println("rh: Core: "+ solver.getUnsatCore().length + Arrays.toString(solver.getUnsatCore()));
 				return false;
 			} else {
@@ -719,13 +719,15 @@ public class ProblemZ3 extends ProblemGeneral {
 	
 	// add by czz
 	/**
+	 * do not use again!!!
 	 * constraint that contains the return variable of the function
 	 */
-	public static String returnConstraint;
+	private static String returnConstraint;
 	/**
+	 * do not use again!!!
 	 * get constraint that contains the return variable of the function
 	 */
-	public static String getReturnConstraint() {
+	private static String getReturnConstraint() {
 		if (returnConstraint == null) {
 			return "";
 		} else {
@@ -756,7 +758,7 @@ public class ProblemZ3 extends ProblemGeneral {
 	private void updateExpressionMap(Map<String, Expression> expressionMap, Expression e) {
 		Pattern pat = Pattern.compile("^(.*)_(\\d+)_[^_]+$");
 		Matcher mat = pat.matcher(e.stringPC());
-		mat.find();
+		if(mat.find()) {
 		int id = Integer.parseInt(mat.group(2));
 		for (Entry<String, Expression> entry: expressionMap.entrySet()) {
 			if (mat.group(1).equals(entry.getKey())) {
@@ -768,8 +770,11 @@ public class ProblemZ3 extends ProblemGeneral {
 				}
 			}
 		}
+		}
 	}
 	
+	public final static int MAX_INT = 128;
+	public final static int MIN_INT = -10;
 	public void generateConstraint(Solver solver) {
 		StringBuffer result = new StringBuffer();
 //		for (String sort_name: dataTypeSortMap.keySet()) {
@@ -793,20 +798,6 @@ public class ProblemZ3 extends ProblemGeneral {
 			}
 			result.append(libExpr).append("\n");
 		}
-		for(ArrayExpression ae: PCParser.symArrayVar.keySet()) {
-			updateExpressionMap(expressionMap, ae);
-			Object tempExpr = PCParser.symArrayVar.get(ae);
-			assert tempExpr instanceof Expr;
-			Expr expr = (Expr) tempExpr;
-			String arrExpr = expr.getFuncDecl().toString();
-			for (String sort_name: dataTypeSortMap.keySet()) {
-				// change to unique sort name
-				String mySortName = "(My" + sort_name.replace("_", " ") + ")";
-//				arrExpr = replaceLast(arrExpr, sort_name, mySortName);
-				arrExpr = arrExpr.replaceAll(sort_name + "\\)$", mySortName + ")");
-			}
-			result.append(arrExpr).append("\n");
-		}
 		for(SymbolicInteger si: PCParser.symIntegerVar.keySet()) {
 			updateExpressionMap(expressionMap, si);
 			Object tempExpr = PCParser.symIntegerVar.get(si);
@@ -821,19 +812,19 @@ public class ProblemZ3 extends ProblemGeneral {
 			Expr expr = (Expr) tempExpr;
 			result.append(expr.getFuncDecl()).append("\n");
 		}
-		for (StringExpression se: PCParser.symStringVar.keySet()) {
-			updateExpressionMap(expressionMap, se);
-			Object tempExpr = PCParser.symStringVar.get(se);
-			assert tempExpr instanceof Expr;
-			Expr expr = (Expr) tempExpr;
-			result.append(expr.getFuncDecl()).append("\n");
-		}
 		if (solver.getAssertions() != null && solver.getAssertions().length > 0) {
 			result.append("(assert (and \n");
 			Arrays.stream(solver.getAssertions()).forEach(x -> result.append(x).append("\n"));
 			result.append("))\n;");
 		}
-		constraint = result.toString();
+		String smt = result.toString();
+		if (smt.contains("max!nt")) {
+			smt = smt.replace("max!nt", Integer.toString(ProblemZ3.MAX_INT));
+		}
+		if (smt.contains("min!nt")) {
+			smt = smt.replace("min!nt", Integer.toString(ProblemZ3.MIN_INT));
+		}
+		constraint = smt;
 	}
 	
 //	public static String replaceLast(String str, String target, String other) {
@@ -1233,6 +1224,9 @@ public class ProblemZ3 extends ProblemGeneral {
 	@Override
 	public Object mixed(Object exp1, Object exp2) {
 		// TODO Auto-generated method stub
+		if(exp1 instanceof RealExpr && exp2 instanceof IntExpr) {
+			return ctx.mkEq((RealExpr)exp1, ctx.mkInt2Real((IntExpr)exp2));
+		}
 		throw new RuntimeException("## Error Z3 \n");
 	}
 
@@ -1373,30 +1367,14 @@ public class ProblemZ3 extends ProblemGeneral {
 				FuncDecl value = ctx.mkConstDecl(key, sort);
 				funcSet.add(value);
 				sortSet.add(sort);
-				FuncDecl[][] acc = ((DatatypeSort) sort).getAccessors();
-				for (int i = 0; i < acc.length; i++) {
-					for (int j = 0; j < acc[i].length; j++) {
-						funcSet.add(acc[i][j]);
+				if(sort instanceof DatatypeSort) {
+					FuncDecl[][] acc = ((DatatypeSort) sort).getAccessors();
+					for (int i = 0; i < acc.length; i++) {
+						for (int j = 0; j < acc[i].length; j++) {
+							funcSet.add(acc[i][j]);
+						}
 					}
 				}
-			}
-			for (Entry<ArrayExpression, Object> entry: PCParser.symArrayVar.entrySet()) {
-				Sort sort = dataTypeSortMap.get("List_" + mkSortFromTypeName(entry.getKey().getElemType()));
-				Symbol key = ctx.mkSymbol(entry.getKey().toString());
-				FuncDecl value = ctx.mkConstDecl(key, sort);
-				funcSet.add(value);
-				sortSet.add(sort);
-				FuncDecl[][] acc = ((DatatypeSort) sort).getAccessors();
-				for (int i = 0; i < acc.length; i++) {
-					for (int j = 0; j < acc[i].length; j++) {
-						funcSet.add(acc[i][j]);
-					}
-				}				
-			}
-			for (Entry<StringExpression, Object> entry: PCParser.symStringVar.entrySet()) {
-				Symbol key = ctx.mkSymbol(entry.getKey().getName());
-				FuncDecl value = ctx.mkConstDecl(key, ctx.mkStringSort());
-				funcSet.add(value);
 			}
 			Symbol[] symbs1 = new Symbol[sortSet.size()];
 			Sort[] sorts = new Sort[sortSet.size()];
@@ -1415,45 +1393,13 @@ public class ProblemZ3 extends ProblemGeneral {
 				funcs[i] = func;
 				i++;
 			}
-			System.out.println(smt);
+//			System.out.println(smt);
 			return ctx.parseSMTLIB2String(smt, symbs1, sorts, symbs2, funcs);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
 		}
 	}
-
-	// add by czz
-	public Object makeArrayVar(ArrayExpression aRef) {
-		DatatypeSort sort;
-		Sort element_sort = mkSortFromTypeName(aRef.getElemType());
-		String sort_name = "List_" + element_sort;
-		if (dataTypeSortMap.containsKey(sort_name)) {
-			sort = dataTypeSortMap.get(sort_name);
-		} else {
-			String[] size_element = new String[] { "mapping", "element" };
-			Sort[] sorts = new Sort[] { ctx.mkArraySort(element_sort, ctx.mkBoolSort()), ctx.mkSeqSort(element_sort) };
-			int[] sort_refs = null;
-			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
-			sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
-			dataTypeSortMap.put(sort_name, sort);
-//			System.out.println("Datatype Summary:");
-			FuncDecl[][] acc = sort.getAccessors();
-//			System.out.println(sort.getConstructors()[0]);
-			for (int i = 0; i < acc.length; i++) {
-				for (int j = 0; j < acc[i].length; j++) {
-//					System.out.println(sort.getAccessors()[i][j]);
-				}
-			}
-//			System.out.println("=====");
-		}
-		return ctx.mkConst(aRef.getName(), sort);
-	}
-	
-	public Object makeStringVar(StringExpression sRef) {
-		return ctx.mkConst(sRef.getName(), ctx.mkStringSort());
-	}
-	// add by czz end
 	
 	public Object makeLibraryVar(LibraryExpression cRef) throws UnknownElementTypeException {
 		try {
@@ -1507,6 +1453,11 @@ public class ProblemZ3 extends ProblemGeneral {
 				case "java.io.FileInputStream":
 					sort = mkFileInputStreamSort();
 					break;
+				case "java.lang.String":
+				case "java.lang.StringBuilder":
+				case "java.lang.StringBuffer":
+					sort = ctx.mkStringSort();
+					break;
 				default:
 					throw new RuntimeException("symbol is of type " + cRef.getTypeName());
 				}
@@ -1527,12 +1478,18 @@ public class ProblemZ3 extends ProblemGeneral {
 		case "byte":
 		case "java.lang.Integer":
 		case "java.lang.Byte":
+		case "boolean":
+		case "java.lang.Boolean":
+		case "char":
+		case "java.lang.Character":
 			return ctx.mkIntSort();
 		case "float":
 		case "double":
 		case "java.lang.Float":
 		case "java.lang.Double":
 			return ctx.mkRealSort();
+		case "java.lang.String":
+			return ctx.mkStringSort();
 		default:
 			throw new RuntimeException("symbol is of type " + typeName);
 		}

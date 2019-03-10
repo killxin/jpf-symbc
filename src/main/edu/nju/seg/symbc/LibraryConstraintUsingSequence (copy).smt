@@ -241,17 +241,31 @@
 ;java.util.List.size()I
 ;java.util.ArrayList.size()I
 ;java.util.LinkedList.size()I
-(assert (= ?r (seq.len (element ?p0))))
+(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 min!nt) 0 (ite (= true (select a!1 x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))
+(assert (and
+    (= ?r (seq.len (element ?p0)))
+    (>= ?r (s!ze (mapping ?p0) max!nt))
+    (=> (> ?r 0) (> (s!ze (mapping ?p0) max!nt) 0))
+    ;(let ((isEmpty (forall ((x ?T)) (= (select (mapping ?p0) x) false))))
+    ;    (ite (= ?r 0) isEmpty (not isEmpty))
+    ;)
+))
 ;java.util.List.isEmpty()Z
 ;java.util.ArrayList.isEmpty()Z
 (assert (= ?r 
-    (ite (= (seq.len (element ?p0)) 0) 1 0)
+    (ite (and
+        (= (seq.len (element ?p0)) 0)
+        (forall ((x ?T)) (= (select (mapping ?p0) x) false))
+    ) 1 0)
 ))
 ;java.util.List.contains(Ljava/lang/Object;)Z
 ;java.util.ArrayList.contains(Ljava/lang/Object;)Z
 ;java.util.LinkedList.contains(Ljava/lang/Object;)Z
 (assert (= ?r 
-    (ite (seq.contains (element ?p0) (seq.unit ?p1)) 1 0)
+    (ite (and
+        (seq.contains (element ?p0) (seq.unit ?p1))
+        (select (mapping ?p0) ?p1)
+    ) 1 0)
 ))
 ;java.util.List.listIterator()Ljava/util/ListIterator;
 ;java.util.ArrayList.listIterator()Ljava/util/ListIterator;
@@ -276,6 +290,7 @@
 ;java.util.LinkedList.clone()Ljava/lang/Object;
 (assert (and 
     (= (element ?r) (element ?p0))
+    (= (mapping ?r) (mapping ?p0))
 ))
 ;java.util.List.add(Ljava/lang/Object;)Z
 ;java.util.ArrayList.add(Ljava/lang/Object;)Z
@@ -284,6 +299,7 @@
 ;java.util.LinkedList.offerLast(Ljava/lang/Object;)Z
 (assert (= ?r 1))
 (assert (= (element ?_p0) (seq.++ (element ?p0) (seq.unit ?p1))))
+(assert (= (mapping ?_p0) (store (mapping ?p0) ?p1 true)))
 ;java.util.List.remove(Ljava/lang/Object;)Z
 ;java.util.ArrayList.remove(Ljava/lang/Object;)Z
 ;java.util.LinkedList.remove(Ljava/lang/Object;)Z
@@ -302,8 +318,19 @@
     (and
         (= ?r 0)
         (= (element ?_p0) (element ?p0))
+        (= (mapping ?_p0) (mapping ?p0))
     )
 ))
+    ;(assert (ite 
+    ;    (seq.contains (element ?_p0) (seq.unit ?p1)) 
+    ;    (= (mapping ?_p0) (mapping ?p0))
+    ;    (forall ((x ?T))
+    ;        (ite (= x ?p1)
+    ;            (= (select (mapping ?_p0) x) false)
+    ;            (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
+    ;        )
+    ;    )
+    ;))
 ;java.util.List.addAll(Ljava/util/Collection;)Z
 ;java.util.ArrayList.addAll(Ljava/util/Collection;)Z
 ;java.util.LinkedList.addAll(Ljava/util/Collection;)Z
@@ -328,10 +355,12 @@
 ;java.util.LinkedList.<init>()V
 (assert (and
     (= (seq.len (element ?_p0)) 0)
+    (forall ((x ?T)) (= (select (mapping ?_p0) x) false))
 ))
 ;Array.<init>(I)V
 (assert (and
     (= (seq.len (element ?_p0)) ?p1)
+    (forall ((x ?T)) (= (select (mapping ?_p0) x) false))
 ))
 ;Array.get(I)Ljava/lang/Object;
 ;java.util.List.get(I)Ljava/lang/Object;
@@ -341,17 +370,7 @@
     (>= ?p1 0) (< ?p1 (seq.len (element ?p0)))
     (= (seq.unit ?r) (seq.at (element ?p0) ?p1))
 ))
-;Array.set(ILjava/lang/Object;)V
-(assert (let ((size (seq.len (element ?p0))))
-    (and
-        (>= ?p1 0) (< ?p1 size)
-        (= (element ?_p0) (seq.++ 
-            (seq.extract (element ?p0) 0 ?p1)
-            (seq.unit ?p2)
-            (seq.extract (element ?p0) (+ ?p1 1) (- (- size ?p1) 1))
-        ))
-    )
-))
+;Array.set(ILjava/lang/Object;)Ljava/lang/Object;
 ;java.util.List.set(ILjava/lang/Object;)Ljava/lang/Object;
 ;java.util.ArrayList.set(ILjava/lang/Object;)Ljava/lang/Object;
 ;java.util.LinkedList.set(ILjava/lang/Object;)Ljava/lang/Object;
@@ -366,6 +385,24 @@
         ))
     )
 ))
+    ;(assert (ite 
+    ;    (seq.contains (element ?_p0) (seq.unit ?r))
+    ;    (forall ((x ?T))
+    ;        (ite (= x ?p2)
+    ;            (= (select (mapping ?_p0) x) true)
+    ;            (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
+    ;        )
+    ;    )
+    ;    (forall ((x ?T))
+    ;        (ite (= x ?p2)
+    ;           (= (select (mapping ?_p0) x) true)
+    ;           (ite (= x ?r)
+    ;                (= (select (mapping ?_p0) x) false)
+    ;                (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
+    ;            )
+    ;        )
+    ;    )
+    ;))
 ;java.util.List.add(ILjava/lang/Object;)V
 ;java.util.ArrayList.add(ILjava/lang/Object;)V
 ;java.util.LinkedList.add(ILjava/lang/Object;)V
@@ -397,6 +434,16 @@
         )
     )
 ))
+    ;(assert (ite 
+    ;    (seq.contains (element ?_p0) (seq.unit ?r)) 
+    ;    (= (mapping ?_p0) (mapping ?p0))
+    ;    (forall ((x ?T))
+    ;        (ite (= x ?r)
+    ;            (= (select (mapping ?_p0) x) false)
+    ;            (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
+    ;        )
+    ;    )
+    ;))
 ;java.util.List.indexOf(Ljava/lang/Object;)I
 ;java.util.ArrayList.indexOf(Ljava/lang/Object;)I
 ;java.util.LinkedList.indexOf(Ljava/lang/Object;)I
@@ -416,6 +463,7 @@
 ;java.util.LinkedList.<init>(Ljava/util/Collection;)V
 (assert (and 
     (= (element ?_p0) (element ?p1))
+    (= (mapping ?_p0) (mapping ?p1))
 ))
 ;java.util.ArrayList.removeRange(II)V
 (assert (let ((size (seq.len (element ?p0))))
@@ -441,18 +489,41 @@
 ;java.util.LinkedList.pop()Ljava/lang/Object;
 (assert (= (seq.unit ?r) (seq.at (element ?_p0) 0)))
 (assert (= (element ?_p0) (seq.extract (element ?p0) 1 (- (seq.len (element ?p0)) 1))))
+    ;(assert (ite 
+    ;    (seq.contains (element ?_p0) (seq.unit ?r)) 
+    ;    (= (mapping ?_p0) (mapping ?p0))
+    ;    (forall ((x ?T))
+    ;        (ite (= x ?r)
+    ;            (= (select (mapping ?_p0) x) false)
+    ;            (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
+    ;        )
+    ;    )
+    ;))
 ;java.util.LinkedList.removeLast()Ljava/lang/Object;
 ;java.util.LinkedList.pollLast()Ljava/lang/Object;
 (assert (= (seq.unit ?r) (seq.at (element ?_p0) (- (seq.len (element ?p0)) 1))))
 (assert (= (element ?_p0) (seq.extract (element ?p0) 0 (- (seq.len (element ?p0)) 1))))
+    ;(assert (ite 
+    ;    (seq.contains (element ?_p0) (seq.unit ?r)) 
+    ;    (= (mapping ?_p0) (mapping ?p0))
+    ;    (forall ((x ?T))
+    ;        (ite (= x ?r)
+    ;            (= (select (mapping ?_p0) x) false)
+    ;            (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
+    ;        )
+    ;    )
+    ;))
 ;java.util.LinkedList.addFirst(Ljava/lang/Object;)V
 ;java.util.LinkedList.push(Ljava/lang/Object;)V
 (assert (= (element ?_p0) (seq.++ (seq.unit ?p1) (element ?p0))))
+(assert (= (mapping ?_p0) (store (mapping ?p0) ?p1 true)))
 ;java.util.LinkedList.addLast(Ljava/lang/Object;)V
 (assert (= (element ?_p0) (seq.++ (element ?p0) (seq.unit ?p1))))
+(assert (= (mapping ?_p0) (store (mapping ?p0) ?p1 true)))
 ;java.util.LinkedList.offerFirst(Ljava/lang/Object;)Z
 (assert (= ?r 1))
 (assert (= (element ?_p0) (seq.++ (seq.unit ?p1) (element ?p0))))
+(assert (= (mapping ?_p0) (store (mapping ?p0) ?p1 true)))
 ;java.util.LinkedList.removeLastOccurrence(Ljava/lang/Object;)Z
 (assert (ite
     (seq.contains (element ?p0) (seq.unit ?p1))
@@ -468,8 +539,19 @@
     (and
         (= ?r 0)
         (= (element ?_p0) (element ?p0))
+        (= (mapping ?_p0) (mapping ?p0))
     )
 ))
+    ;(assert (ite 
+    ;    (seq.contains (element ?_p0) (seq.unit ?p1)) 
+    ;    (= (mapping ?_p0) (mapping ?p0))
+    ;    (forall ((x ?T))
+    ;        (ite (= x ?p1)
+    ;            (= (select (mapping ?_p0) x) false)
+    ;            (= (select (mapping ?_p0) x) (select (mapping ?p0) x))
+    ;        )
+    ;    )
+    ;))
 ;java.util.Map.size()I
 ;java.util.HashMap.size()I
 ;java.util.TreeMap.size()I
@@ -961,15 +1043,10 @@
 ))
 ;java.lang.String.<init>()V
 ;java.lang.StringBuilder.<init>()V
-;java.lang.StringBuffer.<init>()V
-;java.lang.StringBuilder.<init>(I)V
-;java.lang.StringBuffer.<init>(I)V
 (assert (= "" ?_p0))
 ;java.lang.String.<init>(Ljava/lang/String;)V
 ;java.lang.String.<init>(Ljava/lang/StringBuffer;)V
 ;java.lang.String.<init>(Ljava/lang/StringBuilder;)V
-;java.lang.StringBuilder.<init>(Ljava/lang/String;)V
-;java.lang.StringBuffer.<init>(Ljava/lang/String;)V
 (assert (= ?p1 ?_p0))
 ;java.lang.String.equals(Ljava/lang/Object;)Z
 ;java.lang.String.contentEquals(Ljava/lang/StringBuffer;)Z
@@ -978,16 +1055,12 @@
 	(= ?r (ite (= ?p0 ?p1) 1 0))
 )
 ;java.lang.String.charAt(I)C
-;java.lang.StringBuilder.charAt(I)C
-;java.lang.StringBuffer.charAt(I)C
 (define-fun CcastI ((c String)) (Int) 
 (ite (= c "}") 125 (ite (= c "|") 124 (ite (= c "{") 123 (ite (= c "z") 122 (ite (= c "y") 121 (ite (= c "x") 120 (ite (= c "w") 119 (ite (= c "v") 118 (ite (= c "u") 117 (ite (= c "t") 116 (ite (= c "s") 115 (ite (= c "r") 114 (ite (= c "q") 113 (ite (= c "p") 112 (ite (= c "o") 111 (ite (= c "n") 110 (ite (= c "m") 109 (ite (= c "l") 108 (ite (= c "k") 107 (ite (= c "j") 106 (ite (= c "i") 105 (ite (= c "h") 104 (ite (= c "g") 103 (ite (= c "f") 102 (ite (= c "e") 101 (ite (= c "d") 100 (ite (= c "c") 99 (ite (= c "b") 98 (ite (= c "a") 97 (ite (= c "`") 96 (ite (= c "_") 95 (ite (= c "^") 94 (ite (= c "]") 93 (ite (= c "\") 92 (ite (= c "[") 91 (ite (= c "Z") 90 (ite (= c "Y") 89 (ite (= c "X") 88 (ite (= c "W") 87 (ite (= c "V") 86 (ite (= c "U") 85 (ite (= c "T") 84 (ite (= c "S") 83 (ite (= c "R") 82 (ite (= c "Q") 81 (ite (= c "P") 80 (ite (= c "O") 79 (ite (= c "N") 78 (ite (= c "M") 77 (ite (= c "L") 76 (ite (= c "K") 75 (ite (= c "J") 74 (ite (= c "I") 73 (ite (= c "H") 72 (ite (= c "G") 71 (ite (= c "F") 70 (ite (= c "E") 69 (ite (= c "D") 68 (ite (= c "C") 67 (ite (= c "B") 66 (ite (= c "A") 65 (ite (= c "@") 64 (ite (= c "?") 63 (ite (= c ">") 62 (ite (= c "=") 61 (ite (= c "<") 60 (ite (= c ";") 59 (ite (= c ":") 58 (ite (= c "9") 57 (ite (= c "8") 56 (ite (= c "7") 55 (ite (= c "6") 54 (ite (= c "5") 53 (ite (= c "4") 52 (ite (= c "3") 51 (ite (= c "2") 50 (ite (= c "1") 49 (ite (= c "0") 48 (ite (= c "/") 47 (ite (= c ".") 46 (ite (= c "-") 45 (ite (= c ",") 44 (ite (= c "+") 43 (ite (= c "*") 42 (ite (= c ")") 41 (ite (= c "(") 40 (ite (= c "'") 39 (ite (= c "&") 38 (ite (= c "%") 37 (ite (= c "$") 36 (ite (= c "#") 35 (ite (= c """") 34 (ite (= c "!") 33 (ite (= c " ") 32 126)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
 (assert 
 	(= ?r (CcastI (str.at ?p0 ?p1)))
 )
 ;java.lang.String.length()I
-;java.lang.StringBuilder.length()I
-;java.lang.StringBuffer.length()I
 (assert (= ?r (str.len ?p0)))
 ;java.lang.String.isEmpty()Z
 (assert (= ?r (ite (= (str.len ?p0) 0) 1 0)))
@@ -1008,14 +1081,10 @@
 	(ite (str.suffixof ?p1 ?p0) 1 0)
 ))
 ;java.lang.String.indexOf(Ljava/lang/String;)I
-;java.lang.StringBuilder.indexOf(Ljava/lang/String;)I
-;java.lang.StringBuffer.indexOf(Ljava/lang/String;)I
 (assert (= ?r
 	(str.indexof ?p0 ?p1)
 ))
 ;java.lang.String.indexOf(Ljava/lang/String;I)I
-;java.lang.StringBuilder.indexOf(Ljava/lang/String;I)I
-;java.lang.StringBuffer.indexOf(Ljava/lang/String;I)I
 (assert (= ?r
 	(str.indexof ?p0 ?p1 ?p2)
 ))
@@ -1029,30 +1098,14 @@
 	(str.substr ?p0 ?p1 (- ?p2 ?p1))
 ))
 ;java.lang.String.concat(Ljava/lang/String;)Ljava/lang/String;
-(assert (= ?r (str.++ ?p0 ?p1)))
 ;java.lang.StringBuilder.append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-;java.lang.StringBuilder.append(Ljava/lang/StringBuffer;)Ljava/lang/StringBuilder;
-;java.lang.StringBuffer.append(Ljava/lang/String;)Ljava/lang/StringBuffer;
-;java.lang.StringBuffer.append(Ljava/lang/StringBuffer;)Ljava/lang/StringBuffer;
-(assert (and (= ?r ?_p0) (= ?_p0 (str.++ ?p0 ?p1))))
-;java.lang.StringBuilder.append(Z)Ljava/lang/StringBuilder;
-;java.lang.StringBuilder.append(C)Ljava/lang/StringBuilder;
-;java.lang.StringBuilder.append(I)Ljava/lang/StringBuilder;
-;java.lang.StringBuilder.append(J)Ljava/lang/StringBuilder;
-;java.lang.StringBuffer.append(Z)Ljava/lang/StringBuffer;
-;java.lang.StringBuffer.append(C)Ljava/lang/StringBuffer;
-;java.lang.StringBuffer.append(I)Ljava/lang/StringBuffer;
-;java.lang.StringBuffer.append(J)Ljava/lang/StringBuffer;
-(define-fun IcastC ((n Int)) (String) 
-(ite (= n 125) "}" (ite (= n 124) "|" (ite (= n 123) "{" (ite (= n 122) "z" (ite (= n 121) "y" (ite (= n 120) "x" (ite (= n 119) "w" (ite (= n 118) "v" (ite (= n 117) "u" (ite (= n 116) "t" (ite (= n 115) "s" (ite (= n 114) "r" (ite (= n 113) "q" (ite (= n 112) "p" (ite (= n 111) "o" (ite (= n 110) "n" (ite (= n 109) "m" (ite (= n 108) "l" (ite (= n 107) "k" (ite (= n 106) "j" (ite (= n 105) "i" (ite (= n 104) "h" (ite (= n 103) "g" (ite (= n 102) "f" (ite (= n 101) "e" (ite (= n 100) "d" (ite (= n 99) "c" (ite (= n 98) "b" (ite (= n 97) "a" (ite (= n 96) "`" (ite (= n 95) "_" (ite (= n 94) "^" (ite (= n 93) "]" (ite (= n 92) "\" (ite (= n 91) "[" (ite (= n 90) "Z" (ite (= n 89) "Y" (ite (= n 88) "X" (ite (= n 87) "W" (ite (= n 86) "V" (ite (= n 85) "U" (ite (= n 84) "T" (ite (= n 83) "S" (ite (= n 82) "R" (ite (= n 81) "Q" (ite (= n 80) "P" (ite (= n 79) "O" (ite (= n 78) "N" (ite (= n 77) "M" (ite (= n 76) "L" (ite (= n 75) "K" (ite (= n 74) "J" (ite (= n 73) "I" (ite (= n 72) "H" (ite (= n 71) "G" (ite (= n 70) "F" (ite (= n 69) "E" (ite (= n 68) "D" (ite (= n 67) "C" (ite (= n 66) "B" (ite (= n 65) "A" (ite (= n 64) "@" (ite (= n 63) "?" (ite (= n 62) ">" (ite (= n 61) "=" (ite (= n 60) "<" (ite (= n 59) ";" (ite (= n 58) ":" (ite (= n 57) "9" (ite (= n 56) "8" (ite (= n 55) "7" (ite (= n 54) "6" (ite (= n 53) "5" (ite (= n 52) "4" (ite (= n 51) "3" (ite (= n 50) "2" (ite (= n 49) "1" (ite (= n 48) "0" (ite (= n 47) "/" (ite (= n 46) "." (ite (= n 45) "-" (ite (= n 44) "," (ite (= n 43) "+" (ite (= n 42) "*" (ite (= n 41) ")" (ite (= n 40) "(" (ite (= n 39) "'" (ite (= n 38) "&" (ite (= n 37) "%" (ite (= n 36) "$" (ite (= n 35) "#" (ite (= n 34) """" (ite (= n 33) "!" (ite (= n 32) " " "~")))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
-(assert (and (= ?r ?_p0) (= ?_p0 (str.++ ?p0 (IcastC ?p1)))))
+(assert (= ?r (str.++ ?p0 ?p1)))
 ;java.lang.String.contains(Ljava/lang/CharSequence;)Z
 (assert (= ?r 
 	(ite (str.contains ?p0 ?p1) 1 0)
 ))
 ;java.lang.String.toString()Ljava/lang/String;
 ;java.lang.StringBuilder.toString()Ljava/lang/String;
-;java.lang.StringBuffer.toString()Ljava/lang/String;
 (assert (= ?r ?p0))
 ;java.lang.String.valueOf(Z)Ljava/lang/String;
 (assert (= ?r
@@ -1082,8 +1135,6 @@
 		(ite (> ?p0 ?p1) 1 -1)
 	)
 ))
-;java.lang.Integer.parseInt(Ljava/lang/String;)I
-(assert (= ?r (str.to.int ?p0)))
 ;java.io.FileInputStream.<init>(Ljava/lang/String;)V
 (assert (and 
     (>= (length ?_p0) 0) (<= (length ?_p0) 2048)

@@ -68,11 +68,8 @@ public class FASTORE extends gov.nasa.jpf.jvm.bytecode.FASTORE {
 				return this;
 			} else {
 				StackFrame sf = ti.getModifiableTopFrame();
-				CollectionExpression arrayExpr = (CollectionExpression) sf.getOperandAttr(2);
-				if (arrayExpr == null) {
-					ElementInfo eiArray = ti.getElementInfo(sf.peek(2));
-					arrayExpr = (CollectionExpression) eiArray.getObjectAttr();
-				}
+				ElementInfo eiArray = ti.getModifiableElementInfo(sf.peek(2));
+				CollectionExpression arrayExpr = (CollectionExpression) eiArray.getObjectAttr();
 				IntegerExpression indexExpr;
 				RealExpression valueExpr;
 				if (sf.hasOperandAttr(1)) {
@@ -85,23 +82,23 @@ public class FASTORE extends gov.nasa.jpf.jvm.bytecode.FASTORE {
 				} else {
 					valueExpr = new RealConstant(sf.peekFloat());
 				}
-//				SymbolicInteger retExpr = new SymbolicInteger(BytecodeUtils.varName("ret", VarType.INT));
-				SymbolicReal retExpr = new SymbolicReal(BytecodeUtils.varName("ret", VarType.REAL));
+//				SymbolicReal retExpr = new SymbolicReal(BytecodeUtils.varName("ret", VarType.REAL));
 				CollectionExpression newArrayExpr = updateArrayVersion(arrayExpr);
+				eiArray.setObjectAttr(newArrayExpr);
 				LibraryConstraint cc = new LibraryConstraint(LibraryOperation.ARRAY_SET,
-						new Expression[] { arrayExpr, indexExpr, valueExpr }, retExpr, new Expression[] { newArrayExpr, null, null });
+						new Expression[] { arrayExpr, indexExpr, valueExpr }, null, new Expression[] { newArrayExpr, null, null });
 				SymbolicLibraryHandler.pushCC2PC(ti, cc);
 				sf.pop(3);
-				for (int i = 0; i < sf.getLocalVariableCount(); ++i) {
-					Object attr = sf.getLocalAttr(i);
-					if (attr != null && attr.equals(arrayExpr)) {
-						sf.setLocalAttr(i, newArrayExpr);
-//						if (sf.isLocalVariableRef(i)) {
-//							sf.setlocaloperandattr;
-//						}
-						break;
-					}
-				}
+//				for (int i = 0; i < sf.getLocalVariableCount(); ++i) {
+//					Object attr = sf.getLocalAttr(i);
+//					if (attr != null && attr.equals(arrayExpr)) {
+//						sf.setLocalAttr(i, newArrayExpr);
+////						if (sf.isLocalVariableRef(i)) {
+////							sf.setlocaloperandattr;
+////						}
+//						break;
+//					}
+//				}
 				return getNext(ti);				
 			}
 		}

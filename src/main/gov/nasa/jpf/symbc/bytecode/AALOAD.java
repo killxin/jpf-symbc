@@ -20,12 +20,22 @@
 
 package gov.nasa.jpf.symbc.bytecode;
 
+import edu.nju.seg.symbc.CollectionExpression;
+import edu.nju.seg.symbc.LibraryConstraint;
+import edu.nju.seg.symbc.LibraryOperation;
+import edu.nju.seg.symbc.StringExpression;
+import gov.nasa.jpf.Config;
+import gov.nasa.jpf.JPFException;
 import gov.nasa.jpf.symbc.SymbolicInstructionFactory;
+import gov.nasa.jpf.symbc.bytecode.BytecodeUtils.VarType;
 import gov.nasa.jpf.symbc.numeric.Comparator;
+import gov.nasa.jpf.symbc.numeric.Expression;
+import gov.nasa.jpf.symbc.numeric.IntegerConstant;
 import gov.nasa.jpf.symbc.numeric.IntegerExpression;
 import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
 import gov.nasa.jpf.symbc.numeric.PathCondition;
 import gov.nasa.jpf.vm.ArrayIndexOutOfBoundsExecutiveException;
+import gov.nasa.jpf.vm.ChoiceGenerator;
 import gov.nasa.jpf.vm.ElementInfo;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MJIEnv;
@@ -43,6 +53,50 @@ public class AALOAD extends gov.nasa.jpf.jvm.bytecode.AALOAD {
 
     @Override
     public Instruction execute(ThreadInfo ti) {
+
+		// add by czz
+		Config conf = ti.getVM().getConfig();
+		boolean symlibraries_flag = conf.getBoolean("symbolic.libraries");
+		if (symlibraries_flag && SymbolicLibraryHandler.inSymScale(this, ti)) {
+			ChoiceGenerator<?> cg;
+			if (!ti.isFirstStepInsn()) {
+				cg = new PCChoiceGenerator(1);
+				ti.getVM().setNextChoiceGenerator(cg);
+				return this;
+			} else {
+				StackFrame sf = ti.getModifiableTopFrame();
+				CollectionExpression arrayExpr = (CollectionExpression) peekArrayAttr(ti);
+				if (arrayExpr == null) {
+					ElementInfo eiArray = ti.getElementInfo(sf.peek(1));
+					arrayExpr = (CollectionExpression) eiArray.getObjectAttr();
+				}
+				assert !sf.isOperandRef();
+				Expression indexExpr;
+				if (sf.hasOperandAttr()) {
+					indexExpr = (IntegerExpression) sf.getOperandAttr();
+				} else {
+					indexExpr = new IntegerConstant(sf.peek());
+					System.out.println("create symbolic expression for concrete int " + indexExpr);
+				}
+				if (!arrayExpr.getElementTypeName().equals("java.lang.String")) {
+					throw new JPFException("unhandled reference array type: " + arrayExpr.getElementTypeName());
+				}
+				StringExpression retExpr = new StringExpression(BytecodeUtils.varName("ret", VarType.STRING), "java.lang.String");
+				LibraryConstraint cc = new LibraryConstraint(LibraryOperation.ARRAY_GET,
+						new Expression[] { arrayExpr, indexExpr }, retExpr, new Expression[2]);
+				SymbolicLibraryHandler.pushCC2PC(ti, cc);
+				sf.pop(2);
+				try {
+					sf.push(1); // whatever you push to the frame
+					sf.setOperandAttr(retExpr);
+					return getNext(ti);
+
+				} catch (ArrayIndexOutOfBoundsExecutiveException ex) {
+					return ex.getInstruction();
+				}
+			}
+		}
+		// add by czz end
 
         if (peekIndexAttr(ti) == null || !(peekIndexAttr(ti) instanceof IntegerExpression))
             return super.execute(ti);

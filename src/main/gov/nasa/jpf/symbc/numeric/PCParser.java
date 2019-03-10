@@ -68,6 +68,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 import edu.nju.seg.symbc.CollectionExpression;
 import edu.nju.seg.symbc.StringExpression;
@@ -1061,9 +1062,6 @@ public class PCParser {
 		symIntegerVar = new HashMap<SymbolicInteger, Object>();
 		// add by rhjiang
 		symLibraryVar = new HashMap<LibraryExpression, Object>();
-		// add by czz
-		symArrayVar = new HashMap<ArrayExpression, Object>();
-		symStringVar = new HashMap<StringExpression, Object>();
 		// result = null;
 		tempVars = 0;
 
@@ -1222,6 +1220,12 @@ public class PCParser {
 
 	private static String smtFormatRendering(String smt, final LibraryConstraint cRef)
 			throws UnknownElementTypeException {
+		if (smt.contains("max!nt")) {
+			smt = smt.replace("max!nt", Integer.toString(ProblemZ3.MAX_INT));
+		}
+		if (smt.contains("min!nt")) {
+			smt = smt.replace("min!nt", Integer.toString(ProblemZ3.MIN_INT));
+		}
 		for (int i = 0; i < cRef.getParams().length; i++) {
 			Expression pi = cRef.getParams()[i];
 			Expression _pi = cRef._getParams()[i];
@@ -1267,7 +1271,7 @@ public class PCParser {
 		smtFormats = new EnumMap<LibraryOperation, String>(LibraryOperation.class);
 		try {
 //			String spfPath = new gov.nasa.jpf.Config(new String[] {}).getProperty("jpf-symbc");
-			String spfPath = "/home/fox/git/jpf-symbc";
+			String spfPath = "/home/quebiojss/quebio-jss/javapathfinder/jpf-symbc";
 			String path = spfPath + "/src/main/edu/nju/seg/symbc/LibraryConstraintUsingSequence.smt";
 			BufferedReader in = new BufferedReader(new FileReader(path));
 			String line = in.readLine();
@@ -1306,40 +1310,9 @@ public class PCParser {
 		}
 	}
 
-	// add by czz
-	public static Map<ArrayExpression, Object> symArrayVar;
-	public static Map<StringExpression, Object> symStringVar;
-
-	static Object getExpression(ArrayExpression eRef) {
-		ProblemZ3 pbz3 = (ProblemZ3) pb;
-		assert eRef != null;
-		Object dp_var = symArrayVar.get(eRef);
-		if (dp_var == null) {
-			dp_var = pbz3.makeArrayVar(eRef);
-			symArrayVar.put(eRef, dp_var);
-		}
-		return dp_var;
-
-	}
-	
-	static Object getExpression(StringExpression sRef) {
-		ProblemZ3 pbz3 = (ProblemZ3) pb;
-		assert sRef != null;
-		Object dp_var = symStringVar.get(sRef);
-		if (dp_var == null) {
-			dp_var = pbz3.makeStringVar(sRef);
-			symStringVar.put(sRef, dp_var);
-		}
-		return dp_var;		
-	}
-	// add by czz end
-
 	public static String exp2str(Expression exp) throws UnknownElementTypeException {
 		if (exp == null) {
 			return "";
-		} else if (exp instanceof StringExpression) {
-			StringExpression se = (StringExpression) exp;
-			return getExpression(se).toString();
 		} else if (exp instanceof LibraryExpression) {
 			LibraryExpression ce = (LibraryExpression) exp;
 			return getExpression(ce).toString();
@@ -1357,10 +1330,8 @@ public class PCParser {
 			} else {
 				return getExpression(re).toString();
 			}
-		} else if (exp instanceof ArrayExpression) {
-			ArrayExpression ae = (ArrayExpression) exp;
-			return getExpression(ae).toString();
-		} else {
+		} 
+		else {
 			throw new JPFException("object is of type " + exp);
 		}
 	}

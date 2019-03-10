@@ -18,6 +18,7 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import edu.nju.seg.symbc.CollectionExpression;
+import edu.nju.seg.symbc.StringExpression;
 import edu.nju.seg.symbc.FileExpression;
 import edu.nju.seg.symbc.FrameAttribute;
 import edu.nju.seg.symbc.LibraryConstraint;
@@ -37,8 +38,7 @@ import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
 import gov.nasa.jpf.symbc.numeric.PCParser;
 import gov.nasa.jpf.symbc.numeric.PathCondition;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
-import gov.nasa.jpf.symbc.string.StringExpression;
-import gov.nasa.jpf.symbc.string.StringSymbolic;
+import gov.nasa.jpf.symbc.string.SymbolicStringBuilder;
 import gov.nasa.jpf.vm.ChoiceGenerator;
 import gov.nasa.jpf.vm.ElementInfo;
 import gov.nasa.jpf.vm.Instruction;
@@ -190,10 +190,10 @@ public class SymbolicLibraryHandler {
 							_paramExps.push(new_sym_pi);
 							// update the object symbol
 							intent.put(pi, new_sym_pi);
-						} else if (sym_pi instanceof StringSymbolic && smtFormat.contains("?_p" + (numParams - i - 1))) {
-							StringSymbolic new_sym_pi = updateVersion((StringSymbolic) sym_pi);
-							_paramExps.push(new_sym_pi);
-							intent.put(pi, new_sym_pi);
+//						} else if (sym_pi instanceof StringSymbolic && smtFormat.contains("?_p" + (numParams - i - 1))) {
+//							StringSymbolic new_sym_pi = updateVersion((StringSymbolic) sym_pi);
+//							_paramExps.push(new_sym_pi);
+//							intent.put(pi, new_sym_pi);
 						} else {
 							_paramExps.push(null);
 							intent.put(pi, sym_pi);
@@ -204,6 +204,7 @@ public class SymbolicLibraryHandler {
 						int pi = sf.peek(i);
 						IntegerExpression sym_pi = sf.hasOperandAttr(i) ? (IntegerExpression) sf.getOperandAttr(i)
 								: null;
+//						Expression sym_pi = sf.hasOperandAttr(i) ? (Expression) sf.getOperandAttr(i) : null;
 						if (sym_pi == null) {
 							sym_pi = new IntegerConstant(pi);
 							System.out.println("create symbolic expression for concrete int " + sym_pi);
@@ -332,6 +333,8 @@ public class SymbolicLibraryHandler {
 				for (Entry<ElementInfo, Object> entry : intent.entrySet()) {
 					ElementInfo ei = entry.getKey();
 					ei.getModifiableInstance().setObjectAttr(entry.getValue());
+					System.out.println("attach attribute " + entry.getValue() + " to " + entry.getKey());
+//					ei.setObjectAttr(entry.getValue());
 				}
 			}
 			frame.removeFrameAttr(fAttr);
@@ -346,18 +349,26 @@ public class SymbolicLibraryHandler {
 		if (typeName.equals("java.lang.Integer")) {
 			sym_ei = new IntegerConstant(ei.asInteger());
 			System.out.println("create symbolic expression for concrete Integer " + sym_ei);
-		} else if (typeName.equals("java.lang.String")) {
-			sym_ei = new StringSymbolic(BytecodeUtils.varName("String@" + ei.getObjectRef(), VarType.STRING));
+		} else if (typeName.equals("java.lang.Character")) {
+			char value = ei.getDeclaredCharField("value", "java.lang.Character");
+			sym_ei = new IntegerConstant(value);
+			System.out.println("create symbolic expression for concrete Character " + sym_ei);
+		} else if (typeName.equals("java.lang.Boolean")) {
+			boolean value = ei.getDeclaredBooleanField("value","java.lang.Boolean");
+			sym_ei = new IntegerConstant(value ? 1 :0);
+			System.out.println("create symbolic expression for Boolean " + sym_ei);
+		} else if (typeName.equals("java.lang.String") || typeName.equals("java.lang.StringBuilder") || typeName.equals("java.lang.StringBuffer")) {
+			sym_ei = new StringExpression(BytecodeUtils.varName("String@" + ei.getObjectRef(), VarType.STRING), typeName);
 			System.out.println("create symbolic expression for String " + sym_ei);
-		} else if (typeName.equals("java.util.ArrayList")) {
+		} else if (typeName.equals("java.util.ArrayList") || typeName.equals("java.util.LinkedList")) {
 			sym_ei = new CollectionExpression(BytecodeUtils.varName("List@" + ei.getObjectRef(), VarType.OBJECT),
 					typeName);
 			System.out.println("create symbolic expression for empty ArrayList " + sym_ei);
-		} else if (typeName.equals("java.util.HashSet")) {
+		} else if (typeName.equals("java.util.HashSet") || typeName.equals("java.util.TreeSet")) {
 			sym_ei = new CollectionExpression(BytecodeUtils.varName("Set@" + ei.getObjectRef(), VarType.OBJECT),
 					typeName);
 			System.out.println("create symbolic expression for empty HashSet " + sym_ei);
-		} else if (typeName.equals("java.util.HashMap")) {
+		} else if (typeName.equals("java.util.HashMap") || typeName.equals("java.util.TreeMap")) {
 			sym_ei = new CollectionExpression(BytecodeUtils.varName("Map@" + ei.getObjectRef(), VarType.OBJECT),
 					typeName);
 			System.out.println("create symbolic expression for empty HashMap " + sym_ei);
@@ -429,7 +440,7 @@ public class SymbolicLibraryHandler {
 		} else if (retType == Type.CHAR || retType == Type.INT) {
 			retExp = new SymbolicInteger(BytecodeUtils.varName("ret", VarType.INT));
 		} else if (retType == Type.STRING) {
-			retExp = new StringSymbolic(BytecodeUtils.varName("ret", VarType.STRING));
+			retExp = new StringExpression(BytecodeUtils.varName("ret", VarType.STRING), "java.lang.String");
 		} else if (retType.getType() == Type.OBJECT.getType() || retType instanceof ArrayType) {
 			CollectionExpression sym_b = null;
 			StackFrame sf = th.getModifiableTopFrame();
@@ -470,7 +481,7 @@ public class SymbolicLibraryHandler {
 				if (sym_b != null) {
 					((CollectionExpression) retExp).setElementTypeName(sym_b.getElementTypeName());
 				}
-			} else if(typeName.equals("java.util.Set")) {
+			} else if(typeName.equals("java.util.Set") || typeName.equals("java.util.Collection")) {
 				retExp = new CollectionExpression(BytecodeUtils.varName("ret@Set", VarType.OBJECT), typeName);
 				if (sym_b != null) {
 					if(invInst.getInvokedMethod().getName().contains("keySet")) {
@@ -498,8 +509,13 @@ public class SymbolicLibraryHandler {
 				}
 				if (typeName.equals("java.lang.Integer")) {
 					retExp = new SymbolicInteger(BytecodeUtils.varName("ret", VarType.INT));
-				} else if (typeName.equals("java.lang.String")) {
-					retExp = new StringSymbolic(BytecodeUtils.varName("ret", VarType.STRING));
+				} else if (typeName.equals("java.lang.Character")) {
+					retExp = new SymbolicInteger(BytecodeUtils.varName("ret", VarType.INT), 0, 128);
+				} else if (typeName.equals("java.lang.Boolean")) {
+					retExp = new SymbolicInteger(BytecodeUtils.varName("ret", VarType.INT), 0, 1);
+				} else if (typeName.equals("java.lang.String") || typeName.equals("java.lang.StringBuilder")
+						|| typeName.equals("java.lang.StringBuffer")) {
+					retExp = new StringExpression(BytecodeUtils.varName("ret", VarType.STRING), "java.lang.String");
 				} else {
 					System.out.println(sym_b.getKeyValueTypeNames()[0]);
 					throw new JPFException("object is of type " + retType);
@@ -519,12 +535,12 @@ public class SymbolicLibraryHandler {
 		copy_sym.setName(BytecodeUtils.varName(mat.group(1), VarType.OBJECT));
 		return copy_sym;
 	}
-	StringSymbolic updateVersion(StringSymbolic sym) {
-		Pattern pat = Pattern.compile("^(.*)_\\d+_[^_]+$");
-		Matcher mat = pat.matcher(sym.getName());
-		mat.find();
-		StringSymbolic copy_sym = new StringSymbolic(BytecodeUtils.varName(mat.group(1), VarType.STRING));
-		return copy_sym;
-	}
+//	StringSymbolic updateVersion(StringSymbolic sym) {
+//		Pattern pat = Pattern.compile("^(.*)_\\d+_[^_]+$");
+//		Matcher mat = pat.matcher(sym.getName());
+//		mat.find();
+//		StringSymbolic copy_sym = new StringSymbolic(BytecodeUtils.varName(mat.group(1), VarType.STRING));
+//		return copy_sym;
+//	}
 
 }
