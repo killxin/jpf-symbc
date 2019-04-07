@@ -88,7 +88,7 @@ public class ProblemZ3 extends ProblemGeneral {
 			HashMap<String, String> cfg = new HashMap<String, String>();
 			cfg.put("model", "true");
 			// add by rhjiang
-			cfg.put("timeout", "5000");
+//			cfg.put("timeout", "20000");
 			ctx = new Context(cfg);
 			solver = ctx.mkSolver();
 		}
@@ -683,23 +683,30 @@ public class ProblemZ3 extends ProblemGeneral {
 	}
 
 	public static Model currentModel = null;
+
 	// add by rhjiang
 	public static Model getCurrentModel() {
 		return currentModel;
 	}
-	
+
+	public static Context getZ3Context() {
+		return Z3Wrapper.getInstance().ctx;
+	}
+
 	public Boolean solve() {
 		try {
 //	        System.out.println("rh: "+Arrays.toString(Arrays.copyOfRange(solver.getAssertions(),2,10)));
-			System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
+			System.out.println("rh: ");
+			for (BoolExpr expr : solver.getAssertions()) {
+				System.out.println(expr);
+			}
 			Status status = solver.check();
 			if (Status.SATISFIABLE == status) {
 				System.out.println("********rh: SAT********");
 				currentModel = solver.getModel();
 				generateConstraint(solver);
 				return true;
-			} 
-			else if(Status.UNSATISFIABLE == status) {
+			} else if (Status.UNSATISFIABLE == status) {
 				System.out.println("********rh: UNSAT********");
 //				Arrays.stream(solver.getAssertions()).forEach(x -> System.out.println(x));
 //				System.out.println("************************");
@@ -716,16 +723,17 @@ public class ProblemZ3 extends ProblemGeneral {
 			throw new RuntimeException("## Error Z3: " + e);
 		}
 	}
-	
+
 	// add by czz
 	/**
-	 * do not use again!!!
-	 * constraint that contains the return variable of the function
+	 * do not use again!!! constraint that contains the return variable of the
+	 * function
 	 */
 	private static String returnConstraint;
+
 	/**
-	 * do not use again!!!
-	 * get constraint that contains the return variable of the function
+	 * do not use again!!! get constraint that contains the return variable of the
+	 * function
 	 */
 	private static String getReturnConstraint() {
 		if (returnConstraint == null) {
@@ -734,65 +742,68 @@ public class ProblemZ3 extends ProblemGeneral {
 			return returnConstraint;
 		}
 	}
+
 	/**
-	 *  constraint without library type declaration
+	 * constraint without library type declaration
 	 */
 	public static String constraint = null;
+
 	/**
-	 *  get constraint without library type declaration
+	 * get constraint without library type declaration
 	 */
 	public static String getCurrentConstraint() {
 		return constraint;
 	}
-	
+
 	public static Map<String, String> argsTypeMap = BytecodeUtils.getArgsTypeMap();
 	public static Map<String, Expression> argsExpressionMap = BytecodeUtils.getArgsExpressionMap();
 	public static Map<String, Expression> expressionMap = new HashMap<String, Expression>();
-	
+
 	public static void clearArgsExpressionMaps() {
 		argsTypeMap.clear();
 		argsExpressionMap.clear();
 		expressionMap.clear();
 	}
-	
+
 	private void updateExpressionMap(Map<String, Expression> expressionMap, Expression e) {
 		Pattern pat = Pattern.compile("^(.*)_(\\d+)_[^_]+$");
 		Matcher mat = pat.matcher(e.stringPC());
-		if(mat.find()) {
-		int id = Integer.parseInt(mat.group(2));
-		for (Entry<String, Expression> entry: expressionMap.entrySet()) {
-			if (mat.group(1).equals(entry.getKey())) {
-				Matcher mat2 = pat.matcher(entry.getValue().stringPC());
-				mat2.find();
-				if (Integer.parseInt(mat2.group(2)) < id) {
-					entry.setValue(e);
-					break;
+		if (mat.find()) {
+			int id = Integer.parseInt(mat.group(2));
+			for (Entry<String, Expression> entry : expressionMap.entrySet()) {
+				if (mat.group(1).equals(entry.getKey())) {
+					Matcher mat2 = pat.matcher(entry.getValue().stringPC());
+					mat2.find();
+					if (Integer.parseInt(mat2.group(2)) < id) {
+						entry.setValue(e);
+						break;
+					}
 				}
 			}
 		}
-		}
 	}
-	
+
 //	public final static int MAX_INT = 128;
 //	public final static int MIN_INT = -10;
 	public final static int MAX_INT = 4;
 	public final static int MIN_INT = -2;
+
 	public void generateConstraint(Solver solver) {
 		StringBuffer result = new StringBuffer();
 //		for (String sort_name: dataTypeSortMap.keySet()) {
 //			System.out.println("Datatype sort name:" + sort_name);
 //		}
-		for (String name: argsExpressionMap.keySet()) {
+		for (String name : argsExpressionMap.keySet()) {
 			expressionMap.put(name, argsExpressionMap.get(name));
 		}
-		
-		for(LibraryExpression le: PCParser.symLibraryVar.keySet()) {
+
+		for (LibraryExpression le : PCParser.symLibraryVar.keySet()) {
 			updateExpressionMap(expressionMap, le);
 			Object tempExpr = PCParser.symLibraryVar.get(le);
 			assert tempExpr instanceof Expr;
 			Expr expr = (Expr) tempExpr;
 			String libExpr = expr.getFuncDecl().toString();
-			for (String sort_name: dataTypeSortMap.keySet()) {
+			for (String sort_name : dataTypeSortMap.keySet()) {
 				// change to unique sort name
 				String mySortName = "(My" + sort_name.replace("_", " ") + ")";
 //				libExpr = replaceLast(libExpr, sort_name, mySortName);
@@ -800,14 +811,14 @@ public class ProblemZ3 extends ProblemGeneral {
 			}
 			result.append(libExpr).append("\n");
 		}
-		for(SymbolicInteger si: PCParser.symIntegerVar.keySet()) {
+		for (SymbolicInteger si : PCParser.symIntegerVar.keySet()) {
 			updateExpressionMap(expressionMap, si);
 			Object tempExpr = PCParser.symIntegerVar.get(si);
 			assert tempExpr instanceof Expr;
 			Expr expr = (Expr) tempExpr;
 			result.append(expr.getFuncDecl()).append("\n");
 		}
-		for(SymbolicReal sr: PCParser.symRealVar.keySet()) {
+		for (SymbolicReal sr : PCParser.symRealVar.keySet()) {
 			updateExpressionMap(expressionMap, sr);
 			Object tempExpr = PCParser.symRealVar.get(sr);
 			assert tempExpr instanceof Expr;
@@ -828,7 +839,7 @@ public class ProblemZ3 extends ProblemGeneral {
 		}
 		constraint = smt;
 	}
-	
+
 //	public static String replaceLast(String str, String target, String other) {
 //		StringBuilder result = new StringBuilder(str);
 //		result.replace(result.lastIndexOf(target), result.lastIndexOf(target) + other.length(), other);
@@ -1226,8 +1237,8 @@ public class ProblemZ3 extends ProblemGeneral {
 	@Override
 	public Object mixed(Object exp1, Object exp2) {
 		// TODO Auto-generated method stub
-		if(exp1 instanceof RealExpr && exp2 instanceof IntExpr) {
-			return ctx.mkEq((RealExpr)exp1, ctx.mkInt2Real((IntExpr)exp2));
+		if (exp1 instanceof RealExpr && exp2 instanceof IntExpr) {
+			return ctx.mkEq((RealExpr) exp1, ctx.mkInt2Real((IntExpr) exp2));
 		}
 		throw new RuntimeException("## Error Z3 \n");
 	}
@@ -1349,7 +1360,22 @@ public class ProblemZ3 extends ProblemGeneral {
 		}
 	}
 
-	public BoolExpr[] parseSMTLIB2String(String smt/* , Symbol[] symb1, Sort[] sort, Symbol[] symb2, FuncDecl[] func */) {
+	private final static String sizeZ3Func = "(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 "
+			+ MIN_INT + ") 0 (ite (select a!1 x!1) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))\n";
+	private final static String listSizeZ3Func = "(define-fun-rec s!ze ((a!1 (Seq Int)) (x!1 Int)) Int (ite (< x!1 "
+			+ MIN_INT
+			+ ") 0 (ite (seq.contains a!1 (seq.unit x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))\n";
+	private final static String m2eZ3Func = "(define-fun-rec m!e ((a!1 (Array Int Bool)) (x!1 Int)) (Seq Int) (ite (< x!1 "
+			+ MIN_INT
+			+ ") (as seq.empty (Seq Int)) (ite (select a!1 x!1) (seq.++ (m!e a!1 (- x!1 1)) (seq.unit x!1)) (m!e a!1 (- x!1 1)))))\n";
+	private final static String e2mZ3Func = "(define-fun-rec e!m ((a!1 (Seq Int)) (x!1 Int)) (Array Int Bool) (ite (< x!1 "
+			+ MIN_INT
+			+ ") ((as const (Array Int Bool)) false) (ite (seq.contains a!1 (seq.unit x!1)) (store (e!m a!1 (- x!1 1)) x!1 true) (e!m a!1 (- x!1 1)))))\n";
+	private final static String listMappingZ3Func = "(define-fun mapping ((a!1 List_Int)) (Array Int Bool) (e!m (element a!1) "
+			+ MAX_INT + "))\n";
+
+	public BoolExpr[] parseSMTLIB2String(
+			String smt/* , Symbol[] symb1, Sort[] sort, Symbol[] symb2, FuncDecl[] func */) {
 		try {
 			Set<Sort> sortSet = new LinkedHashSet<>();
 			Set<FuncDecl> funcSet = new LinkedHashSet<>();
@@ -1369,7 +1395,7 @@ public class ProblemZ3 extends ProblemGeneral {
 				FuncDecl value = ctx.mkConstDecl(key, sort);
 				funcSet.add(value);
 				sortSet.add(sort);
-				if(sort instanceof DatatypeSort) {
+				if (sort instanceof DatatypeSort) {
 					FuncDecl[][] acc = ((DatatypeSort) sort).getAccessors();
 					for (int i = 0; i < acc.length; i++) {
 						for (int j = 0; j < acc[i].length; j++) {
@@ -1384,6 +1410,9 @@ public class ProblemZ3 extends ProblemGeneral {
 			i = 0;
 			for (Sort sort : sortSet) {
 				symbs1[i] = sort.getName();
+				if (sort.getName().toString().equals("List_Int")) {
+					smt = listMappingZ3Func + smt;
+				}
 				sorts[i] = sort;
 				i++;
 			}
@@ -1395,7 +1424,9 @@ public class ProblemZ3 extends ProblemGeneral {
 				funcs[i] = func;
 				i++;
 			}
-			smt = boundLibraryConst() + smt;
+			StringBuilder res = new StringBuilder();
+			res.append(sizeZ3Func).append(listSizeZ3Func).append(m2eZ3Func).append(e2mZ3Func);
+			smt = res.toString() + smt;
 //			System.out.println(smt);
 			return ctx.parseSMTLIB2String(smt, symbs1, sorts, symbs2, funcs);
 		} catch (Exception e) {
@@ -1403,62 +1434,11 @@ public class ProblemZ3 extends ProblemGeneral {
 			throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
 		}
 	}
-	
-	private final static String sizeZ3Func = "(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 " + MIN_INT + ") 0 (ite (select a!1 x!1) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))\n";
-    private final static String m2eZ3Func = "(define-fun-rec m!e ((a!1 (Array Int Bool)) (x!1 Int)) (Seq Int) (ite (< x!1 " + MIN_INT + ") (as seq.empty (Seq Int)) (ite (select a!1 x!1) (seq.++ (m!e a!1 (- x!1 1)) (seq.unit x!1)) (m!e a!1 (- x!1 1)))))\n";
-    private final static String e2mZ3Func = "(define-fun-rec e!m ((a!1 (Seq Int)) (x!1 Int)) (Array Int Bool) (ite (< x!1 " + MIN_INT + ") ((as const (Array Int Bool)) false) (ite (seq.contains a!1 (seq.unit x!1)) (store (e!m a!1 (- x!1 1)) x!1 true) (e!m a!1 (- x!1 1)))))\n";
-    // private final static String listMappingZ3Func = "(define-fun mapping ((a!1 (List_Int))) (Array Int Bool) (e!m (element a!1) " + MAX_INT + "))\n";
-    private final static String listSizeZ3Func = "(define-fun-rec s!ze ((a!1 (Seq Int)) (x!1 Int)) Int (ite (< x!1 " + MIN_INT + ") 0 (ite (seq.contains a!1 (seq.unit x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))\n";
-    
-	public String boundLibraryConst() {
-		LinkedList<String> bounds = new LinkedList<>();
-		for (Entry<LibraryExpression, Object> entry : PCParser.symLibraryVar.entrySet()) {
-			LibraryExpression cRef = entry.getKey();
-			String name = cRef.getName();
-			String bound = null;
-			switch(cRef.getTypeName()) {
-			case "java.util.Collection":
-            case "java.util.Set":
-            case "java.util.HashSet":
-            case "java.util.TreeSet":
-                bound = String.format("(assert (= (mapping %s) ((_ map and) (mapping %s) (lambda ((x!1 Int)) (and (>= x!1 %d) (<= x!1 %d))))))\n", cRef.getName(), cRef.getName(), MIN_INT, MAX_INT);
-                break;
-            case "java.util.List":
-            case "java.util.ArrayList":
-            case "java.util.LinkedList":
-            	String listMappingZ3Func = "(define-fun mapping ((a!1 (List_Int))) (Array Int Bool) (e!m (element a!1) " + MAX_INT + "))\n";
-            	if(!bounds.contains(listMappingZ3Func)) {
-            		bounds.add(listMappingZ3Func);
-            	}
-            	// no duplicate element and out-of-bound element
-                bound = String.format("(assert (= (s!ze (element %s) %d) (seq.len (element %s))))\n", name, MAX_INT, name);
-                break;
-            case "java.util.Map":
-            case "java.util.HashMap":
-            case "java.util.TreeMap":
-                bound = String.format("(assert (= (key %s) ((_ map and) (key %s) (lambda ((x!1 Int)) (and (>= x!1 %d) (<= x!1 %d))))))\n", name, name, MIN_INT, MAX_INT) +
-                        String.format("(assert (forall ((x Int)) (=> (select (key %s) x) (and (>= (select (mapping %s) x) %d) (<= (select (mapping %s) x) %d)))))\n", name, name, MIN_INT, name, MAX_INT);
-                break;
-            default:
-            	if(cRef.getTypeName().endsWith("Entry")) {
-            		bound = String.format("(assert (and (>= (key %s) %d) (<= (key %s) %d)))\n", name, MIN_INT, name, MAX_INT);
-            	}
-			}
-			if(bound != null) {
-				bounds.add(bound);
-			}
-		}
-		StringBuilder res = new StringBuilder();
-		res.append(sizeZ3Func).append(m2eZ3Func).append(e2mZ3Func)./*append(listMappingZ3Func).*/append(listSizeZ3Func);
-		for(String bound : bounds) {
-			res.append(bound).append("\n");
-		}
-		return res.toString();
-	}
-	
+
 	public Object makeLibraryVar(LibraryExpression cRef) throws UnknownElementTypeException {
 		try {
 			Sort sort = cRef.getSort();
+			String boundSMT = null;
 			if (sort == null) {
 				CollectionExpression ce;
 				switch (cRef.getTypeName()) {
@@ -1467,41 +1447,58 @@ public class ProblemZ3 extends ProblemGeneral {
 				case "java.util.HashSet":
 				case "java.util.TreeSet":
 					ce = (CollectionExpression) cRef;
-					if(ce.getElementTypeName() == null) {
-						throw new UnknownElementTypeException("symbol should be lazy instantiated until its elementType is ensured", ce);
+					if (ce.getElementTypeName() == null) {
+						throw new UnknownElementTypeException(
+								"symbol should be lazy instantiated until its elementType is ensured", ce);
 					}
 					sort = mkSetSort(mkSortFromTypeName(ce.getElementTypeName()));
+					boundSMT = String.format(
+							"(assert (= (mapping %s) ((_ map and) (mapping %s) (lambda ((x!1 Int)) (and (>= x!1 %d) (<= x!1 %d))))))\n",
+							ce.getName(), ce.getName(), MIN_INT, MAX_INT);
 					break;
 				case "java.util.List":
 				case "java.util.ArrayList":
 				case "java.util.LinkedList":
 					ce = (CollectionExpression) cRef;
-					if(ce.getElementTypeName() == null) {
-						throw new UnknownElementTypeException("symbol should be lazy instantiated until its elementType is ensured", ce);
+					if (ce.getElementTypeName() == null) {
+						throw new UnknownElementTypeException(
+								"symbol should be lazy instantiated until its elementType is ensured", ce);
 					}
 					sort = mkListSort(mkSortFromTypeName(ce.getElementTypeName()));
+					// no duplicate element and out-of-bound element
+					boundSMT = String.format("(assert (= (s!ze (element %s) %d) (seq.len (element %s))))\n",
+							ce.getName(), MAX_INT, ce.getName());
 					break;
 				case "java.util.Map":
 				case "java.util.HashMap":
 				case "java.util.TreeMap":
 					ce = (CollectionExpression) cRef;
 					String[] kvTypes = ce.getKeyValueTypeNames();
-					if(kvTypes[0] == null || kvTypes[1] == null) {
-						throw new UnknownElementTypeException("symbol should be lazy instantiated until its keyValueTypes are ensured", ce);
+					if (kvTypes[0] == null || kvTypes[1] == null) {
+						throw new UnknownElementTypeException(
+								"symbol should be lazy instantiated until its keyValueTypes are ensured", ce);
 					}
 					sort = mkMapSort(mkSortFromTypeName(kvTypes[0]), mkSortFromTypeName(kvTypes[1]));
+					boundSMT = String.format(
+							"(assert (= (key %s) ((_ map and) (key %s) (lambda ((x!1 Int)) (and (>= x!1 %d) (<= x!1 %d))))))\n",
+							ce.getName(), ce.getName(), MIN_INT, MAX_INT)
+							+ String.format(
+									"(assert (forall ((x Int)) (=> (select (key %s) x) (and (>= (select (mapping %s) x) %d) (<= (select (mapping %s) x) %d)))))\n",
+									ce.getName(), ce.getName(), MIN_INT, ce.getName(), MAX_INT);
 					break;
 				case "java.util.Iterator":
 					ce = (CollectionExpression) cRef;
-					if(ce.getElementTypeName() == null) {
-						throw new UnknownElementTypeException("symbol should be lazy instantiated until its elementType is ensured", ce);
+					if (ce.getElementTypeName() == null) {
+						throw new UnknownElementTypeException(
+								"symbol should be lazy instantiated until its elementType is ensured", ce);
 					}
 					sort = mkIteratorSort(mkSortFromTypeName(ce.getElementTypeName()));
 					break;
 				case "java.util.ListIterator":
 					ce = (CollectionExpression) cRef;
-					if(ce.getElementTypeName() == null) {
-						throw new UnknownElementTypeException("symbol should be lazy instantiated until its elementType is ensured", ce);
+					if (ce.getElementTypeName() == null) {
+						throw new UnknownElementTypeException(
+								"symbol should be lazy instantiated until its elementType is ensured", ce);
 					}
 					sort = mkListIteratorSort(mkSortFromTypeName(ce.getElementTypeName()));
 					break;
@@ -1518,7 +1515,15 @@ public class ProblemZ3 extends ProblemGeneral {
 				}
 				cRef.setSort(sort);
 			}
-			return ctx.mkConst(cRef.getName(), sort);
+			Expr res = ctx.mkConst(cRef.getName(), sort);
+			PCParser.symLibraryVar.put(cRef, res);
+			if (boundSMT != null) {
+				cRef.setBound(parseSMTLIB2String(boundSMT));
+			}
+			if (cRef.getBound() != null) {
+				Arrays.stream(cRef.getBound()).forEach(x -> post(x));
+			}
+			return res;
 		} catch (UnknownElementTypeException e) {
 			throw e;
 		} catch (Exception e) {
@@ -1575,7 +1580,7 @@ public class ProblemZ3 extends ProblemGeneral {
 			return sort;
 		}
 	}
-	
+
 	private Sort mkListSort(Sort element_sort) {
 		String sort_name = "List_" + element_sort;
 		if (dataTypeSortMap.containsKey(sort_name)) {
@@ -1601,14 +1606,15 @@ public class ProblemZ3 extends ProblemGeneral {
 			return sort;
 		}
 	}
-	
+
 	private Sort mkMapSort(Sort key_sort, Sort value_sort) {
 		String sort_name = "Map_" + key_sort + "_" + value_sort;
 		if (dataTypeSortMap.containsKey(sort_name)) {
 			return dataTypeSortMap.get(sort_name);
 		} else {
 			String[] size_element = new String[] { "key", "mapping" };
-			Sort[] sorts = new Sort[] { ctx.mkArraySort(key_sort, ctx.mkBoolSort()), ctx.mkArraySort(key_sort, value_sort) };
+			Sort[] sorts = new Sort[] { ctx.mkArraySort(key_sort, ctx.mkBoolSort()),
+					ctx.mkArraySort(key_sort, value_sort) };
 			int[] sort_refs = null;
 			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
 			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
@@ -1625,14 +1631,15 @@ public class ProblemZ3 extends ProblemGeneral {
 			return sort;
 		}
 	}
-	
+
 	private Sort mkIteratorSort(Sort element_sort) {
 		String sort_name = "Iterator_" + element_sort;
 		if (dataTypeSortMap.containsKey(sort_name)) {
 			return dataTypeSortMap.get(sort_name);
 		} else {
 			String[] size_element = new String[] { "mapping", "previous" };
-			Sort[] sorts = new Sort[] { ctx.mkArraySort(element_sort, ctx.mkBoolSort()), ctx.mkArraySort(element_sort, ctx.mkBoolSort()) };
+			Sort[] sorts = new Sort[] { ctx.mkArraySort(element_sort, ctx.mkBoolSort()),
+					ctx.mkArraySort(element_sort, ctx.mkBoolSort()) };
 			int[] sort_refs = null;
 			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
 			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
@@ -1649,7 +1656,7 @@ public class ProblemZ3 extends ProblemGeneral {
 			return sort;
 		}
 	}
-	
+
 	private Sort mkListIteratorSort(Sort element_sort) {
 		String sort_name = "ListIterator_" + element_sort;
 		if (dataTypeSortMap.containsKey(sort_name)) {

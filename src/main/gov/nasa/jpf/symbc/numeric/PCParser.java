@@ -1191,12 +1191,12 @@ public class PCParser {
 	static Object getExpression(LibraryExpression eRef) throws UnknownElementTypeException {
 		ProblemZ3 pbz3 = (ProblemZ3) pb;
 		assert eRef != null;
-		Object dp_var = symLibraryVar.get(eRef);
-		if (dp_var == null) {
-			dp_var = pbz3.makeLibraryVar(eRef);
-			symLibraryVar.put(eRef, dp_var);
+		Object eVar = symLibraryVar.get(eRef);
+		if (eVar == null) {
+			eVar = pbz3.makeLibraryVar(eRef);
+//			symLibraryVar.put(eRef, dp_var);
 		}
-		return dp_var;
+		return eVar;
 	}
 
 	public static boolean checkPrecondition = false;
