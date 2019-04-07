@@ -1270,8 +1270,7 @@ public class PCParser {
 	static {
 		smtFormats = new EnumMap<LibraryOperation, String>(LibraryOperation.class);
 		try {
-//			String spfPath = new gov.nasa.jpf.Config(new String[] {}).getProperty("jpf-symbc");
-			String spfPath = "/home/quebiojss/quebio-jss/javapathfinder/jpf-symbc";
+			String spfPath = new gov.nasa.jpf.Config(new String[] {}).getProperty("jpf-symbc");
 			String path = spfPath + "/src/main/edu/nju/seg/symbc/LibraryConstraintUsingSequence.smt";
 			BufferedReader in = new BufferedReader(new FileReader(path));
 			String line = in.readLine();
