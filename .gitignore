@@ -6,6 +6,7 @@ nbproject/private/*
 build/*
 dist/*
 tmp/*
+cons/*
 trace
 *.class
 *.orig
