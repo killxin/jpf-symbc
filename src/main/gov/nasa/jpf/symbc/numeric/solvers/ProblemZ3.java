@@ -88,7 +88,7 @@ public class ProblemZ3 extends ProblemGeneral {
 			HashMap<String, String> cfg = new HashMap<String, String>();
 			cfg.put("model", "true");
 			// add by rhjiang
-			cfg.put("timeout", "2000");
+			cfg.put("timeout", "5000");
 			ctx = new Context(cfg);
 			solver = ctx.mkSolver();
 		}
@@ -624,17 +624,6 @@ public class ProblemZ3 extends ProblemGeneral {
 		}
 	}
 	
-	private static int rem(int i,int j) {
-		if(i >= 0 && j >= 0) {
-			return i%j;
-		} else if(i>=0 && j<0) {
-			return i%(-j);
-		} else if(i<0 && j>= 0) {
-			return -((-i)%j);
-		} else {
-			return -((-i)%(-j));
-		}
-	}
 	// add by jrh
 	private Expr remJava(IntExpr e1, IntExpr e2) {
 		IntNum zero = ctx.mkInt(0);
@@ -808,7 +797,7 @@ public class ProblemZ3 extends ProblemGeneral {
 
 //	public final static int MAX_INT = 128;
 //	public final static int MIN_INT = -10;
-	public final static int MAX_INT = 10;
+	public final static int MAX_INT = 5;
 	public final static int MIN_INT = -5;
 
 	public void generateConstraint(Solver solver) {
@@ -1453,6 +1442,7 @@ public class ProblemZ3 extends ProblemGeneral {
 //			System.out.println(smt);
 			return ctx.parseSMTLIB2String(smt, symbs1, sorts, symbs2, funcs);
 		} catch (Exception e) {
+			System.err.println(smt);
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
 		}

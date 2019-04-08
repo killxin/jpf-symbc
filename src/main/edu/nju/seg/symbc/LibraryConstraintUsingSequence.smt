@@ -22,7 +22,7 @@
 ;java.util.Set.size()I
 ;java.util.HashSet.size()I
 ;java.util.TreeSet.size()I
-(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 min!nt) 0 (ite (= true (select a!1 x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))
+    ;(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 min!nt) 0 (ite (= true (select a!1 x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))
 (assert 
     (= ?r (s!ze (mapping ?p0) max!nt))
 )
@@ -30,7 +30,7 @@
 ;java.util.Set.isEmpty()Z
 ;java.util.HashSet.isEmpty()Z
 ;java.util.TreeSet.isEmpty()Z
-(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 min!nt) 0 (ite (= true (select a!1 x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))
+    ;(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 min!nt) 0 (ite (= true (select a!1 x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))
 (assert
     (= ?r (ite (= (s!ze (mapping ?p0) max!nt) 0) 1 0))
 )
@@ -81,31 +81,31 @@
 ;java.util.Collection.addAll(Ljava/util/Collection;)Z
 ;java.util.Set.addAll(Ljava/util/Collection;)Z
 ;java.util.TreeSet.addAll(Ljava/util/Collection;)Z
-(define-fun-rec e!m ((a!1 (Seq Int)) (x!1 Int)) (Array Int Bool) (ite (< x!1 min!nt) ((as const (Array Int Bool)) false) (ite (seq.contains a!1 (seq.unit x!1)) (store (e!m a!1 (- x!1 1)) x!1 true) (e!m a!1 (- x!1 1)))))
-(define-fun mapping ((a!1 (List Int))) (Array Int Bool) (e!m (element a!1) max!nt))
+    ;(define-fun-rec e!m ((a!1 (Seq Int)) (x!1 Int)) (Array Int Bool) (ite (< x!1 min!nt) ((as const (Array Int Bool)) false) (ite (seq.contains a!1 (seq.unit x!1)) (store (e!m a!1 (- x!1 1)) x!1 true) (e!m a!1 (- x!1 1)))))
+    ;(define-fun mapping ((a!1 (List Int))) (Array Int Bool) (e!m (element a!1) max!nt))
 (assert (and
     (= (mapping ?_p0) ((_ map or) (mapping ?p0) (mapping ?p1)))
-    (= ?r (= (mapping ?_p0) (mapping ?p0)))
+    (= ?r (ite (= (mapping ?_p0) (mapping ?p0)) 0 1))
 ))
 ;java.util.Collection.removeAll(Ljava/util/Collection;)Z
 ;java.util.Set.removeAll(Ljava/util/Collection;)Z
 ;java.util.List.removeAll(Ljava/util/Collection;)Z
 ;java.util.ArrayList.removeAll(Ljava/util/Collection;)Z
-(define-fun-rec e!m ((a!1 (Seq Int)) (x!1 Int)) (Array Int Bool) (ite (< x!1 min!nt) ((as const (Array Int Bool)) false) (ite (seq.contains a!1 (seq.unit x!1)) (store (e!m a!1 (- x!1 1)) x!1 true) (e!m a!1 (- x!1 1)))))
-(define-fun mapping ((a!1 (List Int))) (Array Int Bool) (e!m (element a!1) max!nt))
+    ;(define-fun-rec e!m ((a!1 (Seq Int)) (x!1 Int)) (Array Int Bool) (ite (< x!1 min!nt) ((as const (Array Int Bool)) false) (ite (seq.contains a!1 (seq.unit x!1)) (store (e!m a!1 (- x!1 1)) x!1 true) (e!m a!1 (- x!1 1)))))
+    ;(define-fun mapping ((a!1 (List Int))) (Array Int Bool) (e!m (element a!1) max!nt))
 (assert (and
     (= (mapping ?_p0) ((_ map and) (mapping ?p0) ((_ map not) (mapping ?p1))))
-    (= ?r (= (mapping ?_p0) (mapping ?p0)))
+    (= ?r (ite (= (mapping ?_p0) (mapping ?p0)) 0 1))
 ))
 ;java.util.Collection.retainAll(Ljava/util/Collection;)Z
 ;java.util.Set.retainAll(Ljava/util/Collection;)Z
 ;java.util.List.retainAll(Ljava/util/Collection;)Z
 ;java.util.ArrayList.retainAll(Ljava/util/Collection;)Z
-(define-fun-rec e!m ((a!1 (Seq Int)) (x!1 Int)) (Array Int Bool) (ite (< x!1 min!nt) ((as const (Array Int Bool)) false) (ite (seq.contains a!1 (seq.unit x!1)) (store (e!m a!1 (- x!1 1)) x!1 true) (e!m a!1 (- x!1 1)))))
-(define-fun mapping ((a!1 (List Int))) (Array Int Bool) (e!m (element a!1) max!nt))
+    ;(define-fun-rec e!m ((a!1 (Seq Int)) (x!1 Int)) (Array Int Bool) (ite (< x!1 min!nt) ((as const (Array Int Bool)) false) (ite (seq.contains a!1 (seq.unit x!1)) (store (e!m a!1 (- x!1 1)) x!1 true) (e!m a!1 (- x!1 1)))))
+    ;(define-fun mapping ((a!1 (List Int))) (Array Int Bool) (e!m (element a!1) max!nt))
 (assert (and
     (= (mapping ?_p0) ((_ map and) (mapping ?p0) (mapping ?p1)))
-    (= ?r (= (mapping ?_p0) (mapping ?p0)))
+    (= ?r (ite (= (mapping ?_p0) (mapping ?p0)) 0 1))
 ))
 ;java.util.Collection.clear()V
 ;java.util.Set.clear()V
@@ -313,25 +313,25 @@
 ;java.util.List.addAll(Ljava/util/Collection;)Z
 ;java.util.ArrayList.addAll(Ljava/util/Collection;)Z
 ;java.util.LinkedList.addAll(Ljava/util/Collection;)Z
-(define-fun-rec m!e ((a!1 (Array Int Bool)) (x!1 Int)) (Seq Int) (ite (< x!1 min!nt) (as seq.empty (Seq Int)) (ite (select a!1 x!1) (seq.++ (m!e a!1 (- x!1 1)) (seq.unit x!1)) (m!e a!1 (- x!1 1)))))
+    ;(define-fun-rec m!e ((a!1 (Array Int Bool)) (x!1 Int)) (Seq Int) (ite (< x!1 min!nt) (as seq.empty (Seq Int)) (ite (select a!1 x!1) (seq.++ (m!e a!1 (- x!1 1)) (seq.unit x!1)) (m!e a!1 (- x!1 1)))))
 (assert (and
-    (= (element ?_p0) (seq.++ (element ?p0) (m!e (mapping ?p1))))
-    (= ?r (= (element ?_p0) (element ?p0)))
+    (= (element ?_p0) (seq.++ (element ?p0) (m!e (mapping ?p1) max!nt)))
+    (= ?r (ite (= (element ?_p0) (element ?p0)) 0 1))
     ;(= (mapping ?_p0) ((_ map or) (mapping ?p0) (mapping ?p1)))
 ))
 ;java.util.List.addAll(ILjava/util/Collection;)Z
 ;java.util.ArrayList.addAll(ILjava/util/Collection;)Z
 ;java.util.LinkedList.addAll(ILjava/util/Collection;)Z
-(define-fun-rec m!e ((a!1 (Array Int Bool)) (x!1 Int)) (Seq Int) (ite (< x!1 min!nt) (as seq.empty (Seq Int)) (ite (select a!1 x!1) (seq.++ (m!e a!1 (- x!1 1)) (seq.unit x!1)) (m!e a!1 (- x!1 1)))))
+    ;(define-fun-rec m!e ((a!1 (Array Int Bool)) (x!1 Int)) (Seq Int) (ite (< x!1 min!nt) (as seq.empty (Seq Int)) (ite (select a!1 x!1) (seq.++ (m!e a!1 (- x!1 1)) (seq.unit x!1)) (m!e a!1 (- x!1 1)))))
 (assert (and
     (let ((size (seq.len (element ?p0))))
         (= (element ?_p0) (seq.++
             (seq.extract (element ?p0) 0 ?p1)
-            (m!e (mapping ?p2))
+            (m!e (mapping ?p2) max!nt)
             (seq.extract (element ?p0) ?p1 (- size ?p1))
         ))
     )
-    (= ?r (= (element ?_p0) (element ?p0)))
+    (= ?r (ite (= (element ?_p0) (element ?p0)) 0 1))
     ;(= (mapping ?_p0) ((_ map or) (mapping ?p0) (mapping ?p1)))
 )
 ;java.util.List.clear()V
@@ -513,14 +513,14 @@
 ;java.util.Map.size()I
 ;java.util.HashMap.size()I
 ;java.util.TreeMap.size()I
-(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 min!nt) 0 (ite (= true (select a!1 x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))
+    ;(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 min!nt) 0 (ite (= true (select a!1 x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))
 (assert 
     (= ?r (s!ze (key ?p0) max!nt))
     ;(ite (forall ((k ?K)) (= (select (key ?p0) k) false)) (= ?r 0) (> ?r 0))
 )
 ;java.util.Map.isEmpty()Z
 ;java.util.HashMap.isEmpty()Z
-(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 min!nt) 0 (ite (= true (select a!1 x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))
+    ;(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 min!nt) 0 (ite (= true (select a!1 x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))
 (assert
     (= ?r (ite (= (s!ze ?p0) 0) 1 0))
     ;(= ?r (ite (forall ((k ?K)) (= (select (key ?p0) k) false)) 1 0))
@@ -530,7 +530,7 @@
 ;java.util.TreeMap.containsKey(Ljava/lang/Object;)Z
 (assert 
     (= ?r (ite (select (key ?p0) ?p1) 1 0))
-))
+)
 ;java.util.Map.containsValue(Ljava/lang/Object;)Z
 ;java.util.HashMap.containsValue(Ljava/lang/Object;)Z
 ;java.util.TreeMap.containsValue(Ljava/lang/Object;)Z
