@@ -88,7 +88,7 @@ public class ProblemZ3 extends ProblemGeneral {
 			HashMap<String, String> cfg = new HashMap<String, String>();
 			cfg.put("model", "true");
 			// add by rhjiang
-//			cfg.put("timeout", "20000");
+			cfg.put("timeout", "2000");
 			ctx = new Context(cfg);
 			solver = ctx.mkSolver();
 		}
@@ -623,10 +623,31 @@ public class ProblemZ3 extends ProblemGeneral {
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 		}
 	}
+	
+	private static int rem(int i,int j) {
+		if(i >= 0 && j >= 0) {
+			return i%j;
+		} else if(i>=0 && j<0) {
+			return i%(-j);
+		} else if(i<0 && j>= 0) {
+			return -((-i)%j);
+		} else {
+			return -((-i)%(-j));
+		}
+	}
+	// add by jrh
+	private Expr remJava(IntExpr e1, IntExpr e2) {
+		IntNum zero = ctx.mkInt(0);
+		ArithExpr minus_e1 = ctx.mkSub(zero, e1), minus_e2 = ctx.mkSub(zero, e2); 
+		return ctx.mkITE(ctx.mkAnd(ctx.mkGe(e1, zero),ctx.mkGe(e2, zero)), ctx.mkSub(e1, ctx.mkMul(ctx.mkDiv(e1, e2), e2)),
+				ctx.mkITE(ctx.mkAnd(ctx.mkGe(e1, zero),ctx.mkLt(e2, zero)), ctx.mkSub(e1, ctx.mkMul(ctx.mkDiv(e1, minus_e2), minus_e2)),
+				 ctx.mkITE(ctx.mkAnd(ctx.mkLt(e1, zero),ctx.mkGe(e2, zero)), ctx.mkSub(zero, ctx.mkSub(minus_e1, ctx.mkMul(ctx.mkDiv(minus_e1, e2), e2))),
+						 ctx.mkSub(zero, ctx.mkSub(minus_e1, ctx.mkMul(ctx.mkDiv(minus_e1, minus_e2), minus_e2))))));
+	}
 
 	public Object rem(Object exp, long value) {// added by corina
 		try {
-
+//			return remJava((IntExpr) exp, ctx.mkInt(value));
 			return ctx.mkRem((IntExpr) exp, ctx.mkInt(value));
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -636,7 +657,7 @@ public class ProblemZ3 extends ProblemGeneral {
 
 	public Object rem(long value, Object exp) {// added by corina
 		try {
-
+//			return remJava(ctx.mkInt(value), (IntExpr) exp);
 			return ctx.mkRem(ctx.mkInt(value), (IntExpr) exp);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -647,7 +668,9 @@ public class ProblemZ3 extends ProblemGeneral {
 	public Object rem(Object exp1, Object exp2) {// added by corina
 		try {
 			if (exp2 instanceof Integer)
+//				return remJava((IntExpr) exp1, ctx.mkInt((Integer) exp2));
 				return ctx.mkRem((IntExpr) exp1, ctx.mkInt((Integer) exp2));
+//			return remJava((IntExpr) exp1, (IntExpr) exp2);
 			return ctx.mkRem((IntExpr) exp1, (IntExpr) exp2);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -785,8 +808,8 @@ public class ProblemZ3 extends ProblemGeneral {
 
 //	public final static int MAX_INT = 128;
 //	public final static int MIN_INT = -10;
-	public final static int MAX_INT = 4;
-	public final static int MIN_INT = -2;
+	public final static int MAX_INT = 10;
+	public final static int MIN_INT = -5;
 
 	public void generateConstraint(Solver solver) {
 		StringBuffer result = new StringBuffer();
@@ -1466,8 +1489,9 @@ public class ProblemZ3 extends ProblemGeneral {
 					}
 					sort = mkListSort(mkSortFromTypeName(ce.getElementTypeName()));
 					// no duplicate element and out-of-bound element
-					boundSMT = String.format("(assert (= (s!ze (element %s) %d) (seq.len (element %s))))\n",
-							ce.getName(), MAX_INT, ce.getName());
+					// the tmp list of swap may contain duplicate element 
+//					boundSMT = String.format("(assert (= (s!ze (element %s) %d) (seq.len (element %s))))\n",
+//							ce.getName(), MAX_INT, ce.getName());
 					break;
 				case "java.util.Map":
 				case "java.util.HashMap":
@@ -1521,7 +1545,7 @@ public class ProblemZ3 extends ProblemGeneral {
 				cRef.setBound(parseSMTLIB2String(boundSMT));
 			}
 			if (cRef.getBound() != null) {
-				Arrays.stream(cRef.getBound()).forEach(x -> post(x));
+//				Arrays.stream(cRef.getBound()).forEach(x -> post(x));
 			}
 			return res;
 		} catch (UnknownElementTypeException e) {

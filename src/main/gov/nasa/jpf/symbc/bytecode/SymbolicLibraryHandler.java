@@ -56,7 +56,7 @@ public class SymbolicLibraryHandler {
 			sig2opt.put(opt.getSignature(), opt);
 		}
 	}
-	
+
 	public boolean isMethodSymbolic(JVMInvokeInstruction invInst, ThreadInfo th) {
 //		String fullName = invInst.getInvokedMethod().getFullName();
 //		LibraryOperation opt = sig2opt.get(fullName);
@@ -71,7 +71,7 @@ public class SymbolicLibraryHandler {
 		if (opt == null) {
 			return false;
 		} else {
-			if (!inSymScale(invInst,th)) {
+			if (!inSymScale(invInst, th)) {
 				CollectionExpression.ensureElementOrKeyValueTypes(opt, invInst, th);
 				return false;
 			} else {
@@ -107,18 +107,17 @@ public class SymbolicLibraryHandler {
 		Config conf = th.getVM().getConfig();
 //		String[] scales = conf.getStringArray("symbolic.libraries.scale");
 		String[] scales = conf.getStringArray("target");
-		if(scales == null) {
-			return BytecodeUtils.isMethodSymbolic(th.getVM().getConfig(), 
-					invInst.getMethodInfo().getFullName(),
+		if (scales == null) {
+			return BytecodeUtils.isMethodSymbolic(th.getVM().getConfig(), invInst.getMethodInfo().getFullName(),
 					invInst.getMethodInfo().getArgumentsSize(), null);
 		} else {
 			String methodName = invInst.getMethodInfo().getFullName();
-			if(methodName.contains("main([Ljava/lang/String;)")||methodName.contains("setUp()")) {
+			if (methodName.contains("main([Ljava/lang/String;)") || methodName.contains("setUp()")) {
 				return false;
 			}
 			String className = invInst.getMethodInfo().getClassName();
-			for(String scale : scales) {
-				if(scale.equals(className)) {
+			for (String scale : scales) {
+				if (scale.equals(className)) {
 					return true;
 				}
 			}
@@ -152,11 +151,12 @@ public class SymbolicLibraryHandler {
 		String className = invInst.getInvokedMethodClassName();
 		String methodDesc = invInst.getInvokedMethodName();
 		String fullName = className + "." + methodDesc;
-		if(fullName.equals("java.util.List.listIterator()Ljava/util/ListIterator;")){
-		System.out.println(fullName);
+		if (fullName.equals("java.util.List.listIterator()Ljava/util/ListIterator;")) {
+			System.out.println(fullName);
 		}
-		if (className.startsWith("java.util") || className.startsWith("java.io") || className.startsWith("java.security")
-				|| className.startsWith("java.lang.String") || className.startsWith("java.lang.Integer")) {
+		if (className.startsWith("java.util") || className.startsWith("java.io")
+				|| className.startsWith("java.security") || className.startsWith("java.lang.String")
+				|| className.startsWith("java.lang.Integer")) {
 			ChoiceGenerator<?> cg;
 			if (!th.isFirstStepInsn()) {
 				cg = new PCChoiceGenerator(1);
@@ -265,8 +265,8 @@ public class SymbolicLibraryHandler {
 			@Override
 			public void instructionExecuted(VM vm, ThreadInfo currentThread, Instruction nextInstruction,
 					Instruction executedInstruction) {
-				if(executedInstruction instanceof ReturnInstruction && 
-						executedInstruction.getMethodInfo().equals(mi)) {
+				if (executedInstruction instanceof ReturnInstruction
+						&& executedInstruction.getMethodInfo().equals(mi)) {
 					if (recoverFromSymbolicMethod(currentThread)) {
 						vm.removeListener(this);
 					}
@@ -308,12 +308,22 @@ public class SymbolicLibraryHandler {
 		Object obj = frame.getFrameAttr();
 		if (obj instanceof FrameAttribute) {
 			FrameAttribute fAttr = (FrameAttribute) obj;
+			// turn on symbolic execution
+			Map<ElementInfo, Object> intent = fAttr.symbcInfo;
+			if (intent != null) {
+				for (Entry<ElementInfo, Object> entry : intent.entrySet()) {
+					ElementInfo ei = entry.getKey();
+					ei.getModifiableInstance().setObjectAttr(entry.getValue());
+					System.out.println("RET attach attribute " + entry.getValue() + " to " + entry.getKey().getObjectRef());
+//								ei.setObjectAttr(entry.getValue());
+				}
+			}
 			// bind the rEturn expression to return value
 			Expression retExp = fAttr.rEturn;
 			if (retExp != null) {
 				if (frame.isOperandRef()) {
 					int retRef = frame.peek();
-					if(retRef != 0) {
+					if (retRef != 0) {
 						ElementInfo retEI = th.getModifiableElementInfo(retRef);
 						System.out.println("RET " + retRef);
 						System.out.println("RET (before set attr)" + retEI.getObjectAttr());
@@ -325,16 +335,6 @@ public class SymbolicLibraryHandler {
 				} else {
 					frame.setOperandAttr(retExp);
 					System.out.println("RET " + frame.getOperandAttr());
-				}
-			}
-			// turn on symbolic execution
-			Map<ElementInfo, Object> intent = fAttr.symbcInfo;
-			if (intent != null) {
-				for (Entry<ElementInfo, Object> entry : intent.entrySet()) {
-					ElementInfo ei = entry.getKey();
-					ei.getModifiableInstance().setObjectAttr(entry.getValue());
-					System.out.println("attach attribute " + entry.getValue() + " to " + entry.getKey());
-//					ei.setObjectAttr(entry.getValue());
 				}
 			}
 			frame.removeFrameAttr(fAttr);
@@ -354,11 +354,13 @@ public class SymbolicLibraryHandler {
 			sym_ei = new IntegerConstant(value);
 			System.out.println("create symbolic expression for concrete Character " + sym_ei);
 		} else if (typeName.equals("java.lang.Boolean")) {
-			boolean value = ei.getDeclaredBooleanField("value","java.lang.Boolean");
-			sym_ei = new IntegerConstant(value ? 1 :0);
+			boolean value = ei.getDeclaredBooleanField("value", "java.lang.Boolean");
+			sym_ei = new IntegerConstant(value ? 1 : 0);
 			System.out.println("create symbolic expression for Boolean " + sym_ei);
-		} else if (typeName.equals("java.lang.String") || typeName.equals("java.lang.StringBuilder") || typeName.equals("java.lang.StringBuffer")) {
-			sym_ei = new StringExpression(BytecodeUtils.varName("String@" + ei.getObjectRef(), VarType.STRING), typeName);
+		} else if (typeName.equals("java.lang.String") || typeName.equals("java.lang.StringBuilder")
+				|| typeName.equals("java.lang.StringBuffer")) {
+			sym_ei = new StringExpression(BytecodeUtils.varName("String@" + ei.getObjectRef(), VarType.STRING),
+					typeName);
 			System.out.println("create symbolic expression for String " + sym_ei);
 		} else if (typeName.equals("java.util.ArrayList") || typeName.equals("java.util.LinkedList")) {
 			sym_ei = new CollectionExpression(BytecodeUtils.varName("List@" + ei.getObjectRef(), VarType.OBJECT),
@@ -372,8 +374,7 @@ public class SymbolicLibraryHandler {
 			sym_ei = new CollectionExpression(BytecodeUtils.varName("Map@" + ei.getObjectRef(), VarType.OBJECT),
 					typeName);
 			System.out.println("create symbolic expression for empty HashMap " + sym_ei);
-		}
-		else if (typeName.equals("java.io.FileInputStream")) {
+		} else if (typeName.equals("java.io.FileInputStream")) {
 			sym_ei = new FileExpression(BytecodeUtils.varName("FI@" + ei.getObjectRef(), VarType.OBJECT), typeName);
 			System.out.println("create symbolic expression for empty FileInputStream " + sym_ei);
 		} else if (typeName.startsWith("[") && !typeName.startsWith("[[")) {
@@ -383,8 +384,8 @@ public class SymbolicLibraryHandler {
 			if (typeName.matches("^(\\[Ljava).+")) {
 				elementTypeName = typeName.substring(2).replace(";", "");
 			} else {
-				switch(typeName) {
-				case "[B": 
+				switch (typeName) {
+				case "[B":
 				case "[S":
 				case "[I":
 				case "[L":
@@ -419,10 +420,11 @@ public class SymbolicLibraryHandler {
 			((PCChoiceGenerator) cg).setCurrentPC(pc);
 			System.out.println("create symbolic expression for byte[] " + sym_ei);
 		} else {
-			if(typeName.equals("java.security.MessageDigest")) {
+			if (typeName.equals("java.security.MessageDigest")) {
 				// define data type if necessary
 				sym_ei = new IntegerConstant(24);
-				System.out.println("create concrete Integer 24 to represent java.security.MessageDigest (unused) " + sym_ei);
+				System.out.println(
+						"create concrete Integer 24 to represent java.security.MessageDigest (unused) " + sym_ei);
 			} else {
 				throw new JPFException("object is of type " + ei.getClassInfo().getName());
 			}
@@ -454,7 +456,8 @@ public class SymbolicLibraryHandler {
 			String typeName = retType.toString();
 			if (retType instanceof ArrayType) {
 				String elementTypeName = ((ArrayType) retType).getElementType().toString();
-				retExp = new CollectionExpression(BytecodeUtils.varName("ret@Array", VarType.ARRAY), "java.util.ArrayList");
+				retExp = new CollectionExpression(BytecodeUtils.varName("ret@Array", VarType.ARRAY),
+						"java.util.ArrayList");
 				if (elementTypeName.equals("java.lang.Object")) {
 					Instruction nextInst = invInst.getNext(th);
 					if (nextInst instanceof CHECKCAST) {
@@ -465,28 +468,28 @@ public class SymbolicLibraryHandler {
 				if (elementTypeName.equals("java.lang.Object") && sym_b != null) {
 					if (sym_b.getElementTypeName() != null) {
 						elementTypeName = sym_b.getElementTypeName();
-					} else if(sym_b.getKeyValueTypeNames()[1] != null) {
+					} else if (sym_b.getKeyValueTypeNames()[1] != null) {
 						elementTypeName = sym_b.getKeyValueTypeNames()[1];
 					}
 				} else if (elementTypeName.startsWith("[")) {
-					// change elementTypeName from "[Ljava.lang.Integer;" to "java.lang.Integer" or java.lang.others
+					// change elementTypeName from "[Ljava.lang.Integer;" to "java.lang.Integer" or
+					// java.lang.others
 					elementTypeName = elementTypeName.replaceAll("^(\\[L?)|;", "");
 				}
 				((CollectionExpression) retExp).setElementTypeName(elementTypeName);
-			} else if (typeName.equals("java.util.Iterator") || 
-					typeName.equals("java.util.List") ||
-					typeName.equals("java.util.ListIterator")) {
+			} else if (typeName.equals("java.util.Iterator") || typeName.equals("java.util.List")
+					|| typeName.equals("java.util.ListIterator")) {
 				String suffix = typeName.substring(typeName.lastIndexOf(".") + 1);
 				retExp = new CollectionExpression(BytecodeUtils.varName("ret@" + suffix, VarType.OBJECT), typeName);
 				if (sym_b != null) {
 					((CollectionExpression) retExp).setElementTypeName(sym_b.getElementTypeName());
 				}
-			} else if(typeName.equals("java.util.Set") || typeName.equals("java.util.Collection")) {
+			} else if (typeName.equals("java.util.Set") || typeName.equals("java.util.Collection")) {
 				retExp = new CollectionExpression(BytecodeUtils.varName("ret@Set", VarType.OBJECT), typeName);
 				if (sym_b != null) {
-					if(invInst.getInvokedMethod().getName().contains("keySet")) {
+					if (invInst.getInvokedMethod().getName().contains("keySet")) {
 						((CollectionExpression) retExp).setElementTypeName(sym_b.getKeyValueTypeNames()[0]);
-					} else if(invInst.getInvokedMethod().getName().contains("values")) {
+					} else if (invInst.getInvokedMethod().getName().contains("values")) {
 						((CollectionExpression) retExp).setElementTypeName(sym_b.getKeyValueTypeNames()[1]);
 					} else {
 						((CollectionExpression) retExp).setElementTypeName(sym_b.getElementTypeName());
@@ -503,7 +506,7 @@ public class SymbolicLibraryHandler {
 				if (typeName.equals("java.lang.Object") && sym_b != null) {
 					if (sym_b.getElementTypeName() != null) {
 						typeName = sym_b.getElementTypeName();
-					} else if(sym_b.getKeyValueTypeNames()[1] != null) {
+					} else if (sym_b.getKeyValueTypeNames()[1] != null) {
 						typeName = sym_b.getKeyValueTypeNames()[1];
 					}
 				}
