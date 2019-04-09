@@ -88,7 +88,7 @@ public class ProblemZ3 extends ProblemGeneral {
 			HashMap<String, String> cfg = new HashMap<String, String>();
 			cfg.put("model", "true");
 			// add by rhjiang
-			cfg.put("timeout", "5000");
+			cfg.put("timeout", "10000");
 			ctx = new Context(cfg);
 			solver = ctx.mkSolver();
 		}
@@ -1535,6 +1535,7 @@ public class ProblemZ3 extends ProblemGeneral {
 				cRef.setBound(parseSMTLIB2String(boundSMT));
 			}
 			if (cRef.getBound() != null) {
+				/* bound collections symbols */
 //				Arrays.stream(cRef.getBound()).forEach(x -> post(x));
 			}
 			return res;

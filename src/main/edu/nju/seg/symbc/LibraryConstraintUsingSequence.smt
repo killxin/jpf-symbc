@@ -646,7 +646,7 @@
 ;java.util.Map.getOrDefault(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 ;java.util.HashMap.getOrDefault(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 (assert (ite
-    (select (value ?p0) ?p1)
+    (select (key ?p0) ?p1)
     (= ?r (select (mapping ?p0) ?p1))
     (= ?r ?p2)
 ))
@@ -926,6 +926,7 @@
 (assert (and 
     (= true (select (mapping ?p0) ?r))
     (= false (select (previous ?p0) ?r))
+    (forall ((x Int)) (=> (and (select (mapping ?p0) x) (not (select (previous ?p0) x))) (>= x ?r)))
     (= (mapping ?_p0) (mapping ?p0))
     (= (previous ?_p0) (store (previous ?p0) ?r true))
 ))
