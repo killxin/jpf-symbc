@@ -694,24 +694,24 @@ public class ProblemZ3 extends ProblemGeneral {
 		}
 	}
 
-	public static Model currentModel = null;
-
 	// add by rhjiang
+	private static Model currentModel;
+	public static void resetCurrentModel() {
+		currentModel = null;
+	}
 	public static Model getCurrentModel() {
 		return currentModel;
 	}
-
 	public static Context getZ3Context() {
 		return Z3Wrapper.getInstance().ctx;
 	}
 
 	public Boolean solve() {
 		try {
-//	        System.out.println("rh: "+Arrays.toString(Arrays.copyOfRange(solver.getAssertions(),2,10)));
-			System.out.println("rh: ");
-			for (BoolExpr expr : solver.getAssertions()) {
-				System.out.println(expr);
-			}
+//			System.out.println("rh: ");
+//			for (BoolExpr expr : solver.getAssertions()) {
+//				System.out.println(expr);
+//			}
 			Status status = solver.check();
 			if (Status.SATISFIABLE == status) {
 				System.out.println("********rh: SAT********");
