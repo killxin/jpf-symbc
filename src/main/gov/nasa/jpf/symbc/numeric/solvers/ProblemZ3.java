@@ -40,6 +40,10 @@ package gov.nasa.jpf.symbc.numeric.solvers;
 import java.io.PrintWriter;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
 //TODO: problem: we do not distinguish between ints and reals?
 // still needs a lot of work: do not use!
@@ -47,10 +51,14 @@ import java.util.Map.Entry;
 import com.microsoft.z3.*;
 
 import edu.nju.seg.symbc.CollectionExpression;
+import edu.nju.seg.symbc.StringExpression;
 import edu.nju.seg.symbc.LibraryExpression;
 import edu.nju.seg.symbc.UnknownElementTypeException;
 import gov.nasa.jpf.JPFException;
 import gov.nasa.jpf.symbc.SymbolicInstructionFactory;
+import gov.nasa.jpf.symbc.arrays.ArrayExpression;
+import gov.nasa.jpf.symbc.bytecode.BytecodeUtils;
+import gov.nasa.jpf.symbc.numeric.Expression;
 import gov.nasa.jpf.symbc.numeric.PCParser;
 import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.symbc.numeric.SymbolicReal;
@@ -80,7 +88,7 @@ public class ProblemZ3 extends ProblemGeneral {
 			HashMap<String, String> cfg = new HashMap<String, String>();
 			cfg.put("model", "true");
 			// add by rhjiang
-//			cfg.put("timeout", "5000");
+			cfg.put("timeout", "10000");
 			ctx = new Context(cfg);
 			solver = ctx.mkSolver();
 		}
@@ -615,10 +623,20 @@ public class ProblemZ3 extends ProblemGeneral {
 			throw new RuntimeException("## Error Z3: Exception caught in Z3 JNI: \n" + e);
 		}
 	}
+	
+	// add by jrh
+	private Expr remJava(IntExpr e1, IntExpr e2) {
+		IntNum zero = ctx.mkInt(0);
+		ArithExpr minus_e1 = ctx.mkSub(zero, e1), minus_e2 = ctx.mkSub(zero, e2); 
+		return ctx.mkITE(ctx.mkAnd(ctx.mkGe(e1, zero),ctx.mkGe(e2, zero)), ctx.mkSub(e1, ctx.mkMul(ctx.mkDiv(e1, e2), e2)),
+				ctx.mkITE(ctx.mkAnd(ctx.mkGe(e1, zero),ctx.mkLt(e2, zero)), ctx.mkSub(e1, ctx.mkMul(ctx.mkDiv(e1, minus_e2), minus_e2)),
+				 ctx.mkITE(ctx.mkAnd(ctx.mkLt(e1, zero),ctx.mkGe(e2, zero)), ctx.mkSub(zero, ctx.mkSub(minus_e1, ctx.mkMul(ctx.mkDiv(minus_e1, e2), e2))),
+						 ctx.mkSub(zero, ctx.mkSub(minus_e1, ctx.mkMul(ctx.mkDiv(minus_e1, minus_e2), minus_e2))))));
+	}
 
 	public Object rem(Object exp, long value) {// added by corina
 		try {
-
+//			return remJava((IntExpr) exp, ctx.mkInt(value));
 			return ctx.mkRem((IntExpr) exp, ctx.mkInt(value));
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -628,7 +646,7 @@ public class ProblemZ3 extends ProblemGeneral {
 
 	public Object rem(long value, Object exp) {// added by corina
 		try {
-
+//			return remJava(ctx.mkInt(value), (IntExpr) exp);
 			return ctx.mkRem(ctx.mkInt(value), (IntExpr) exp);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -639,7 +657,9 @@ public class ProblemZ3 extends ProblemGeneral {
 	public Object rem(Object exp1, Object exp2) {// added by corina
 		try {
 			if (exp2 instanceof Integer)
+//				return remJava((IntExpr) exp1, ctx.mkInt((Integer) exp2));
 				return ctx.mkRem((IntExpr) exp1, ctx.mkInt((Integer) exp2));
+//			return remJava((IntExpr) exp1, (IntExpr) exp2);
 			return ctx.mkRem((IntExpr) exp1, (IntExpr) exp2);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -674,31 +694,40 @@ public class ProblemZ3 extends ProblemGeneral {
 		}
 	}
 
-	public static String modelPicture = null;
+	public static Model currentModel = null;
+
 	// add by rhjiang
-	public static String getCurrentModel() {
-		return modelPicture;
+	public static Model getCurrentModel() {
+		return currentModel;
 	}
-	
+
+	public static Context getZ3Context() {
+		return Z3Wrapper.getInstance().ctx;
+	}
+
 	public Boolean solve() {
 		try {
 //	        System.out.println("rh: "+Arrays.toString(Arrays.copyOfRange(solver.getAssertions(),2,10)));
-			System.out.println("rh: "+Arrays.toString(solver.getAssertions()));
+			System.out.println("rh: ");
+			for (BoolExpr expr : solver.getAssertions()) {
+				System.out.println(expr);
+			}
 			Status status = solver.check();
 			if (Status.SATISFIABLE == status) {
 				System.out.println("********rh: SAT********");
-				modelPicture = solver.getModel().toString();
-//				System.out.println("rh: Model: " + solver.getModel());
+				currentModel = solver.getModel();
+				generateConstraint(solver);
 				return true;
-			} 
-			else if(Status.UNSATISFIABLE == status) {
+			} else if (Status.UNSATISFIABLE == status) {
 				System.out.println("********rh: UNSAT********");
+//				Arrays.stream(solver.getAssertions()).forEach(x -> System.out.println(x));
+//				System.out.println("************************");
 //				System.out.println("rh: Core: "+ solver.getUnsatCore().length + Arrays.toString(solver.getUnsatCore()));
 				return false;
 			} else {
 				System.out.println("********rh: UNKNOWN********");
 				// should not rise UNKNOWN
-				System.exit(-1);
+//				System.exit(-1);
 				return false;
 			}
 		} catch (Exception e) {
@@ -706,6 +735,129 @@ public class ProblemZ3 extends ProblemGeneral {
 			throw new RuntimeException("## Error Z3: " + e);
 		}
 	}
+
+	// add by czz
+	/**
+	 * do not use again!!! constraint that contains the return variable of the
+	 * function
+	 */
+	private static String returnConstraint;
+
+	/**
+	 * do not use again!!! get constraint that contains the return variable of the
+	 * function
+	 */
+	private static String getReturnConstraint() {
+		if (returnConstraint == null) {
+			return "";
+		} else {
+			return returnConstraint;
+		}
+	}
+
+	/**
+	 * constraint without library type declaration
+	 */
+	public static String constraint = null;
+
+	/**
+	 * get constraint without library type declaration
+	 */
+	public static String getCurrentConstraint() {
+		return constraint;
+	}
+
+	public static Map<String, String> argsTypeMap = BytecodeUtils.getArgsTypeMap();
+	public static Map<String, Expression> argsExpressionMap = BytecodeUtils.getArgsExpressionMap();
+	public static Map<String, Expression> expressionMap = new HashMap<String, Expression>();
+
+	public static void clearArgsExpressionMaps() {
+		argsTypeMap.clear();
+		argsExpressionMap.clear();
+		expressionMap.clear();
+	}
+
+	private void updateExpressionMap(Map<String, Expression> expressionMap, Expression e) {
+		Pattern pat = Pattern.compile("^(.*)_(\\d+)_[^_]+$");
+		Matcher mat = pat.matcher(e.stringPC());
+		if (mat.find()) {
+			int id = Integer.parseInt(mat.group(2));
+			for (Entry<String, Expression> entry : expressionMap.entrySet()) {
+				if (mat.group(1).equals(entry.getKey())) {
+					Matcher mat2 = pat.matcher(entry.getValue().stringPC());
+					mat2.find();
+					if (Integer.parseInt(mat2.group(2)) < id) {
+						entry.setValue(e);
+						break;
+					}
+				}
+			}
+		}
+	}
+
+//	public final static int MAX_INT = 128;
+//	public final static int MIN_INT = -10;
+	public final static int MAX_INT = 5;
+	public final static int MIN_INT = -5;
+
+	public void generateConstraint(Solver solver) {
+		StringBuffer result = new StringBuffer();
+//		for (String sort_name: dataTypeSortMap.keySet()) {
+//			System.out.println("Datatype sort name:" + sort_name);
+//		}
+		for (String name : argsExpressionMap.keySet()) {
+			expressionMap.put(name, argsExpressionMap.get(name));
+		}
+
+		for (LibraryExpression le : PCParser.symLibraryVar.keySet()) {
+			updateExpressionMap(expressionMap, le);
+			Object tempExpr = PCParser.symLibraryVar.get(le);
+			assert tempExpr instanceof Expr;
+			Expr expr = (Expr) tempExpr;
+			String libExpr = expr.getFuncDecl().toString();
+			for (String sort_name : dataTypeSortMap.keySet()) {
+				// change to unique sort name
+				String mySortName = "(My" + sort_name.replace("_", " ") + ")";
+//				libExpr = replaceLast(libExpr, sort_name, mySortName);
+				libExpr = libExpr.replaceAll(sort_name + "\\)$", mySortName + ")");
+			}
+			result.append(libExpr).append("\n");
+		}
+		for (SymbolicInteger si : PCParser.symIntegerVar.keySet()) {
+			updateExpressionMap(expressionMap, si);
+			Object tempExpr = PCParser.symIntegerVar.get(si);
+			assert tempExpr instanceof Expr;
+			Expr expr = (Expr) tempExpr;
+			result.append(expr.getFuncDecl()).append("\n");
+		}
+		for (SymbolicReal sr : PCParser.symRealVar.keySet()) {
+			updateExpressionMap(expressionMap, sr);
+			Object tempExpr = PCParser.symRealVar.get(sr);
+			assert tempExpr instanceof Expr;
+			Expr expr = (Expr) tempExpr;
+			result.append(expr.getFuncDecl()).append("\n");
+		}
+		if (solver.getAssertions() != null && solver.getAssertions().length > 0) {
+			result.append("(assert (and \n");
+			Arrays.stream(solver.getAssertions()).forEach(x -> result.append(x).append("\n"));
+			result.append("))\n;");
+		}
+		String smt = result.toString();
+		if (smt.contains("max!nt")) {
+			smt = smt.replace("max!nt", Integer.toString(ProblemZ3.MAX_INT));
+		}
+		if (smt.contains("min!nt")) {
+			smt = smt.replace("min!nt", Integer.toString(ProblemZ3.MIN_INT));
+		}
+		constraint = smt;
+	}
+
+//	public static String replaceLast(String str, String target, String other) {
+//		StringBuilder result = new StringBuilder(str);
+//		result.replace(result.lastIndexOf(target), result.lastIndexOf(target) + other.length(), other);
+//		return result.toString();
+//	}
+	// add by czz end
 
 	public void post(Object constraint) {
 		try {
@@ -1097,6 +1249,9 @@ public class ProblemZ3 extends ProblemGeneral {
 	@Override
 	public Object mixed(Object exp1, Object exp2) {
 		// TODO Auto-generated method stub
+		if (exp1 instanceof RealExpr && exp2 instanceof IntExpr) {
+			return ctx.mkEq((RealExpr) exp1, ctx.mkInt2Real((IntExpr) exp2));
+		}
 		throw new RuntimeException("## Error Z3 \n");
 	}
 
@@ -1217,7 +1372,22 @@ public class ProblemZ3 extends ProblemGeneral {
 		}
 	}
 
-	public BoolExpr[] parseSMTLIB2String(String smt/* , Symbol[] symb1, Sort[] sort, Symbol[] symb2, FuncDecl[] func */) {
+	private final static String sizeZ3Func = "(define-fun-rec s!ze ((a!1 (Array Int Bool)) (x!1 Int)) Int (ite (< x!1 "
+			+ MIN_INT + ") 0 (ite (select a!1 x!1) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))\n";
+	private final static String listSizeZ3Func = "(define-fun-rec s!ze ((a!1 (Seq Int)) (x!1 Int)) Int (ite (< x!1 "
+			+ MIN_INT
+			+ ") 0 (ite (seq.contains a!1 (seq.unit x!1)) (+ (s!ze a!1 (- x!1 1)) 1) (s!ze a!1 (- x!1 1)))))\n";
+	private final static String m2eZ3Func = "(define-fun-rec m!e ((a!1 (Array Int Bool)) (x!1 Int)) (Seq Int) (ite (< x!1 "
+			+ MIN_INT
+			+ ") (as seq.empty (Seq Int)) (ite (select a!1 x!1) (seq.++ (m!e a!1 (- x!1 1)) (seq.unit x!1)) (m!e a!1 (- x!1 1)))))\n";
+	private final static String e2mZ3Func = "(define-fun-rec e!m ((a!1 (Seq Int)) (x!1 Int)) (Array Int Bool) (ite (< x!1 "
+			+ MIN_INT
+			+ ") ((as const (Array Int Bool)) false) (ite (seq.contains a!1 (seq.unit x!1)) (store (e!m a!1 (- x!1 1)) x!1 true) (e!m a!1 (- x!1 1)))))\n";
+	private final static String listMappingZ3Func = "(define-fun mapping ((a!1 List_Int)) (Array Int Bool) (e!m (element a!1) "
+			+ MAX_INT + "))\n";
+
+	public BoolExpr[] parseSMTLIB2String(
+			String smt/* , Symbol[] symb1, Sort[] sort, Symbol[] symb2, FuncDecl[] func */) {
 		try {
 			Set<Sort> sortSet = new LinkedHashSet<>();
 			Set<FuncDecl> funcSet = new LinkedHashSet<>();
@@ -1237,10 +1407,12 @@ public class ProblemZ3 extends ProblemGeneral {
 				FuncDecl value = ctx.mkConstDecl(key, sort);
 				funcSet.add(value);
 				sortSet.add(sort);
-				FuncDecl[][] acc = ((DatatypeSort) sort).getAccessors();
-				for (int i = 0; i < acc.length; i++) {
-					for (int j = 0; j < acc[i].length; j++) {
-						funcSet.add(acc[i][j]);
+				if (sort instanceof DatatypeSort) {
+					FuncDecl[][] acc = ((DatatypeSort) sort).getAccessors();
+					for (int i = 0; i < acc.length; i++) {
+						for (int j = 0; j < acc[i].length; j++) {
+							funcSet.add(acc[i][j]);
+						}
 					}
 				}
 			}
@@ -1250,6 +1422,9 @@ public class ProblemZ3 extends ProblemGeneral {
 			i = 0;
 			for (Sort sort : sortSet) {
 				symbs1[i] = sort.getName();
+				if (sort.getName().toString().equals("List_Int")) {
+					smt = listMappingZ3Func + smt;
+				}
 				sorts[i] = sort;
 				i++;
 			}
@@ -1261,9 +1436,13 @@ public class ProblemZ3 extends ProblemGeneral {
 				funcs[i] = func;
 				i++;
 			}
-			System.out.println(smt);
+			StringBuilder res = new StringBuilder();
+			res.append(sizeZ3Func).append(listSizeZ3Func).append(m2eZ3Func).append(e2mZ3Func);
+			smt = res.toString() + smt;
+//			System.out.println(smt);
 			return ctx.parseSMTLIB2String(smt, symbs1, sorts, symbs2, funcs);
 		} catch (Exception e) {
+			System.err.println(smt);
 			e.printStackTrace();
 			throw new RuntimeException("## Error Z3 : Exception caught in Z3 JNI: " + e);
 		}
@@ -1272,6 +1451,7 @@ public class ProblemZ3 extends ProblemGeneral {
 	public Object makeLibraryVar(LibraryExpression cRef) throws UnknownElementTypeException {
 		try {
 			Sort sort = cRef.getSort();
+			String boundSMT = null;
 			if (sort == null) {
 				CollectionExpression ce;
 				switch (cRef.getTypeName()) {
@@ -1280,53 +1460,85 @@ public class ProblemZ3 extends ProblemGeneral {
 				case "java.util.HashSet":
 				case "java.util.TreeSet":
 					ce = (CollectionExpression) cRef;
-					if(ce.getElementTypeName() == null) {
-						throw new UnknownElementTypeException("symbol should be lazy instantiated until its elementType is ensured", ce);
+					if (ce.getElementTypeName() == null) {
+						throw new UnknownElementTypeException(
+								"symbol should be lazy instantiated until its elementType is ensured", ce);
 					}
 					sort = mkSetSort(mkSortFromTypeName(ce.getElementTypeName()));
+					boundSMT = String.format(
+							"(assert (= (mapping %s) ((_ map and) (mapping %s) (lambda ((x!1 Int)) (and (>= x!1 %d) (<= x!1 %d))))))\n",
+							ce.getName(), ce.getName(), MIN_INT, MAX_INT);
 					break;
 				case "java.util.List":
 				case "java.util.ArrayList":
 				case "java.util.LinkedList":
 					ce = (CollectionExpression) cRef;
-					if(ce.getElementTypeName() == null) {
-						throw new UnknownElementTypeException("symbol should be lazy instantiated until its elementType is ensured", ce);
+					if (ce.getElementTypeName() == null) {
+						throw new UnknownElementTypeException(
+								"symbol should be lazy instantiated until its elementType is ensured", ce);
 					}
 					sort = mkListSort(mkSortFromTypeName(ce.getElementTypeName()));
+					// no duplicate element and out-of-bound element
+					// the tmp list of swap may contain duplicate element 
+//					boundSMT = String.format("(assert (= (s!ze (element %s) %d) (seq.len (element %s))))\n",
+//							ce.getName(), MAX_INT, ce.getName());
 					break;
 				case "java.util.Map":
 				case "java.util.HashMap":
 				case "java.util.TreeMap":
 					ce = (CollectionExpression) cRef;
 					String[] kvTypes = ce.getKeyValueTypeNames();
-					if(kvTypes[0] == null || kvTypes[1] == null) {
-						throw new UnknownElementTypeException("symbol should be lazy instantiated until its keyValueTypes are ensured", ce);
+					if (kvTypes[0] == null || kvTypes[1] == null) {
+						throw new UnknownElementTypeException(
+								"symbol should be lazy instantiated until its keyValueTypes are ensured", ce);
 					}
 					sort = mkMapSort(mkSortFromTypeName(kvTypes[0]), mkSortFromTypeName(kvTypes[1]));
+					boundSMT = String.format(
+							"(assert (= (key %s) ((_ map and) (key %s) (lambda ((x!1 Int)) (and (>= x!1 %d) (<= x!1 %d))))))\n",
+							ce.getName(), ce.getName(), MIN_INT, MAX_INT)
+							+ String.format(
+									"(assert (forall ((x Int)) (=> (select (key %s) x) (and (>= (select (mapping %s) x) %d) (<= (select (mapping %s) x) %d)))))\n",
+									ce.getName(), ce.getName(), MIN_INT, ce.getName(), MAX_INT);
 					break;
 				case "java.util.Iterator":
 					ce = (CollectionExpression) cRef;
-					if(ce.getElementTypeName() == null) {
-						throw new UnknownElementTypeException("symbol should be lazy instantiated until its elementType is ensured", ce);
+					if (ce.getElementTypeName() == null) {
+						throw new UnknownElementTypeException(
+								"symbol should be lazy instantiated until its elementType is ensured", ce);
 					}
 					sort = mkIteratorSort(mkSortFromTypeName(ce.getElementTypeName()));
 					break;
 				case "java.util.ListIterator":
 					ce = (CollectionExpression) cRef;
-					if(ce.getElementTypeName() == null) {
-						throw new UnknownElementTypeException("symbol should be lazy instantiated until its elementType is ensured", ce);
+					if (ce.getElementTypeName() == null) {
+						throw new UnknownElementTypeException(
+								"symbol should be lazy instantiated until its elementType is ensured", ce);
 					}
 					sort = mkListIteratorSort(mkSortFromTypeName(ce.getElementTypeName()));
 					break;
 				case "java.io.FileInputStream":
 					sort = mkFileInputStreamSort();
 					break;
+				case "java.lang.String":
+				case "java.lang.StringBuilder":
+				case "java.lang.StringBuffer":
+					sort = ctx.mkStringSort();
+					break;
 				default:
 					throw new RuntimeException("symbol is of type " + cRef.getTypeName());
 				}
 				cRef.setSort(sort);
 			}
-			return ctx.mkConst(cRef.getName(), sort);
+			Expr res = ctx.mkConst(cRef.getName(), sort);
+			PCParser.symLibraryVar.put(cRef, res);
+			if (boundSMT != null) {
+				cRef.setBound(parseSMTLIB2String(boundSMT));
+			}
+			if (cRef.getBound() != null) {
+				/* bound collections symbols */
+//				Arrays.stream(cRef.getBound()).forEach(x -> post(x));
+			}
+			return res;
 		} catch (UnknownElementTypeException e) {
 			throw e;
 		} catch (Exception e) {
@@ -1337,15 +1549,28 @@ public class ProblemZ3 extends ProblemGeneral {
 
 	public Sort mkSortFromTypeName(String typeName) {
 		switch (typeName) {
+		case "int":
+		case "byte":
 		case "java.lang.Integer":
 		case "java.lang.Byte":
+		case "boolean":
+		case "java.lang.Boolean":
+		case "char":
+		case "java.lang.Character":
 			return ctx.mkIntSort();
+		case "float":
+		case "double":
+		case "java.lang.Float":
+		case "java.lang.Double":
+			return ctx.mkRealSort();
+		case "java.lang.String":
+			return ctx.mkStringSort();
 		default:
 			throw new RuntimeException("symbol is of type " + typeName);
 		}
 	}
 
-	public Map<String, DatatypeSort> dataTypeSortMap = new TreeMap<>();
+	public static Map<String, DatatypeSort> dataTypeSortMap = new TreeMap<>();
 
 	private Sort mkSetSort(Sort element_sort) {
 		String sort_name = "Set_" + element_sort;
@@ -1370,14 +1595,16 @@ public class ProblemZ3 extends ProblemGeneral {
 			return sort;
 		}
 	}
-	
+
 	private Sort mkListSort(Sort element_sort) {
 		String sort_name = "List_" + element_sort;
 		if (dataTypeSortMap.containsKey(sort_name)) {
 			return dataTypeSortMap.get(sort_name);
 		} else {
-			String[] size_element = new String[] { "mapping", "element" };
-			Sort[] sorts = new Sort[] { ctx.mkArraySort(element_sort, ctx.mkBoolSort()), ctx.mkSeqSort(element_sort) };
+//			String[] size_element = new String[] { "mapping", "element" };
+//			Sort[] sorts = new Sort[] { ctx.mkArraySort(element_sort, ctx.mkBoolSort()), ctx.mkSeqSort(element_sort) };
+			String[] size_element = new String[] { "element" };
+			Sort[] sorts = new Sort[] { ctx.mkSeqSort(element_sort) };
 			int[] sort_refs = null;
 			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
 			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
@@ -1394,14 +1621,15 @@ public class ProblemZ3 extends ProblemGeneral {
 			return sort;
 		}
 	}
-	
+
 	private Sort mkMapSort(Sort key_sort, Sort value_sort) {
 		String sort_name = "Map_" + key_sort + "_" + value_sort;
 		if (dataTypeSortMap.containsKey(sort_name)) {
 			return dataTypeSortMap.get(sort_name);
 		} else {
 			String[] size_element = new String[] { "key", "mapping" };
-			Sort[] sorts = new Sort[] { ctx.mkArraySort(key_sort, ctx.mkBoolSort()), ctx.mkArraySort(key_sort, value_sort) };
+			Sort[] sorts = new Sort[] { ctx.mkArraySort(key_sort, ctx.mkBoolSort()),
+					ctx.mkArraySort(key_sort, value_sort) };
 			int[] sort_refs = null;
 			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
 			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
@@ -1418,14 +1646,15 @@ public class ProblemZ3 extends ProblemGeneral {
 			return sort;
 		}
 	}
-	
+
 	private Sort mkIteratorSort(Sort element_sort) {
 		String sort_name = "Iterator_" + element_sort;
 		if (dataTypeSortMap.containsKey(sort_name)) {
 			return dataTypeSortMap.get(sort_name);
 		} else {
 			String[] size_element = new String[] { "mapping", "previous" };
-			Sort[] sorts = new Sort[] { ctx.mkArraySort(element_sort, ctx.mkBoolSort()), ctx.mkArraySort(element_sort, ctx.mkBoolSort()) };
+			Sort[] sorts = new Sort[] { ctx.mkArraySort(element_sort, ctx.mkBoolSort()),
+					ctx.mkArraySort(element_sort, ctx.mkBoolSort()) };
 			int[] sort_refs = null;
 			Constructor cons = ctx.mkConstructor(sort_name, "is_" + sort_name, size_element, sorts, sort_refs);
 			DatatypeSort sort = ctx.mkDatatypeSort(sort_name, new Constructor[] { cons });
@@ -1442,7 +1671,7 @@ public class ProblemZ3 extends ProblemGeneral {
 			return sort;
 		}
 	}
-	
+
 	private Sort mkListIteratorSort(Sort element_sort) {
 		String sort_name = "ListIterator_" + element_sort;
 		if (dataTypeSortMap.containsKey(sort_name)) {

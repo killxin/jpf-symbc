@@ -21,9 +21,15 @@ package gov.nasa.jpf.symbc.bytecode;
 
 
 
+import gov.nasa.jpf.Config;
+import gov.nasa.jpf.symbc.bytecode.BytecodeUtils.VarType;
+import gov.nasa.jpf.symbc.numeric.Expression;
+import gov.nasa.jpf.symbc.numeric.IntegerConstant;
 import gov.nasa.jpf.symbc.numeric.IntegerExpression;
+import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
 import gov.nasa.jpf.symbc.numeric.PathCondition;
 import gov.nasa.jpf.symbc.string.SymbolicLengthInteger;
+import gov.nasa.jpf.vm.ChoiceGenerator;
 import gov.nasa.jpf.vm.ClassInfo;
 import gov.nasa.jpf.vm.ClassLoaderInfo;
 import gov.nasa.jpf.vm.ElementInfo;
@@ -31,6 +37,9 @@ import gov.nasa.jpf.vm.Heap;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.StackFrame;
 import gov.nasa.jpf.vm.ThreadInfo;
+import edu.nju.seg.symbc.CollectionExpression;
+import edu.nju.seg.symbc.LibraryConstraint;
+import edu.nju.seg.symbc.LibraryOperation;
 
 /**
  * Symbolic version of the NEWARRAY class from jpf-core. Has some extra code to
@@ -90,6 +99,53 @@ public class NEWARRAY extends gov.nasa.jpf.jvm.bytecode.NEWARRAY {
 	    
 		StackFrame sf = ti.getModifiableTopFrame();
 		Object attr = sf.getOperandAttr();
+		
+		// add by czz
+		Config conf = ti.getVM().getConfig();
+		boolean symlibraries_flag = conf.getBoolean("symbolic.libraries");
+		if (symlibraries_flag && SymbolicLibraryHandler.inSymScale(this, ti)) {
+			ChoiceGenerator<?> cg;
+			if (!ti.isFirstStepInsn()) {
+				cg = new PCChoiceGenerator(1);
+				ti.getVM().setNextChoiceGenerator(cg);
+				return this;
+			} else {
+				IntegerExpression lengthExpr;
+				if(attr instanceof SymbolicLengthInteger) {
+					long l = ((SymbolicLengthInteger) attr).solution;
+					assert(l>=0 && l<=Integer.MAX_VALUE) : "Array length must be positive integer";
+					arrayLength = (int) l;
+					lengthExpr = new IntegerConstant(arrayLength);
+//					sf.pop();
+				} else 	if(attr instanceof IntegerExpression) {
+					lengthExpr = (IntegerExpression) attr;
+//					sf.pop();
+				} else {
+					arrayLength = sf.peek();
+					lengthExpr = new IntegerConstant(arrayLength);
+				}
+				CollectionExpression arrayExpr = new CollectionExpression(BytecodeUtils.varName("local", VarType.ARRAY), "java.util.ArrayList");
+				LibraryConstraint cc = new LibraryConstraint(LibraryOperation.ARRAY_INIT2,
+						new Expression[] { null, lengthExpr }, null, new Expression[] { arrayExpr, null });
+				typeName = getTypeName();
+				if (typeName.equals("int") || typeName.equals("byte") || typeName.equals("short") || typeName.equals("long")) {
+					arrayExpr.setElementTypeName("java.lang.Integer");
+				} else if (typeName.equalsIgnoreCase("boolean") || typeName.equalsIgnoreCase("java.lang.Boolean")
+						|| typeName.equalsIgnoreCase("char") || typeName.equalsIgnoreCase("java.lang.Character")) {
+					arrayExpr.setElementTypeName("int");
+				} else if (typeName.equalsIgnoreCase("float") || typeName.equalsIgnoreCase("double")) {
+					arrayExpr.setElementTypeName("float");
+				} else {
+					throw new RuntimeException("unhandled array type");
+				}
+				SymbolicLibraryHandler.pushCC2PC(ti, cc);
+				sf.setOperandAttr(arrayExpr);
+				ElementInfo ei = ti.getModifiableElementInfo(sf.peek());
+				ei.setObjectAttr(arrayExpr);
+			}
+			return getNext(ti);
+		}
+		// add by czz end
 		
 		if(attr instanceof SymbolicLengthInteger) {
 			long l = ((SymbolicLengthInteger) attr).solution;

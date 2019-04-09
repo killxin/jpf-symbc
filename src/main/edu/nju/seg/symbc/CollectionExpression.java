@@ -2,10 +2,14 @@ package edu.nju.seg.symbc;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import gov.nasa.jpf.ListenerAdapter;
 import gov.nasa.jpf.jvm.bytecode.CHECKCAST;
 import gov.nasa.jpf.jvm.bytecode.JVMInvokeInstruction;
+import gov.nasa.jpf.symbc.bytecode.BytecodeUtils;
+import gov.nasa.jpf.symbc.bytecode.BytecodeUtils.VarType;
 import gov.nasa.jpf.vm.ElementInfo;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MethodInfo;
@@ -46,7 +50,16 @@ public class CollectionExpression extends LibraryExpression {
 		switch (typeName) {
 		case "java.lang.Integer":
 		case "java.lang.Byte":
+		case "java.lang.Character":
+		case "int":
 			return "Int";
+		case "java.lang.Float":
+		case "java.lang.Double":
+		case "float":
+		case "double":
+			return "Real";
+		case "java.lang.String":
+			return "String";
 		default:
 			return typeName;
 		}
@@ -229,4 +242,13 @@ public class CollectionExpression extends LibraryExpression {
 		}
 	}
 	
+    public CollectionExpression updateVersion() {
+		Pattern pat = Pattern.compile("^(.*)_\\d+_[^_]+$");
+		Matcher mat = pat.matcher(name);
+		mat.find();
+		CollectionExpression copy_sym = this.clone();
+		copy_sym.setName(BytecodeUtils.varName(mat.group(1), VarType.ARRAY));
+		return copy_sym;
+	}
+
 }

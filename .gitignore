@@ -12,3 +12,5 @@ trace
 *.orig
 *~
 *.DS_Store
+cons*
+DataBaseFile*

@@ -20,12 +20,31 @@
 
 package gov.nasa.jpf.symbc.bytecode;
 
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.bcel.generic.Type;
+
+import edu.nju.seg.symbc.CollectionExpression;
+import edu.nju.seg.symbc.FrameAttribute;
+import edu.nju.seg.symbc.LibraryConstraint;
+import edu.nju.seg.symbc.LibraryOperation;
+import gov.nasa.jpf.Config;
 import gov.nasa.jpf.symbc.SymbolicInstructionFactory;
+import gov.nasa.jpf.symbc.arrays.ArrayExpression;
+import gov.nasa.jpf.symbc.bytecode.BytecodeUtils.VarType;
 import gov.nasa.jpf.symbc.numeric.Comparator;
+import gov.nasa.jpf.symbc.numeric.Expression;
+import gov.nasa.jpf.symbc.numeric.IntegerConstant;
 import gov.nasa.jpf.symbc.numeric.IntegerExpression;
 import gov.nasa.jpf.symbc.numeric.PCChoiceGenerator;
+import gov.nasa.jpf.symbc.numeric.PCParser;
 import gov.nasa.jpf.symbc.numeric.PathCondition;
+import gov.nasa.jpf.symbc.numeric.SymbolicInteger;
 import gov.nasa.jpf.vm.ArrayIndexOutOfBoundsExecutiveException;
+import gov.nasa.jpf.vm.ChoiceGenerator;
 import gov.nasa.jpf.vm.ElementInfo;
 import gov.nasa.jpf.vm.Instruction;
 import gov.nasa.jpf.vm.MJIEnv;
@@ -39,133 +58,191 @@ import gov.nasa.jpf.vm.ThreadInfo;
  */
 public class IALOAD extends gov.nasa.jpf.jvm.bytecode.IALOAD {
 
-    public static int lastLength = -1; // YN: helper variable for last known length
+	public static int lastLength = -1; // YN: helper variable for last known length
 
-    @Override
-    public Instruction execute(ThreadInfo ti) {
+	// adjust by czz
+	@Override
+	public Instruction execute(ThreadInfo ti) {
+		// add by czz
+		Config conf = ti.getVM().getConfig();
+		boolean symlibraries_flag = conf.getBoolean("symbolic.libraries");
+		if (symlibraries_flag && SymbolicLibraryHandler.inSymScale(this, ti)) {
+			ChoiceGenerator<?> cg;
+			if (!ti.isFirstStepInsn()) {
+				cg = new PCChoiceGenerator(1);
+				ti.getVM().setNextChoiceGenerator(cg);
+				return this;
+			} else {
+				StackFrame sf = ti.getModifiableTopFrame();
+				int p = sf.peek();
+				// String smtFormat = PCParser.smtFormats.get(LibraryOperation.LIST_GET);
+//				ArrayExpression arrayExpr = ArrayExpression.create(
+//						((ArrayExpression)peekArrayAttr(ti)).getName(), "java.lang.Integer");
+//				ArrayExpression arrayExpr = (ArrayExpression) peekArrayAttr(ti);
+//				if (arrayExpr.getElemType().equals("?")) {
+//					arrayExpr.setElemType("java.lang.Integer");
+//				}
+				ElementInfo eiArray = ti.getElementInfo(sf.peek(1));
+				CollectionExpression arrayExpr = (CollectionExpression) eiArray.getObjectAttr(); 
+//				assert !sf.isOperandRef();
+				Expression indexExpr;
+				if (sf.hasOperandAttr()) {
+					indexExpr = (IntegerExpression) sf.getOperandAttr();
+				} else {
+					indexExpr = new IntegerConstant(p);
+					System.out.println("create symbolic expression for concrete int " + indexExpr);
+				}
+				IntegerExpression retExpr = new SymbolicInteger(BytecodeUtils.varName("ret", VarType.INT));
+				LibraryConstraint cc = new LibraryConstraint(LibraryOperation.ARRAY_GET,
+						new Expression[] { arrayExpr, indexExpr }, retExpr, new Expression[2]);
+				SymbolicLibraryHandler.pushCC2PC(ti, cc);
+				sf.pop(2);
+				try {
+					sf.push(1); // whatever you push to the frame
+					sf.setOperandAttr(retExpr);
 
-        if (peekIndexAttr(ti) == null || !(peekIndexAttr(ti) instanceof IntegerExpression))
-            return super.execute(ti);
-        StackFrame frame = ti.getModifiableTopFrame();
-        arrayRef = frame.peek(1); // ..,arrayRef,idx
-        if (arrayRef == MJIEnv.NULL) {
-            return ti.createAndThrowException("java.lang.NullPointerException");
-        }
+//				Object elementAttr = eiArray.getElementAttr(index);
+//				if (elementAttr != null) {
+//					if (getElementSize() == 1) {
+//						sf.setOperandAttr(elementAttr);
+//					} else {
+//						sf.setLongOperandAttr(elementAttr);
+//					}
+//				}
 
-        ElementInfo eiArray = ti.getElementInfo(arrayRef);
-        int len = (eiArray.getArrayFields()).arrayLength(); // assumed concrete
-        lastLength = len; // YN: store last length
+					return getNext(ti);
 
-        if (!ti.isFirstStepInsn()) {
-            PCChoiceGenerator arrayCG;
+				} catch (ArrayIndexOutOfBoundsExecutiveException ex) {
+					return ex.getInstruction();
+				}
+			}
+		}
+		// add by czz end
 
-            if (SymbolicInstructionFactory.collect_constraints) {
-                arrayCG = new PCChoiceGenerator(1); // YN: symcrete mode
-            } else {
-            	// this ChoiceFenerator will enumerate all possible index from 0 to len+1
-                arrayCG = new PCChoiceGenerator(0, len + 1); // add 2 error cases: <0, >=len
-            }
+		if (peekIndexAttr(ti) == null || !(peekIndexAttr(ti) instanceof IntegerExpression))
+			return super.execute(ti);
 
-            arrayCG.setOffset(this.position);
-            arrayCG.setMethodName(this.getMethodInfo().getFullName());
+		StackFrame frame = ti.getModifiableTopFrame();
+		arrayRef = frame.peek(1); // ..,arrayRef,idx
+		if (arrayRef == MJIEnv.NULL) {
+			return ti.createAndThrowException("java.lang.NullPointerException");
+		}
 
-            ti.getVM().getSystemState().setNextChoiceGenerator(arrayCG);
+		ElementInfo eiArray = ti.getElementInfo(arrayRef);
+		int len = (eiArray.getArrayFields()).arrayLength(); // assumed concrete
+		lastLength = len; // YN: store last length
 
-            if (SymbolicInstructionFactory.debugMode)
-                System.out.println("# array cg registered: " + arrayCG);
-            return this;
+		if (!ti.isFirstStepInsn()) {
+			PCChoiceGenerator arrayCG;
 
-        } else { // this is what really returns results
+			if (SymbolicInstructionFactory.collect_constraints) {
+				arrayCG = new PCChoiceGenerator(1); // YN: symcrete mode
+			} else {
+				// this ChoiceFenerator will enumerate all possible index from 0 to len+1
+				arrayCG = new PCChoiceGenerator(0, len + 1); // add 2 error cases: <0 len, >=len len+1
+			}
 
-            // index = frame.peek();
-            PCChoiceGenerator lastCG = ti.getVM().getSystemState()
-                    .getLastChoiceGeneratorOfType(PCChoiceGenerator.class);
-            assert (lastCG != null);
-            PCChoiceGenerator prevCG = lastCG.getPreviousChoiceGeneratorOfType(PCChoiceGenerator.class);
+			arrayCG.setOffset(this.position);
+			arrayCG.setMethodName(this.getMethodInfo().getFullName());
 
-            if (SymbolicInstructionFactory.collect_constraints) {
-                // YN: reuse index written from concrete exec + set choice correctly
-                index = peekIndex(ti);
-                ((PCChoiceGenerator) lastCG).select(index);
-            } else {
-                index = lastCG.getNextChoice();
-            }
+			ti.getVM().getSystemState().setNextChoiceGenerator(arrayCG);
 
-            IntegerExpression sym_index = (IntegerExpression) peekIndexAttr(ti);
-            // check the constraint
+			if (SymbolicInstructionFactory.debugMode)
+				System.out.println("# array cg registered: " + arrayCG);
+			return this;
 
-            PathCondition pc;
+		} else { // this is what really returns results
 
-            if (prevCG == null)
-                pc = new PathCondition();
-            else
-                pc = ((PCChoiceGenerator) prevCG).getCurrentPC();
+			// index = frame.peek();
+			PCChoiceGenerator lastCG = ti.getVM().getSystemState()
+					.getLastChoiceGeneratorOfType(PCChoiceGenerator.class);
+			assert (lastCG != null);
+			PCChoiceGenerator prevCG = lastCG.getPreviousChoiceGeneratorOfType(PCChoiceGenerator.class);
 
-            assert pc != null;
+			if (SymbolicInstructionFactory.collect_constraints) {
+				// YN: reuse index written from concrete exec + set choice correctly
+				index = peekIndex(ti);
+				((PCChoiceGenerator) lastCG).select(index);
+			} else {
+				index = lastCG.getNextChoice();
+			}
 
-            if (index < len) {
-                pc._addDet(Comparator.EQ, index, sym_index);
-                if (pc.simplify()) { // satisfiable
-                    ((PCChoiceGenerator) lastCG).setCurrentPC(pc);
-                } else {
-                    ti.getVM().getSystemState().setIgnored(true);// backtrack
-                    return getNext(ti);
-                }
-            }
-            // now check for out of bounds exceptions
-            else if (index == len) {
-                pc._addDet(Comparator.LT, sym_index, 0);
-                if (pc.simplify()) { // satisfiable
-                    ((PCChoiceGenerator) lastCG).setCurrentPC(pc);
-                    return ti.createAndThrowException("java.lang.ArrayIndexOutOfBoundsException");
-                } else {
-                    ti.getVM().getSystemState().setIgnored(true);// backtrack
-                    return getNext(ti);
-                }
-            } else if (index == len + 1) {
-                pc._addDet(Comparator.GE, sym_index, len);
-                if (pc.simplify()) { // satisfiable
-                    ((PCChoiceGenerator) lastCG).setCurrentPC(pc);
-                    return ti.createAndThrowException("java.lang.ArrayIndexOutOfBoundsException");
-                } else {
-                    ti.getVM().getSystemState().setIgnored(true);// backtrack
-                    return getNext(ti);
-                }
-            }
+			IntegerExpression sym_index = (IntegerExpression) peekIndexAttr(ti);
+			// check the constraint
 
-            // original code for concrete execution
-            arrayOperandAttr = peekArrayAttr(ti);
-            indexOperandAttr = peekIndexAttr(ti);
+			PathCondition pc;
 
-            // corina: Ignore POR for now
-            /*
-             * Scheduler scheduler = ti.getScheduler(); if (scheduler.canHaveSharedArrayCG(
-             * ti, this, eiArray, index)){ // don't modify the frame before this eiArray =
-             * scheduler.updateArraySharedness(ti, eiArray, index); if
-             * (scheduler.setsSharedArrayCG( ti, this, eiArray, index)){ return this; } }
-             */
+			if (prevCG == null)
+				pc = new PathCondition();
+			else
+				pc = ((PCChoiceGenerator) prevCG).getCurrentPC();
 
-            frame.pop(2); // now we can pop index and array reference
-            // assign to index any value between 0 and array length
+			assert pc != null;
 
-            try {
-                push(frame, eiArray, index);
+			if (index < len) {
+				pc._addDet(Comparator.EQ, index, sym_index);
+				if (pc.simplify()) { // satisfiable
+					((PCChoiceGenerator) lastCG).setCurrentPC(pc);
+				} else {
+					ti.getVM().getSystemState().setIgnored(true);// backtrack
+					return getNext(ti);
+				}
+			}
+			// now check for out of bounds exceptions
+			else if (index == len) {
+				pc._addDet(Comparator.LT, sym_index, 0);
+				if (pc.simplify()) { // satisfiable
+					((PCChoiceGenerator) lastCG).setCurrentPC(pc);
+					return ti.createAndThrowException("java.lang.ArrayIndexOutOfBoundsException");
+				} else {
+					ti.getVM().getSystemState().setIgnored(true);// backtrack
+					return getNext(ti);
+				}
+			} else if (index == len + 1) {
+				pc._addDet(Comparator.GE, sym_index, len);
+				if (pc.simplify()) { // satisfiable
+					((PCChoiceGenerator) lastCG).setCurrentPC(pc);
+					return ti.createAndThrowException("java.lang.ArrayIndexOutOfBoundsException");
+				} else {
+					ti.getVM().getSystemState().setIgnored(true);// backtrack
+					return getNext(ti);
+				}
+			}
 
-                Object elementAttr = eiArray.getElementAttr(index);
-                if (elementAttr != null) {
-                    if (getElementSize() == 1) {
-                        frame.setOperandAttr(elementAttr);
-                    } else {
-                        frame.setLongOperandAttr(elementAttr);
-                    }
-                }
+			// original code for concrete execution
+			arrayOperandAttr = peekArrayAttr(ti);
+			indexOperandAttr = peekIndexAttr(ti);
 
-                return getNext(ti);
+			// corina: Ignore POR for now
+			/*
+			 * Scheduler scheduler = ti.getScheduler(); if (scheduler.canHaveSharedArrayCG(
+			 * ti, this, eiArray, index)){ // don't modify the frame before this eiArray =
+			 * scheduler.updateArraySharedness(ti, eiArray, index); if
+			 * (scheduler.setsSharedArrayCG( ti, this, eiArray, index)){ return this; } }
+			 */
 
-            } catch (ArrayIndexOutOfBoundsExecutiveException ex) {
-                return ex.getInstruction();
-            }
-        }
-    }
+			frame.pop(2); // now we can pop index and array reference
+			// assign to index any value between 0 and array length
+
+			try {
+				push(frame, eiArray, index);
+//                frame.setLocalAttr(0, a);
+
+				Object elementAttr = eiArray.getElementAttr(index);
+				if (elementAttr != null) {
+					if (getElementSize() == 1) {
+						frame.setOperandAttr(elementAttr);
+					} else {
+						frame.setLongOperandAttr(elementAttr);
+					}
+				}
+
+				return getNext(ti);
+
+			} catch (ArrayIndexOutOfBoundsExecutiveException ex) {
+				return ex.getInstruction();
+			}
+		}
+	}
 
 }

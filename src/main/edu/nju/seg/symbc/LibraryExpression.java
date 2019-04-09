@@ -10,12 +10,14 @@ public class LibraryExpression extends Expression {
 	protected String name;
 	protected String typeName;
 	protected com.microsoft.z3.Sort sort;
+	protected com.microsoft.z3.BoolExpr[] bound;
 	protected LibraryExpression copyFrom;
 
 	public LibraryExpression(String name, String typeName) {
 		this.name = name;
 		this.typeName = typeName;
 		this.sort = null;
+		this.bound = null;
 		this.copyFrom = null;
 	}
 
@@ -53,12 +55,25 @@ public class LibraryExpression extends Expression {
 		this.sort = sort;
 	}
 
+	public com.microsoft.z3.BoolExpr[] getBound() {
+		return bound;
+	}
+
+	public void setBound(com.microsoft.z3.BoolExpr[] bound) {
+		this.bound = bound;
+	}
+
 	public LibraryExpression getCopyFrom() {
 		return copyFrom;
 	}
 
 	public void setCopyFrom(LibraryExpression copyFrom) {
 		this.copyFrom = copyFrom;
+	}
+	
+	@Override
+	public String prefix_notation() {
+		return stringPC();
 	}
 
 	@Override
