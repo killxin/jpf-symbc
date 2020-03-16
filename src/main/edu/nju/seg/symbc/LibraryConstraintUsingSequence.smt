@@ -17,6 +17,8 @@
 (define-fun-rec m!e ((a!1 (Array Int Bool)) (x!1 Int)) (Seq Int) (ite (< x!1 min!nt) (as seq.empty (Seq Int)) (ite (select a!1 x!1) (seq.++ (m!e a!1 (- x!1 1)) (seq.unit x!1)) (m!e a!1 (- x!1 1)))))
 (define-fun-rec e!m ((a!1 (Seq Int)) (x!1 Int)) (Array Int Bool) (ite (< x!1 min!nt) ((as const (Array Int Bool)) false) (ite (seq.contains a!1 (seq.unit x!1)) (store (e!m a!1 (- x!1 1)) x!1 true) (e!m a!1 (- x!1 1)))))
 (define-fun mapping ((a!1 (List Int))) (Array Int Bool) (e!m (element a!1) max!nt))
+(define-fun !te ((a!1 (List Int))) (Seq Int) (element a!1))
+(define-fun !te ((a!1 (Set Int))) (Seq Int) (m!e (mapping a!1) max!nt))
 ;START
 ;java.util.Collection.size()I
 ;java.util.Set.size()I
@@ -314,8 +316,11 @@
 ;java.util.ArrayList.addAll(Ljava/util/Collection;)Z
 ;java.util.LinkedList.addAll(Ljava/util/Collection;)Z
     ;(define-fun-rec m!e ((a!1 (Array Int Bool)) (x!1 Int)) (Seq Int) (ite (< x!1 min!nt) (as seq.empty (Seq Int)) (ite (select a!1 x!1) (seq.++ (m!e a!1 (- x!1 1)) (seq.unit x!1)) (m!e a!1 (- x!1 1)))))
+    ;(define-fun !te ((a!1 (List Int))) (Seq Int) (element a!1)
+    ;(define-fun !te ((a!1 (Set Int))) (Seq Int) (m!e (mapping a!1) max!nt)
 (assert (and
-    (= (element ?_p0) (seq.++ (element ?p0) (m!e (mapping ?p1) max!nt)))
+    ;(= (element ?_p0) (seq.++ (element ?p0) (m!e (mapping ?p1) max!nt)))
+    (= (element ?_p0) (seq.++ (element ?p0) (!te ?p1)))
     (= ?r (ite (= (element ?_p0) (element ?p0)) 0 1))
     ;(= (mapping ?_p0) ((_ map or) (mapping ?p0) (mapping ?p1)))
 ))
@@ -323,11 +328,14 @@
 ;java.util.ArrayList.addAll(ILjava/util/Collection;)Z
 ;java.util.LinkedList.addAll(ILjava/util/Collection;)Z
     ;(define-fun-rec m!e ((a!1 (Array Int Bool)) (x!1 Int)) (Seq Int) (ite (< x!1 min!nt) (as seq.empty (Seq Int)) (ite (select a!1 x!1) (seq.++ (m!e a!1 (- x!1 1)) (seq.unit x!1)) (m!e a!1 (- x!1 1)))))
+    ;(define-fun !te ((a!1 (List Int))) (Seq Int) (element a!1)
+    ;(define-fun !te ((a!1 (Set Int))) (Seq Int) (m!e (mapping a!1) max!nt)
 (assert (and
     (let ((size (seq.len (element ?p0))))
         (= (element ?_p0) (seq.++
             (seq.extract (element ?p0) 0 ?p1)
-            (m!e (mapping ?p2) max!nt)
+            ;(m!e (mapping ?p2) max!nt)
+            (!te ?p2)
             (seq.extract (element ?p0) ?p1 (- size ?p1))
         ))
     )

@@ -708,10 +708,10 @@ public class ProblemZ3 extends ProblemGeneral {
 
 	public Boolean solve() {
 		try {
-//			System.out.println("rh: ");
-//			for (BoolExpr expr : solver.getAssertions()) {
-//				System.out.println(expr);
-//			}
+			System.out.println("rh: ");
+			for (BoolExpr expr : solver.getAssertions()) {
+				System.out.println(expr);
+			}
 			Status status = solver.check();
 			if (Status.SATISFIABLE == status) {
 				System.out.println("********rh: SAT********");
@@ -1385,7 +1385,9 @@ public class ProblemZ3 extends ProblemGeneral {
 			+ ") ((as const (Array Int Bool)) false) (ite (seq.contains a!1 (seq.unit x!1)) (store (e!m a!1 (- x!1 1)) x!1 true) (e!m a!1 (- x!1 1)))))\n";
 	private final static String listMappingZ3Func = "(define-fun mapping ((a!1 List_Int)) (Array Int Bool) (e!m (element a!1) "
 			+ MAX_INT + "))\n";
-
+	private final static String setIteratorZ3Func = "(define-fun !te ((a!1 Set_Int)) (Seq Int) (m!e (mapping a!1) " + MAX_INT +"))\n";
+	private final static String listIteratorZ3Func = "(define-fun !te ((a!1 List_Int)) (Seq Int) (element a!1))\n";
+	
 	public BoolExpr[] parseSMTLIB2String(
 			String smt/* , Symbol[] symb1, Sort[] sort, Symbol[] symb2, FuncDecl[] func */) {
 		try {
@@ -1422,8 +1424,12 @@ public class ProblemZ3 extends ProblemGeneral {
 			i = 0;
 			for (Sort sort : sortSet) {
 				symbs1[i] = sort.getName();
-				if (sort.getName().toString().equals("List_Int")) {
+				if (symbs1[i].toString().equals("List_Int")) {
 					smt = listMappingZ3Func + smt;
+					smt = listIteratorZ3Func + smt;
+				}
+				if (symbs1[i].toString().equals("Set_Int")) {
+					smt = setIteratorZ3Func + smt;
 				}
 				sorts[i] = sort;
 				i++;
